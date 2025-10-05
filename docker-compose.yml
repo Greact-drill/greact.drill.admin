@@ -3,15 +3,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=${VITE_API_URL}
-    ports:
+    expose:
       - "80"
     environment:
       - NODE_ENV=production
+      - VITE_API_URL=${VITE_API_URL}
     networks:
       - proxy
 
 networks:
   proxy:
-    external: true
+    external: true  
