@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
+    expose:
       - "80"
     environment:
       - NODE_ENV=production
