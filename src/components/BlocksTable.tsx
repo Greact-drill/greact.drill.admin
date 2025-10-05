@@ -216,7 +216,7 @@ export default function BlocksTable({ title }: Props) {
                     icon="pi pi-plus" 
                     className="p-button-primary" 
                     onClick={handleCreate} 
-                    style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3'}}
+                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
                 />
             </div>
         </div>

@@ -20,10 +20,8 @@ export default function AdminApp() {
     return (
         <div className="admin-layout"> 
             <aside className="admin-sidebar">
-                
                 <div className="sidebar-header">
-                    <i className="pi pi-prime"></i> 
-                    <h1>Drill</h1> 
+                    <h1 className="logo-text">Drill</h1> 
                 </div>
                 
                 <nav className="sidebar-nav">

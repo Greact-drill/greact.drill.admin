@@ -97,8 +97,7 @@ const EdgeForm: React.FC<{ edge?: Edge | null; onClose: () => void; isSubmitting
                     loading={mutation.isPending} 
                     tooltip={isEdit ? 'Сохранить' : 'Создать'}
                     className="p-button-rounded"
-                    style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3', width: '2.5rem', height: '2.5rem', padding: '0'}} 
-                />
+                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', width: '2.5rem', height: '2.5rem', padding: '0'}}                />
                 <Button 
                     icon="pi pi-times"
                     onClick={onClose} 
@@ -225,7 +224,7 @@ export default function EdgesTable({title} : Props) {
                     icon="pi pi-plus" 
                     severity="success" 
                     onClick={() => handleShowForm(null)}
-                    style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3'}}
+                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
                 />
             </div>
         </div>
@@ -274,7 +273,7 @@ export default function EdgesTable({title} : Props) {
 
             <Dialog 
                 visible={openForm}
-                style={{ width: '450px', backgroundColor: '#27293d', color: '#fff' }}
+                style={{ width: '450px', backgroundColor: 'var(--accent-primary)', color: '#fff' }}
                 header={selectedEdge ? `Редактировать: ${selectedEdge.id}` : 'Создать новую буровую'}
                 modal
                 className="p-fluid admin-dialog"

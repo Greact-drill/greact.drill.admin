@@ -1,7 +1,7 @@
 @import 'primereact/resources/primereact.min.css';
 @import 'primeicons/primeicons.css';
 @import 'primeflex/primeflex.css';
-@import 'primereact/resources/themes/lara-dark-indigo/theme.css'; 
+@import 'primereact/resources/themes/mdc-dark-deeppurple/theme.css'; 
 
 /* Сброс и глобальные переменные */
 :root {
@@ -9,9 +9,10 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  /* Сохраняем темную схему по умолчанию, но меняем основной фон на более темный, как в Material Dark */
+  color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #121212; /* Очень темный фон для Material Dark */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -70,22 +71,43 @@ body {
 /* ... остальные стили из App.css (.rig-card, .rigs-grid и т.д.) */
 
 :root {
-    /* Цветовые переменные админ-панели */
-    --admin-bg: #1e293b;         
-    --sidebar-bg: #334155;        
-    --card-bg: #334155;           
-    --border-color: #475569;      
-    --text-primary: #f1f5f9;      
-    --text-secondary: #94a3b8;    
-    --accent-primary: #6366f1;    
-    --accent-hover: #4f46e5;      
+    /* Цветовые переменные админ-панели, адаптированные под mdc-dark-deeppurple */
+    /* Deep Purple 500: #673AB7. Deep Purple 700: #512DA8. Deep Purple 900: #311B92 */
+    
+    /* Основной фон (Surface/Ground) */
+    --admin-bg: #121212;            /* Самый темный фон (аналог PrimeReact --surface-ground) */
+    
+    /* Фон боковой панели и карточек (Surface/Card) */
+    --sidebar-bg: #1e1e1e;          /* Темный фон для сайдбара/карточек */
+    --card-bg: #1e1e1e;             /* Тот же фон для карточек (аналог PrimeReact --surface-card) */
+    
+    /* Цвет границы/разделителя (Surface/Border) */
+    --border-color: #333333;        /* Более светлая и заметная граница на темном фоне */
+    
+    /* Основной и второстепенный текст */
+    --text-primary: #ffffff;        /* Белый текст (высокая контрастность) */
+    --text-secondary: #aaaaaa;      /* Серый текст (аналог PrimeReact --text-secondary-color) */
+    
+    /* Акцентный цвет (Primary Color) - Deep Purple 500 */
+    --accent-primary: #673AB7;      /* Deep Purple 500 */
+    --accent-hover: #512DA8;        /* Deep Purple 700 для ховера/более темного состояния */
+    
     --sidebar-width: 260px;
 }
 
 .admin-layout {
     display: flex;
     min-height: 100vh;
-    background-color: var(--admin-bg);
+    /* --------------------------------------------------------------------------------- */
+    /* ИЗМЕНЕНИЕ: Усиленный градиент */
+    /* Используем Deep Purple 900 (#311B92) для основного свечения */
+    background: radial-gradient(
+        ellipse at top left, 
+        rgba(49, 27, 146, 0.4) 0%, /* Увеличиваем непрозрачность до 40% */
+        rgba(18, 18, 18, 1) 60%    /* Расширяем градиент до 60% */
+    );
+    background-color: var(--admin-bg); /* Сплошной цвет как запасной вариант */
+    /* --------------------------------------------------------------------------------- */
     color: var(--text-primary);
     width: 100%; 
 }
@@ -135,7 +157,8 @@ body {
 }
 
 .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    /* Легкий ховер-эффект на темном фоне */
+    background-color: rgba(255, 255, 255, 0.08); /* Чуть более светлый, чем был */
     color: var(--text-primary);
 }
 
@@ -143,7 +166,8 @@ body {
     background-color: var(--accent-primary);
     color: #ffffff;
     font-weight: 600;
-    box-shadow: 0 4px 12px rgba(108, 93, 211, 0.3);
+    /* Уменьшил тень, чтобы она выглядела менее агрессивно на темной теме */
+    box-shadow: 0 4px 12px rgba(103, 58, 183, 0.4); /* Используем цвет акцента (Deep Purple 500) для тени */
 }
 
 .nav-link .pi {
@@ -153,7 +177,6 @@ body {
 /* --- Основной контент (ГДЕ ДОЛЖНА БЫТЬ ТАБЛИЦА) --- */
 .admin-content {
     flex: 1; /* КРИТИЧНО: Занимает ВСЮ доступную ширину после сайдбара */
-    /* УДАЛЕНО: margin-left: var(--sidebar-width); - это ломает Flexbox */
     padding: 24px 32px;
     
     display: flex; 
@@ -176,7 +199,8 @@ body {
     background-color: var(--card-bg);
     padding: 24px;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    /* Тень на темном фоне должна быть минимальной */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); 
     flex-grow: 1; 
     min-height: 100px;
     display: flex;
@@ -187,6 +211,7 @@ body {
     flex-grow: 1;
 }
 
+/* Стили для инпутов PrimeReact (для лучшего соответствия) */
 .p-input-icon-left > .pi.pi-search {
     /* Сдвигаем иконку на 1px вниз для лучшего вертикального центрирования */
     transform: translateX(10px);
@@ -195,9 +220,40 @@ body {
 .p-input-icon-left input.p-inputtext {
     /* Значение 3.5rem (56px) должно создать заметный отступ */
     padding-left: 2rem !important; 
+    /* В Material Design часто используют более скругленные инпуты */
+    border-radius: 6px; 
 }
 
-/* Также полезно проверить и другие иконки в инпутах, если они используются */
 .p-input-icon-left > .pi {
     transform: translateY(1px); 
+}
+
+.p-button-label {
+    color: #ffffff;
+}
+
+/* --- Стилизация логотипа "Drill" --- */
+.logo-text {
+    font-family: 'Consolas', 'Courier New', monospace; 
+       
+    font-size: 1.8rem; /* Достаточно крупный */
+    font-weight: 700; /* Жирный */
+    margin: 0; /* Убираем стандартные отступы */
+    text-transform: uppercase; /* Логотипы часто используют заглавные буквы */
+    letter-spacing: 2px; /* Небольшой разнос, чтобы выглядело более стильно */
+    
+    /* Добавляем мягкое свечение в цвете Deep Purple 500 */
+    color: var(--accent-primary);
+    text-shadow: 
+        0 0 5px rgba(103, 58, 183, 0.6), /* Мягкий, широкий свет */
+        0 0 10px rgba(103, 58, 183, 0.4); /* Чуть более сильный центр */
+}
+
+.sidebar-header h1, 
+.sidebar-header h2 {
+    color: var(--text-primary);
+}
+
+.sidebar-header .logo-text {
+    color: var(--accent-primary);
 }
