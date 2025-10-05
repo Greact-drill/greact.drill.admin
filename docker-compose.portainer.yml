@@ -1,0 +1,16 @@
+services:
+  admin-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=${VITE_API_URL}
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true  
