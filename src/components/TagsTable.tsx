@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTagsForAdmin, deleteTag, createTag, updateTag } from '../api/admin'; 
+import { getTagsForAdmin, deleteTag, createTag, updateTag, syncTags } from '../api/admin'; 
 import type { Tag } from '../api/admin';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -13,6 +13,7 @@ import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import type { DataTableFilterMeta } from 'primereact/datatable'; 
+import { SyncDialog } from './SyncDialog';
 
 interface Props {
     title: string;
@@ -187,6 +188,8 @@ export default function TagsTable({ title }: Props) {
     const [openForm, setOpenForm] = useState(false);
     const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
 
+    const [openSyncDialog, setOpenSyncDialog] = useState(false);
+
     const [filters, setFilters] = useState<DataTableFilterMeta>({
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
         name: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -206,6 +209,33 @@ export default function TagsTable({ title }: Props) {
             queryClient.invalidateQueries({ queryKey: ['tags'] });
         },
     });
+
+    const syncMutation = useMutation({
+        mutationFn: (edge: string) => syncTags(edge),
+        onSuccess: (data) => {
+            alert(data.message);
+            queryClient.invalidateQueries({ queryKey: ['tags'] });
+            setOpenSyncDialog(false);
+        },
+        onError: (err: any) => {
+            alert(`Ошибка синхронизации: ${err.message || 'Неизвестная ошибка'}`);
+            setOpenSyncDialog(false);
+        },
+    });
+
+    const handleOpenSyncDialog = () => {
+        setOpenSyncDialog(true);
+    };
+
+    const handleSync = (edge: string) => {
+        confirmDialog({
+            message: `Вы уверены, что хотите запустить синхронизацию тегов для 'edge': ${edge}?`,
+            header: 'Подтверждение синхронизации',
+            icon: 'pi pi-cloud-download',
+            acceptClassName: 'p-button-warning',
+            accept: () => syncMutation.mutate(edge), 
+        });
+    };
 
     const handleCreate = () => {
         setSelectedTag(null);
@@ -242,19 +272,19 @@ export default function TagsTable({ title }: Props) {
     };
 
     const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            const value = e.target.value;
-            
-            const newFilters: DataTableFilterMeta = {
-            ...filters,
-            global: {
-                ...filters.global,
-                value: value,
-            },
-        };
-    
-            setFilters(newFilters);
-            setGlobalFilterValue(value);
-        };
+        const value = e.target.value;
+        
+        const newFilters: DataTableFilterMeta = {
+        ...filters,
+        global: {
+            ...filters.global,
+            value: value,
+        },
+    };
+
+        setFilters(newFilters);
+        setGlobalFilterValue(value);
+    };
 
     const header = (
         <div className="flex flex-wrap align-items-center justify-content-between gap-2">
@@ -275,16 +305,30 @@ export default function TagsTable({ title }: Props) {
                     onClick={handleCreate} 
                     style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
                 />
+                <Button 
+                    label="Синхронизировать" 
+                    icon="pi pi-sync" 
+                    className="p-button-secondary" 
+                    onClick={handleOpenSyncDialog}
+                    disabled={isLoading || syncMutation.isPending} 
+                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
+                    tooltip="Открыть диалог синхронизации тегов"
+                />
             </div>
         </div>
     );
 
     return (
         <div className="card">
-            {(queryError || deleteMutation.error) && (
-                <Message severity="error" text={`Ошибка: ${queryError?.message || deleteMutation.error?.message}`} className="mb-3" />
+            {(queryError || deleteMutation.error || syncMutation.error) && (
+                <Message severity="error" text={`Ошибка: ${queryError?.message || deleteMutation.error?.message || syncMutation.error?.message}`} className="mb-3" />
             )}
-            {deleteMutation.isPending && <Message severity="info" text="Удаление..." className="mb-3" />}
+            {deleteMutation.isPending && 
+            <Message
+                severity="info"
+                text={deleteMutation.isPending ? "Удаление..." : "Синхронизация тегов..."}
+                className="mb-3"
+            />}
             
             <DataTable 
                 value={tags || []} 
@@ -366,6 +410,12 @@ export default function TagsTable({ title }: Props) {
                     isSubmitting={deleteMutation.isPending}
                 />
             </Dialog>
+            <SyncDialog
+                isVisible={openSyncDialog}
+                onClose={() => setOpenSyncDialog(false)}
+                onSync={handleSync}
+                isSubmitting={syncMutation.isPending}
+            />
             
             <ConfirmDialog />
         </div>

@@ -82,6 +82,14 @@ export async function deleteTag(id: string): Promise<void> {
     await apiClient.delete(`/tag/${id}`);
 }
 
+export async function syncTags(edge: string = 'real'): Promise<{ message: string; count: number }> {
+    const response = await apiClient.post<{ message: string; count: number }>(
+        `/sync/tags?edge=${edge}`
+    );
+
+    return response.data;
+}
+
 export interface CustomizationPayload {
     key: string;
     value: string;
