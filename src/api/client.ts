@@ -7,7 +7,7 @@ class ApiClient {
   private isUsingFallback: boolean = false
 
   constructor() {
-    this.primaryUrl = import.meta.env.VITE_API_URL || 'https://drill.greact.ru/api/dev'
+    this.primaryUrl = import.meta.env.VITE_API_URL || 'https://drill.greact.ru/api/dev-common'
     this.fallbackUrl = 'http://localhost:3000'
     
     // Создаем instance для основного URL
