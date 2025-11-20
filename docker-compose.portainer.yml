@@ -5,12 +5,16 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL
+        - VITE_FILE_EXAMPLE
+        - VITE_FILE_UPLOAD
     expose:
       - "80"
     container_name: greact-drill-admin-${BRANCH}
     environment:
       - NODE_ENV=production
       - VITE_API_URL=${VITE_API_URL}
+      - VITE_FILE_EXAMPLE=${VITE_FILE_EXAMPLE}
+      - VITE_FILE_UPLOAD=${VITE_FILE_UPLOAD}
     networks:
       - proxy
 

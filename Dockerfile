@@ -15,6 +15,8 @@ RUN npm install --legacy-peer-deps
 COPY  . .
 
 ARG VITE_API_URL
+ARG VITE_FILE_EXAMPLE
+ARG VITE_FILE_UPLOAD
 
 # Собираем приложение для продакшена
 RUN npm run build
