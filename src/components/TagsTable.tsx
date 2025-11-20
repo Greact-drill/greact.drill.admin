@@ -189,6 +189,10 @@ export default function TagsTable({ title }: Props) {
     const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
 
     const [openSyncDialog, setOpenSyncDialog] = useState(false);
+    
+    // Состояния для загрузки файла
+    const [uploadDialogVisible, setUploadDialogVisible] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const [filters, setFilters] = useState<DataTableFilterMeta>({
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -222,6 +226,68 @@ export default function TagsTable({ title }: Props) {
             setOpenSyncDialog(false);
         },
     });
+
+    // Функции для загрузки файла
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+        }
+    };
+
+    const handleUploadSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedFile) return;
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        try {
+            // const response = await fetch('http://localhost:3000/data/upload', {
+            const response = await fetch(import.meta.env.VITE_FILE_UPLOAD, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                // Обновляем данные после успешной загрузки
+                queryClient.invalidateQueries({ queryKey: ['tags'] });
+                setUploadDialogVisible(false);
+                setSelectedFile(null);
+            } else {
+                console.error('Ошибка загрузки файла');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+        }
+    };
+
+    const handleDownloadExample = async () => {
+        try {
+            // const response = await fetch('http://localhost:3000/data/example');
+            const response = await fetch(import.meta.env.VITE_FILE_EXAMPLE);
+            if (response.ok) {
+                const exampleData = await response.json();
+                
+                // Форматируем JSON с отступами для читаемости
+                const formattedJson = JSON.stringify(exampleData, null, 2);
+                
+                const blob = new Blob([formattedJson], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `example_tag.json`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                console.error('Ошибка загрузки примера файла');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+        }
+    };
 
     const handleOpenSyncDialog = () => {
         setOpenSyncDialog(true);
@@ -299,6 +365,13 @@ export default function TagsTable({ title }: Props) {
                     />
                 </span>
                 <Button 
+                    label="Загрузить JSON"
+                    icon="pi pi-upload" 
+                    className="p-button-secondary" 
+                    onClick={() => setUploadDialogVisible(true)}
+                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
+                />
+                <Button 
                     label="Создать новый тег" 
                     icon="pi pi-plus" 
                     className="p-button-primary" 
@@ -308,7 +381,7 @@ export default function TagsTable({ title }: Props) {
                 <Button 
                     label="Синхронизировать" 
                     icon="pi pi-sync" 
-                    className="p-button-secondary" 
+                    className="p-button-help" 
                     onClick={handleOpenSyncDialog}
                     disabled={isLoading || syncMutation.isPending} 
                     style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
@@ -410,12 +483,78 @@ export default function TagsTable({ title }: Props) {
                     isSubmitting={deleteMutation.isPending}
                 />
             </Dialog>
+
+            {/* Диалог синхронизации */}
             <SyncDialog
                 isVisible={openSyncDialog}
                 onClose={() => setOpenSyncDialog(false)}
                 onSync={handleSync}
                 isSubmitting={syncMutation.isPending}
             />
+
+            {/* Новый диалог для загрузки файла */}
+            <Dialog 
+                visible={uploadDialogVisible} 
+                style={{ width: '450px', backgroundColor: '#27293d', color: '#fff' }} 
+                header="Загрузить JSON файл с тегами" 
+                modal 
+                className="p-fluid admin-dialog" 
+                onHide={() => {
+                    setUploadDialogVisible(false);
+                    setSelectedFile(null);
+                }}
+            >
+                <div className="mb-4">
+                    <Button 
+                        label="Скачать пример файла"
+                        icon="pi pi-download"
+                        className="p-button-outlined p-button-help"
+                        onClick={handleDownloadExample}
+                        style={{borderColor: '#6c5dd3', color: '#6c5dd3'}}
+                    />
+                </div>
+
+                <form onSubmit={handleUploadSubmit} className="p-fluid">
+                    <div className="field">
+                        <label htmlFor="file" className="font-semibold mb-2 block" style={{ color: '#a0a2b8' }}>
+                            Выберите JSON файл
+                        </label>
+                        <InputText 
+                            type="file"
+                            id="file"
+                            accept=".json"
+                            onChange={handleFileSelect}
+                            style={{ backgroundColor: '#1e1e2f', borderColor: '#3a3c53', color: '#fff' }}
+                        />
+                        {selectedFile && (
+                            <div className="mt-2 text-sm" style={{ color: '#a0a2b8' }}>
+                                Выбран файл: {selectedFile.name}
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="flex justify-content-center gap-4 mt-4">
+                        <Button 
+                            icon="pi pi-upload" 
+                            type="submit" 
+                            disabled={!selectedFile}
+                            tooltip="Загрузить"
+                            className="p-button-rounded" 
+                            style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3', width: '2.5rem', height: '2.5rem', padding: '0'}} 
+                        />
+                        <Button 
+                            icon="pi pi-times" 
+                            onClick={() => {
+                                setUploadDialogVisible(false);
+                                setSelectedFile(null);
+                            }} 
+                            className="p-button-danger p-button-rounded" 
+                            tooltip="Отмена" 
+                            style={{width: '2.5rem', height: '2.5rem', padding: '0'}}
+                        />
+                    </div>
+                </form>
+            </Dialog>
             
             <ConfirmDialog />
         </div>
