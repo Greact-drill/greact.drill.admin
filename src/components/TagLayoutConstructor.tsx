@@ -417,7 +417,7 @@ export default function TagLayoutConstructor({ title }: Props) {
         
         // Ограничиваем позицию в пределах drop-zone
         const constrainedPosition = {
-            x: Math.max(10, Math.min(position.x, 1000)),
+            x: Math.max(10, Math.min(position.x, 1500)),
             y: Math.max(10, Math.min(position.y, 600))
         };
         
