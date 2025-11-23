@@ -257,3 +257,129 @@ body {
 .sidebar-header .logo-text {
     color: var(--accent-primary);
 }
+
+/* main.css - добавьте эти стили */
+
+.layout-constructor {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.constructor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--card-bg);
+    border-radius: 8px;
+}
+
+.controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.constructor-content {
+    flex: 1;
+    position: relative;
+    background: var(--admin-bg);
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    min-height: 600px;
+}
+
+.drop-zone {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    background: 
+        linear-gradient(90deg, var(--border-color) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(var(--border-color) 1px, transparent 1px) 0 0 / 20px 20px;
+}
+
+.drop-zone.drop-over {
+    background-color: rgba(103, 58, 183, 0.1);
+    border-color: var(--accent-primary);
+}
+
+.drop-zone-header {
+    padding: 16px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.widget-item {
+    position: absolute;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: move;
+    z-index: 10;
+}
+
+.widget-item:hover {
+    box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
+    border-color: var(--accent-primary);
+}
+
+.widget-item.dragging {
+    opacity: 0.6;
+}
+
+.widget-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.widget-label {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.widget-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.widget-form .field {
+    margin-bottom: 16px;
+}
+
+.widget-form label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.widget-form input,
+.widget-form .p-dropdown {
+    width: 100%;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}
