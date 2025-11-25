@@ -3,6 +3,7 @@ import CustomizationTable from './components/CustomizationTable';
 import BlocksTable from './components/BlocksTable';
 import EdgesTable from './components/EdgesTable';
 import TagsTable from './components/TagsTable';
+import TagLayoutConstructor from './components/TagLayoutConstructor';
 import './main.css';
 
 const navItems = [
@@ -61,7 +62,8 @@ export default function AdminApp() {
                         
                         <Route path="edge-customization" element={<CustomizationTable type="edge" title="Компоненты Буровых"/>} />
                         <Route path="block-customization" element={<CustomizationTable type="block" title="Компоненты Блоков"/>} />
-                        <Route path="tag-customization" element={<CustomizationTable type="tag" title="Компоненты Тегов"/>} />
+                        {/* <Route path="tag-customization" element={<CustomizationTable type="tag" title="Компоненты Тегов"/>} /> */}
+                        <Route path="tag-customization" element={<TagLayoutConstructor title="Конструктор размещения тегов"/>} />
                     </Routes>
                 </div>
             </main>
