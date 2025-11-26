@@ -22,7 +22,7 @@ import { InputText } from 'primereact/inputtext';
 
 // Интерфейс для конфигурации виджета из JSON
 interface WidgetConfig {
-    page: 'KTU' | 'PUMPBLOCK';
+    page: 'KTU' | 'PUMPBLOCK' | 'ACCIDENT' | 'BYPASS'; // Добавляем новые страницы
     widgetType: 'gauge' | 'bar' | 'number' | 'status';
     position: { x: number; y: number };
     customLabel?: string;
@@ -48,13 +48,15 @@ const WIDGET_TYPES = [
 
 const PAGES = [
     { label: 'КТУ', value: 'KTU' },
-    { label: 'Насосный блок', value: 'PUMPBLOCK' }
+    { label: 'Насосный блок', value: 'PUMPBLOCK' },
+    { label: 'Аварии', value: 'ACCIDENT' }, // Добавляем новые страницы
+    { label: 'Байпас', value: 'BYPASS' }    // Добавляем новые страницы
 ];
 
 // Компонент виджета для перетаскивания
 const DraggableWidget: React.FC<{ 
     item: LayoutItem; 
-    tagName: string; // Добавляем пропс с названием тега
+    tagName: string;
     onEdit: (item: LayoutItem) => void;
     onDelete: (id: string) => void;
     onPositionChange: (id: string, position: { x: number; y: number }) => void;
@@ -117,7 +119,6 @@ const DropZone: React.FC<{
             const dropZoneRect = dropRef.current?.getBoundingClientRect();
             
             if (offset && dropZoneRect) {
-                // Вычисляем относительные координаты внутри drop-zone
                 const relativeX = offset.x - dropZoneRect.left;
                 const relativeY = offset.y - dropZoneRect.top;
                 
@@ -135,7 +136,6 @@ const DropZone: React.FC<{
         }),
     }));
 
-    // Используем ref для drop-zone
     drop(dropRef);
 
     return (
@@ -173,7 +173,6 @@ const WidgetForm: React.FC<{
     }, [item]);
 
     const handleSave = () => {
-        // Валидация
         if (!formData.edge_id || !formData.tag_id || !formData.widgetType) {
             setError('Не все обязательные поля заполнены.');
             return;
@@ -276,16 +275,14 @@ const WidgetForm: React.FC<{
 export default function TagLayoutConstructor({ title }: Props) {
     const queryClient = useQueryClient();
     const [layouts, setLayouts] = useState<LayoutItem[]>([]);
-    const [selectedPage, setSelectedPage] = useState<'KTU' | 'PUMPBLOCK'>('KTU');
+    const [selectedPage, setSelectedPage] = useState<'KTU' | 'PUMPBLOCK' | 'ACCIDENT' | 'BYPASS'>('KTU'); // Обновляем тип
     const [selectedEdge, setSelectedEdge] = useState<string>('');
     const [showForm, setShowForm] = useState(false);
     const [editingItem, setEditingItem] = useState<LayoutItem | null>(null);
     const [globalSearch, setGlobalSearch] = useState('');
     
-    // Используем useRef для хранения актуального состояния layouts
     const layoutsRef = useRef<LayoutItem[]>([]);
     
-    // Синхронизируем ref с состоянием
     useEffect(() => {
         layoutsRef.current = layouts;
     }, [layouts]);
@@ -307,13 +304,11 @@ export default function TagLayoutConstructor({ title }: Props) {
         refetchOnWindowFocus: false
     });
 
-    // Создаем карту тегов для быстрого доступа
     const tagsMap = useMemo(() => {
         if (!tags) return new Map();
         return new Map(tags.map(tag => [tag.id, tag.name]));
     }, [tags]);
 
-    // Устанавливаем первую буровую по умолчанию при загрузке edges
     useEffect(() => {
         if (edges && edges.length > 0 && !selectedEdge) {
             setSelectedEdge(edges[0].id);
@@ -327,7 +322,6 @@ export default function TagLayoutConstructor({ title }: Props) {
         const layoutItems: LayoutItem[] = [];
         
         (customizations as TagCustomization[]).forEach((custom: TagCustomization) => {
-            // Ищем записи с ключом widgetConfig
             if (custom.key === 'widgetConfig') {
                 try {
                     const config: WidgetConfig = JSON.parse(custom.value);
@@ -354,16 +348,13 @@ export default function TagLayoutConstructor({ title }: Props) {
         mutationFn: async (layoutItems: LayoutItem[]) => {
             console.log('Сохранение всех виджетов:', layoutItems);
             
-            // Удаляем все существующие кастомизации с ключом widgetConfig
             const deletePromises = layoutItems.map(item =>
                 deleteTagCustomization(item.edge_id, item.tag_id, 'widgetConfig')
                     .catch(() => {})
             );
             await Promise.all(deletePromises);
 
-            // Создаем новые кастомизации с полным конфигом в value
             const createPromises = layoutItems.map(item => {
-                // Извлекаем конфигурацию (без edge_id и tag_id)
                 const { edge_id, tag_id, id, ...config } = item;
                 
                 return createTagCustomization({
@@ -389,11 +380,9 @@ export default function TagLayoutConstructor({ title }: Props) {
         mutationFn: async (item: LayoutItem) => {
             console.log('Сохранение одного виджета:', item);
             
-            // Удаляем старую кастомизацию
             await deleteTagCustomization(item.edge_id, item.tag_id, 'widgetConfig')
                 .catch(() => {});
 
-            // Создаем новую кастомизацию
             const { edge_id, tag_id, id, ...config } = item;
             
             return createTagCustomization({
@@ -411,17 +400,14 @@ export default function TagLayoutConstructor({ title }: Props) {
         }
     });
 
-    // Функция для обработки перетаскивания
     const handleDrop = useCallback((draggedItem: any, position: { x: number; y: number }) => {
         console.log('Handling drop for item:', draggedItem, 'at position:', position);
         
-        // Ограничиваем позицию в пределах drop-zone
         const constrainedPosition = {
             x: Math.max(10, Math.min(position.x, 1500)),
             y: Math.max(10, Math.min(position.y, 600))
         };
         
-        // Используем актуальное состояние из ref
         const updatedLayouts = layoutsRef.current.map(item =>
             item.id === draggedItem.id
                 ? { ...item, position: constrainedPosition }
@@ -430,17 +416,14 @@ export default function TagLayoutConstructor({ title }: Props) {
         
         console.log('Updated layouts:', updatedLayouts);
         
-        // Обновляем состояние
         setLayouts(updatedLayouts);
         
-        // Сохраняем только измененный виджет
         const changedWidget = updatedLayouts.find(item => item.id === draggedItem.id);
         if (changedWidget) {
             saveSingleMutation.mutate(changedWidget);
         }
     }, [saveSingleMutation]);
 
-    // Функция для автоматического расположения виджетов
     const autoArrangeWidgets = () => {
         console.log('Auto arranging widgets');
         const newLayouts = [...layoutsRef.current];
@@ -450,7 +433,6 @@ export default function TagLayoutConstructor({ title }: Props) {
         let y = margin;
         let rowHeight = 0;
 
-        // Сортируем виджеты по типу (сначала широкие)
         const sortedLayouts = newLayouts.sort((a, b) => {
             const typeA = (a.widgetType === 'gauge' || a.widgetType === 'bar') ? 0 : 1;
             const typeB = (b.widgetType === 'gauge' || b.widgetType === 'bar') ? 0 : 1;
@@ -524,7 +506,6 @@ export default function TagLayoutConstructor({ title }: Props) {
                 console.log('Deleting widget:', id);
                 setLayouts(newLayouts);
                 
-                // Удаляем виджет из базы данных
                 if (widgetToDelete) {
                     deleteTagCustomization(widgetToDelete.edge_id, widgetToDelete.tag_id, 'widgetConfig')
                         .catch(() => {});
@@ -533,13 +514,11 @@ export default function TagLayoutConstructor({ title }: Props) {
         });
     };
 
-    // Функция для принудительного обновления данных с сервера
     const handleRefresh = () => {
         console.log('Refreshing data from server');
         queryClient.invalidateQueries({ queryKey: ['tag-customization-layout'] });
     };
 
-    // Фильтрация виджетов по выбранной странице и буровой
     const pageLayouts = useMemo(() => {
         return layouts.filter(item => 
             item.page === selectedPage && 
@@ -623,7 +602,7 @@ export default function TagLayoutConstructor({ title }: Props) {
                             <DraggableWidget
                                 key={item.id}
                                 item={item}
-                                tagName={tagsMap.get(item.tag_id) || `Тег ${item.tag_id}`} // Передаем название тега
+                                tagName={tagsMap.get(item.tag_id) || `Тег ${item.tag_id}`}
                                 onEdit={setEditingItem}
                                 onDelete={handleDeleteWidget}
                                 onPositionChange={() => {}}
@@ -643,7 +622,6 @@ export default function TagLayoutConstructor({ title }: Props) {
                     </DropZone>
                 </div>
 
-                {/* Форма редактирования виджета */}
                 <Dialog
                     visible={showForm}
                     style={{ width: '500px', backgroundColor: '#27293d', color: '#fff' }}
