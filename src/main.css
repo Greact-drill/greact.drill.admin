@@ -383,3 +383,44 @@ body {
     gap: 8px;
     margin-top: 20px;
 }
+/* Добавьте это в ваш основной CSS файл, например App.css или index.css */
+
+/* Стили для иерархического отображения TreeTable */
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="1"] > td {
+    padding-left: 2rem !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="2"] > td {
+    padding-left: 4rem !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="3"] > td {
+    padding-left: 6rem !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="4"] > td {
+    padding-left: 8rem !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="5"] > td {
+    padding-left: 10rem !important;
+}
+
+/* Заголовки без отступов */
+.edges-tree-table .p-treetable-thead > tr > th {
+    padding-left: 1rem !important;
+}
+
+/* Стили для иконок */
+.edges-tree-table .pi-sitemap {
+    color: var(--accent-primary);
+}
+
+.edges-tree-table .pi-folder {
+    color: #ffa500;
+}
+
+.edges-tree-table .pi-file {
+    color: #a0a2b8;
+}
+
