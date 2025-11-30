@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-    type Edge, type Block, type Tag, type BaseCustomization, type TagCustomization,
+    type Edge, type Tag, type BaseCustomization, type TagCustomization,
     getEdgeCustomizationForAdmin, createEdgeCustomization, updateEdgeCustomization, deleteEdgeCustomization,
-    getBlockCustomizationForAdmin, createBlockCustomization, updateBlockCustomization, deleteBlockCustomization,
     getTagCustomizationForAdmin, createTagCustomization, updateTagCustomization, deleteTagCustomization,
-    getEdgesForAdmin, getBlocksForAdmin, getTagsForAdmin 
+    getEdgesForAdmin, getTagsForAdmin 
 } from '../api/admin'; 
 
 import { type DataTableFilterMeta, DataTable } from 'primereact/datatable';
@@ -38,7 +37,7 @@ const CustomizationForm: React.FC<{
     const initialBaseData = initialData as BaseCustomization | undefined;
 
     const [edgeId, setEdgeId] = useState(initialTagData?.edge_id || initialBaseData?.edge_id || '');
-    const [blockId, setBlockId] = useState(initialBaseData?.block_id || '');
+    // const [blockId, setBlockId] = useState(initialBaseData?.block_id || '');
     const [tagId, setTagId] = useState(initialTagData?.tag_id || '');
     const [key, setKey] = useState(initialData?.key || '');
     const [value, setValue] = useState(initialData?.value || '');
@@ -51,12 +50,12 @@ const CustomizationForm: React.FC<{
         enabled: type !== 'block',
     });
 
-    const { data: blocks, isLoading: isBlocksLoading } = useQuery<Block[]>({
-        queryKey: ['blocks'],
-        queryFn: getBlocksForAdmin,
-        staleTime: Infinity,
-        enabled: type === 'block',
-    });
+    // const { data: blocks, isLoading: isBlocksLoading } = useQuery<Block[]>({
+    //     queryKey: ['blocks'],
+    //     queryFn: getBlocksForAdmin,
+    //     staleTime: Infinity,
+    //     enabled: type === 'block',
+    // });
 
     const { data: tags, isLoading: isTagsLoading } = useQuery<Tag[]>({
         queryKey: ['tags'],
@@ -71,17 +70,17 @@ const CustomizationForm: React.FC<{
                 ? (data: any) => updateEdgeCustomization(edgeId, key, data)
                 : (data: any) => createEdgeCustomization(data);
         }
-        if (type === 'block') {
-            return isEdit 
-                ? (data: any) => updateBlockCustomization(blockId, key, data)
-                : (data: any) => createBlockCustomization(data);
-        }
+        // if (type === 'block') {
+        //     return isEdit 
+        //         ? (data: any) => updateBlockCustomization(blockId, key, data)
+        //         : (data: any) => createBlockCustomization(data);
+        // }
         if (type === 'tag') {
             return isEdit 
                 ? (data: any) => updateTagCustomization(edgeId, tagId, key, data)
                 : (data: any) => createTagCustomization(data);
         }
-    }, [type, isEdit, edgeId, blockId, tagId, key]);
+    }, [type, isEdit, edgeId, tagId, key]);
 
     const mutation = useMutation({
         mutationFn: mutationFn as (data: any) => Promise<any>,
@@ -104,9 +103,9 @@ const CustomizationForm: React.FC<{
         if (type === 'edge') {
             payload.edge_id = edgeId;
             valid = valid && edgeId;
-        } else if (type === 'block') {
-            payload.block_id = blockId;
-            valid = valid && blockId;
+        // } else if (type === 'block') {
+        //     payload.block_id = blockId;
+        //     valid = valid && blockId;
         } else if (type === 'tag') {
             payload.edge_id = edgeId;
             payload.tag_id = tagId;
@@ -155,7 +154,7 @@ const CustomizationForm: React.FC<{
             )}
             
             {/* Поле для Block Customization */}
-            {type === 'block' && (
+            {/* {type === 'block' && (
                 <div className="field">
                     <label htmlFor="blockId" className="font-semibold mb-2 block" style={labelStyle}>ID Блока</label>
                     <Dropdown 
@@ -168,7 +167,7 @@ const CustomizationForm: React.FC<{
                         disabled={isEdit || mutation.isPending || isBlocksLoading}
                     />
                 </div>
-            )}
+            )} */}
 
             {/* Поле для Tag Customization */}
             {type === 'tag' && (
@@ -253,7 +252,7 @@ export default function CustomizationTable({ title, type }: Props) {
 
     const fetchFn = useMemo(() => {
         if (type === 'edge') return getEdgeCustomizationForAdmin;
-        if (type === 'block') return getBlockCustomizationForAdmin;
+        // if (type === 'block') return getBlockCustomizationForAdmin;
         if (type === 'tag') return getTagCustomizationForAdmin;
     }, [type]);
 
@@ -270,9 +269,9 @@ export default function CustomizationTable({ title, type }: Props) {
             if (type === 'edge' && baseData.edge_id) {
                 return deleteEdgeCustomization(baseData.edge_id, baseData.key);
             }
-            if (type === 'block' && baseData.block_id) {
-                return deleteBlockCustomization(baseData.block_id, baseData.key);
-            }
+            // if (type === 'block' && baseData.block_id) {
+            //     return deleteBlockCustomization(baseData.block_id, baseData.key);
+            // }
             if (type === 'tag' && tagData.edge_id && tagData.tag_id) {
                 return deleteTagCustomization(tagData.edge_id, tagData.tag_id, tagData.key);
             }
