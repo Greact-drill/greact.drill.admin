@@ -21,6 +21,7 @@ import { InputText } from 'primereact/inputtext';
 import EdgeTreeSelector from './EdgeTreeSelector';
 import EdgePathDisplay from './EdgePathDisplay';
 import BulkWidgetCreator from './BulkWidgetCreator';
+import { getErrorMessage } from '../utils/errorUtils';
 
 // Интерфейс для конфигурации виджета из JSON
 interface WidgetConfig {
@@ -637,7 +638,7 @@ export default function TagLayoutConstructor({ title }: Props) {
                 </div>
 
                 {(saveSingleMutation.error) && (
-                    <Message severity="error" text={`Ошибка сохранения: ${saveSingleMutation.error?.message}`} />
+                    <Message severity="error" text={`Ошибка сохранения: ${getErrorMessage(saveSingleMutation.error, 'Произошла ошибка при сохранении')}`} />
                 )}
 
                 {(saveSingleMutation.isPending) && (

@@ -16,6 +16,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { TreeTable } from 'primereact/treetable';
 import { Column } from 'primereact/column';
 import React, { useState, useMemo } from 'react';
+import { getErrorMessage } from '../utils/errorUtils';
 
 interface Props {
     title: string;
@@ -49,7 +50,7 @@ const EdgeForm: React.FC<{
             onClose();
         },
         onError: (err: any) => {
-            setError(err.message || 'Ошибка выполнения операции.');
+            setError(getErrorMessage(err, 'Ошибка выполнения операции.'));
         },
     });
 
@@ -178,7 +179,7 @@ export default function EdgesTable({ title }: Props) {
             setDeleteError('');
         },
         onError: (err: any) => {
-            setDeleteError(err.message || 'Не удалось удалить edge.');
+            setDeleteError(getErrorMessage(err, 'Не удалось удалить edge.'));
         }
     });
 

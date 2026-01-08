@@ -16,6 +16,7 @@ import { Message } from 'primereact/message';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
+import { getErrorMessage } from '../utils/errorUtils';
 
 type CustomizationType = 'edge' | 'block' | 'tag';
 
@@ -89,7 +90,7 @@ const CustomizationForm: React.FC<{
             onClose();
         },
         onError: (err: any) => {
-            setError(err.message || 'Ошибка выполнения операции.');
+            setError(getErrorMessage(err, 'Ошибка выполнения операции.'));
         },
     });
 
@@ -432,7 +433,11 @@ export default function CustomizationTable({ title, type }: Props) {
     return (
         <div className="card">
             {(queryError || deleteMutation.error) && (
-                <Message severity="error" text={`Ошибка: ${queryError?.message || deleteMutation.error?.message}`} className="mb-3" />
+                <Message 
+                    severity="error" 
+                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error, 'Произошла ошибка')}`} 
+                    className="mb-3" 
+                />
             )}
             {deleteMutation.isPending && <Message severity="info" text="Удаление..." className="mb-3" />}
             

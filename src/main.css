@@ -1271,6 +1271,62 @@ select option:checked {
     color: var(--text-primary) !important;
 }
 
+.p-dialog .p-dialog-footer {
+    background: var(--card-bg) !important;
+    border-top: 1px solid var(--border-color) !important;
+    padding: 20px 32px !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+}
+
+.p-dialog .p-dialog-footer .p-button {
+    min-width: 100px !important;
+    padding: 10px 20px !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all var(--transition-base) !important;
+}
+
+.p-dialog .p-dialog-footer .p-button:not(.p-button-danger):not(.p-button-primary) {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-dialog .p-dialog-footer .p-button:not(.p-button-danger):not(.p-button-primary):hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2) !important;
+}
+
+.p-dialog .p-dialog-footer .p-button.p-button-primary {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    border-color: var(--accent-primary) !important;
+    color: white !important;
+}
+
+.p-dialog .p-dialog-footer .p-button.p-button-primary:hover {
+    background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent-primary) 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4) !important;
+}
+
+.p-dialog .p-dialog-footer .p-button.p-button-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
+
+.p-dialog .p-dialog-footer .p-button.p-button-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    border-color: #dc2626 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+}
+
 .p-dialog .p-dialog-header-icon {
     width: 2rem !important;
     height: 2rem !important;
@@ -3266,6 +3322,52 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 
 .p-confirm-dialog .p-dialog-content {
   padding: 32px !important;
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer {
+  background: var(--card-bg) !important;
+  border-top: 1px solid var(--border-color) !important;
+  padding: 20px 32px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button {
+  min-width: 100px !important;
+  padding: 10px 20px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  transition: all var(--transition-base) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button:not(.p-button-danger) {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button:not(.p-button-danger):hover {
+  background: rgba(249, 115, 22, 0.15) !important;
+  border-color: var(--accent-primary) !important;
+  color: var(--accent-primary) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  border-color: #ef4444 !important;
+  color: white !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  border-color: #dc2626 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
 }
 
 /* Премиальные стили для пустых состояний */

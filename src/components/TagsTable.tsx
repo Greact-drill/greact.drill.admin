@@ -14,6 +14,7 @@ import { Message } from 'primereact/message';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import type { DataTableFilterMeta } from 'primereact/datatable'; 
 import { SyncDialog } from './SyncDialog';
+import { getErrorMessage } from '../utils/errorUtils';
 
 interface Props {
     title: string;
@@ -52,7 +53,7 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
             onClose();
         },
         onError: (err: any) => {
-            setError(err.message || 'Ошибка выполнения операции.');
+            setError(getErrorMessage(err, 'Ошибка выполнения операции.'));
         },
     });
 
@@ -221,7 +222,7 @@ export default function TagsTable({ title }: Props) {
             setOpenSyncDialog(false);
         },
         onError: (err: any) => {
-            alert(`Ошибка синхронизации: ${err.message || 'Неизвестная ошибка'}`);
+            alert(`Ошибка синхронизации: ${getErrorMessage(err, 'Неизвестная ошибка')}`);
             setOpenSyncDialog(false);
         },
     });
@@ -393,7 +394,11 @@ export default function TagsTable({ title }: Props) {
     return (
         <div className="card">
             {(queryError || deleteMutation.error || syncMutation.error) && (
-                <Message severity="error" text={`Ошибка: ${queryError?.message || deleteMutation.error?.message || syncMutation.error?.message}`} className="mb-3" />
+                <Message 
+                    severity="error" 
+                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error || syncMutation.error, 'Произошла ошибка')}`} 
+                    className="mb-3" 
+                />
             )}
             {deleteMutation.isPending && 
             <Message
