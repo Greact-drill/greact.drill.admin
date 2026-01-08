@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import CustomizationTable from './components/CustomizationTable';
 import EdgesTable from './components/EdgesTable';
@@ -6,20 +7,33 @@ import TagLayoutConstructor from './components/TagLayoutConstructor';
 import './main.css';
 
 const navItems = [
-    { path: '/edges', name: 'Буровые', icon: 'pi pi-sitemap' },
-    { path: '/tags', name: 'Теги', icon: 'pi pi-tags' },
-    { path: '/edge-customization', name: 'Компоненты Буровых', icon: 'pi pi-cog' },
-    { path: '/tag-customization', name: 'Компоненты Тегов', icon: 'pi pi-cog' },
+    { path: '/edges', name: 'Буровые', icon: 'pi pi-building' },
+    { path: '/tags', name: 'Теги', icon: 'pi pi-bookmark' },
+    { path: '/edge-customization', name: 'Компоненты Буровых', icon: 'pi pi-sliders-h' },
+    { path: '/tag-customization', name: 'Компоненты Тегов', icon: 'pi pi-th-large' },
 ];
 
 export default function AdminApp() {
     const location = useLocation();
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    const toggleSidebar = () => {
+        setSidebarCollapsed(!sidebarCollapsed);
+    };
 
     return (
         <div className="admin-layout"> 
-            <aside className="admin-sidebar">
+            <aside className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
                 <div className="sidebar-header">
-                    <h1 className="logo-text">Drill</h1> 
+                    {!sidebarCollapsed && <h1 className="logo-text">Drill</h1>}
+                    <button 
+                        className="sidebar-toggle"
+                        onClick={toggleSidebar}
+                        aria-label={sidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
+                        title={sidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
+                    >
+                        <i className={sidebarCollapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'}></i>
+                    </button>
                 </div>
                 
                 <nav className="sidebar-nav">
@@ -34,9 +48,10 @@ export default function AdminApp() {
                                         to={item.path} 
                                         className={linkClasses}
                                         target={'_self'}
+                                        title={sidebarCollapsed ? item.name : ''}
                                     >
                                         <i className={item.icon}></i>
-                                        <span>{item.name}</span>
+                                        {!sidebarCollapsed && <span>{item.name}</span>}
                                     </Link>
                                 </li>
                             );
@@ -44,7 +59,7 @@ export default function AdminApp() {
                     </ul>
                 </nav>
             </aside>
-            <main className="admin-content">
+            <main className={`admin-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
                 <div className="content-header">
                     <h2 className="text-3xl font-semibold">
                        Администрирование

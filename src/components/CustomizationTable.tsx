@@ -122,8 +122,8 @@ const CustomizationForm: React.FC<{
         mutation.mutate(dataToSend);
     };
 
-    const inputStyle = { backgroundColor: '#1e1e2f', borderColor: '#3a3c53' };
-    const labelStyle = { color: '#a0a2b8' };
+    const inputStyle = { backgroundColor: 'var(--white)', borderColor: 'var(--border-color)' };
+    const labelStyle = { color: 'var(--text-primary)' };
     const commonDropdownProps = { 
         optionLabel: 'name',
         optionValue: 'id',
@@ -218,7 +218,6 @@ const CustomizationForm: React.FC<{
                     loading={mutation.isPending} 
                     tooltip={isEdit ? 'Сохранить' : 'Создать'} 
                     className="p-button-rounded" 
-                    style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3', width: '2.5rem', height: '2.5rem', padding: '0'}} 
                 />
                 <Button 
                     icon="pi pi-times" 
@@ -457,7 +456,7 @@ export default function CustomizationTable({ title, type }: Props) {
 
             <Dialog 
                 visible={openForm} 
-                style={{ width: '450px', backgroundColor: '#27293d', color: '#fff' }} 
+                style={{ width: '450px' }} 
                 header={selectedData ? `Редактировать ключ: ${selectedData.key}` : 'Создать новый ключ кастомизации'} 
                 modal 
                 className="p-fluid admin-dialog" 

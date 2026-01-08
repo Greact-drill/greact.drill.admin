@@ -92,8 +92,8 @@ const EdgeForm: React.FC<{
         mutation.mutate(payload);
     };
     
-    const inputStyle = { backgroundColor: '#1e1e2f', borderColor: '#3a3c53' };
-    const labelStyle = { color: '#a0a2b8' };
+    const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
+    const labelStyle = { color: 'var(--text-primary)' };
 
     return (
         <form onSubmit={handleSubmit} className="p-fluid">
@@ -145,7 +145,6 @@ const EdgeForm: React.FC<{
                     loading={mutation.isPending} 
                     tooltip={isEdit ? 'Сохранить' : 'Создать'}
                     className="p-button-rounded"
-                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', width: '2.5rem', height: '2.5rem', padding: '0'}}
                 />
                 <Button 
                     icon="pi pi-times"
@@ -295,7 +294,7 @@ export default function EdgesTable({ title }: Props) {
 
     // Функция для отображения родителя в дереве
     const parentTemplate = (node: any) => {
-        if (!node.data.parent_id) return <span style={{ color: '#888' }}>Корневой элемент</span>;
+        if (!node.data.parent_id) return <span style={{ color: 'var(--text-secondary)' }}>Корневой элемент</span>;
         
         const parent = edges?.find(e => e.id === node.data.parent_id);
         return parent ? `${parent.name} (${parent.id})` : node.data.parent_id;
@@ -444,7 +443,7 @@ export default function EdgesTable({ title }: Props) {
 
             <Dialog 
                 visible={openForm}
-                style={{ width: '500px', backgroundColor: 'var(--surface-ground)', color: 'var(--text-color)' }}
+                style={{ width: '500px' }}
                 header={selectedEdge ? `Редактировать: ${selectedEdge.id}` : 'Создать новый Edge'}
                 modal
                 className="p-fluid"

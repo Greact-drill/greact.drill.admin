@@ -139,3 +139,22 @@ export async function updateTagCustomization(edgeId: string, tagId: string, key:
 export async function deleteTagCustomization(edgeId: string, tagId: string, key: string): Promise<void> {
     await apiClient.delete(`/tag-customization/${edgeId}/${tagId}/${key}`);
 }
+
+// Добавляем функцию для получения конфигураций виджетов по edge_id
+export async function getWidgetConfigs(edgeId: string): Promise<TagCustomization[]> {
+  const response = await apiClient.get<TagCustomization[]>(`/tag-customization/edge/${edgeId}`);
+  return response.data;
+}
+
+// Добавляем функцию для получения конфигураций виджетов по странице
+export async function getWidgetConfigsByPage(page: string): Promise<TagCustomization[]> {
+  const response = await apiClient.get<TagCustomization[]>(`/tag-customization/page/${page}`);
+  return response.data;
+}
+
+// Добавляем функцию для получения всех конфигураций виджетов
+// Исправляем: добавляем дженерик типизацию для apiClient.get
+export async function getAllWidgetConfigs(): Promise<any[]> {
+  const response = await apiClient.get<any[]>('/edge/widget-configs/all');
+  return response.data;
+}

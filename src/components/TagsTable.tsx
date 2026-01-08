@@ -78,8 +78,8 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
         mutation.mutate(payload);
     };
     
-    const inputStyle = { backgroundColor: '#1e1e2f', borderColor: '#3a3c53' };
-    const labelStyle = { color: '#a0a2b8' };
+    const inputStyle = { backgroundColor: 'var(--white)', borderColor: 'var(--border-color)' };
+    const labelStyle = { color: 'var(--text-primary)' };
 
     return (
         <form onSubmit={handleSubmit} className="p-fluid">
@@ -168,7 +168,6 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
                     loading={mutation.isPending} 
                     tooltip={isEdit ? 'Сохранить' : 'Создать'} 
                     className="p-button-rounded" 
-                    style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3', width: '2.5rem', height: '2.5rem', padding: '0'}} 
                 />
                 <Button 
                     icon="pi pi-times" 
@@ -470,7 +469,7 @@ export default function TagsTable({ title }: Props) {
 
             <Dialog 
                 visible={openForm} 
-                style={{ width: '550px', backgroundColor: '#27293d', color: '#fff' }} 
+                style={{ width: '550px' }} 
                 header={selectedTag ? `Редактировать: ${selectedTag.id}` : 'Создать новый тег'} 
                 modal 
                 className="p-fluid admin-dialog" 
@@ -495,7 +494,7 @@ export default function TagsTable({ title }: Props) {
             {/* Новый диалог для загрузки файла */}
             <Dialog 
                 visible={uploadDialogVisible} 
-                style={{ width: '450px', backgroundColor: '#27293d', color: '#fff' }} 
+                style={{ width: '450px' }} 
                 header="Загрузить JSON файл с тегами" 
                 modal 
                 className="p-fluid admin-dialog" 
@@ -508,15 +507,14 @@ export default function TagsTable({ title }: Props) {
                     <Button 
                         label="Скачать пример файла"
                         icon="pi pi-download"
-                        className="p-button-outlined p-button-help"
+                        className="p-button-outlined"
                         onClick={handleDownloadExample}
-                        style={{borderColor: '#6c5dd3', color: '#6c5dd3'}}
                     />
                 </div>
 
                 <form onSubmit={handleUploadSubmit} className="p-fluid">
                     <div className="field">
-                        <label htmlFor="file" className="font-semibold mb-2 block" style={{ color: '#a0a2b8' }}>
+                        <label htmlFor="file" className="font-semibold mb-2 block">
                             Выберите JSON файл
                         </label>
                         <InputText 
@@ -524,10 +522,9 @@ export default function TagsTable({ title }: Props) {
                             id="file"
                             accept=".json"
                             onChange={handleFileSelect}
-                            style={{ backgroundColor: '#1e1e2f', borderColor: '#3a3c53', color: '#fff' }}
                         />
                         {selectedFile && (
-                            <div className="mt-2 text-sm" style={{ color: '#a0a2b8' }}>
+                            <div className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                                 Выбран файл: {selectedFile.name}
                             </div>
                         )}
@@ -540,7 +537,6 @@ export default function TagsTable({ title }: Props) {
                             disabled={!selectedFile}
                             tooltip="Загрузить"
                             className="p-button-rounded" 
-                            style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3', width: '2.5rem', height: '2.5rem', padding: '0'}} 
                         />
                         <Button 
                             icon="pi pi-times" 
