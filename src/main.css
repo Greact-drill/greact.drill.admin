@@ -3814,3 +3814,350 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     padding: 20px;
   }
 }
+
+/* Стили для редактора таблицы */
+.table-editor-container {
+    width: 100%;
+    overflow: auto;
+    max-height: 600px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-bg);
+}
+
+.table-editor-wrapper {
+    overflow: auto;
+    width: 100%;
+}
+
+.table-editor {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: var(--card-bg);
+}
+
+.table-editor th {
+    background: var(--background-darker);
+    border: 1px solid var(--border-color);
+    padding: 4px;
+    font-weight: 600;
+    text-align: center;
+    position: sticky;
+    z-index: 1;
+}
+
+.table-editor-corner {
+    background: var(--background-darker) !important;
+    border-right: 2px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+    min-width: 120px;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+.table-editor-col-header {
+    background: var(--background-darker) !important;
+    border-bottom: 2px solid var(--border-color);
+    min-width: 150px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.table-editor-row-header {
+    background: var(--background-darker) !important;
+    border-right: 2px solid var(--border-color);
+    min-width: 120px;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+
+.table-editor td {
+    border: 1px solid var(--border-color);
+    padding: 4px;
+    background: var(--card-bg);
+    min-width: 150px;
+    min-height: 50px;
+}
+
+.table-editor-cell {
+    vertical-align: top;
+}
+
+.table-cell-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.table-cell-editor select,
+.table-cell-editor input {
+    width: 100%;
+}
+
+.table-cell-editor select {
+    font-size: 11px;
+    padding: 2px 4px;
+}
+
+.table-cell-editor input {
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+/* Стили для TableConfigurator */
+.table-configurator {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.config-column {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.config-column::-webkit-scrollbar {
+    width: 6px;
+}
+
+.config-column::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+.table-info {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-info h3 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.table-summary p {
+    margin: 8px 0;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.table-summary strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Стили для формы настройки таблицы */
+.table-config-form {
+    padding: 0;
+}
+
+.table-config-form-grid {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 24px;
+    margin-top: 24px;
+}
+
+/* Панель с доступными элементами для перетаскивания */
+.draggable-items-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.draggable-items-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.draggable-items-section h4 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.draggable-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.draggable-items-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.draggable-items-list::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+.draggable-tag,
+.draggable-edge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: move;
+    transition: all var(--transition-base);
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.draggable-tag:hover,
+.draggable-edge:hover {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
+.draggable-tag.dragging,
+.draggable-edge.dragging {
+    opacity: 0.6;
+    transform: rotate(2deg);
+}
+
+.draggable-tag.used,
+.draggable-edge.used {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--background-darker);
+}
+
+.draggable-tag i,
+.draggable-edge i {
+    color: var(--accent-primary);
+    font-size: 14px;
+}
+
+/* Панель с DropZone для заголовков */
+.drop-zones-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.vertical-headers-drop-zone,
+.horizontal-headers-drop-zone {
+    background: var(--card-bg);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 200px;
+    transition: all var(--transition-base);
+}
+
+.vertical-headers-drop-zone.drop-over,
+.horizontal-headers-drop-zone.drop-over {
+    background-color: rgba(249, 115, 22, 0.1);
+    border-color: var(--accent-primary);
+    border-style: solid;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2), 0 0 20px rgba(249, 115, 22, 0.3);
+}
+
+.drop-zone-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.headers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 100px;
+}
+
+.header-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--background-darker);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
+}
+
+.header-item:hover {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: var(--accent-primary);
+}
+
+.header-index {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 24px;
+}
+
+.header-id {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.empty-drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    color: var(--text-secondary);
+    text-align: center;
+    min-height: 150px;
+}
+
+.empty-drop-zone i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-drop-zone span {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .table-config-form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .draggable-items-panel {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+}

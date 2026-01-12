@@ -4,6 +4,7 @@ import CustomizationTable from './components/CustomizationTable';
 import EdgesTable from './components/EdgesTable';
 import TagsTable from './components/TagsTable';
 import TagLayoutConstructor from './components/TagLayoutConstructor';
+import TableConfigurator from './components/TableConfigurator';
 import './main.css';
 
 const navItems = [
@@ -11,6 +12,7 @@ const navItems = [
     { path: '/tags', name: 'Теги', icon: 'pi pi-bookmark' },
     { path: '/edge-customization', name: 'Компоненты Буровых', icon: 'pi pi-sliders-h' },
     { path: '/tag-customization', name: 'Компоненты Тегов', icon: 'pi pi-th-large' },
+    { path: '/table-config', name: 'Настройка таблиц', icon: 'pi pi-table' },
 ];
 
 export default function AdminApp() {
@@ -73,6 +75,7 @@ export default function AdminApp() {
                         
                         <Route path="edge-customization" element={<CustomizationTable type="edge" title="Компоненты Буровых"/>} />
                         <Route path="tag-customization" element={<TagLayoutConstructor title="Конструктор размещения тегов"/>} />
+                        <Route path="table-config" element={<TableConfigurator title="Настройка таблиц"/>} />
                     </Routes>
                 </div>
             </main>

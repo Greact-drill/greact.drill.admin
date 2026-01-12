@@ -158,3 +158,74 @@ export async function getAllWidgetConfigs(): Promise<any[]> {
   const response = await apiClient.get<any[]>('/edge/widget-configs/all');
   return response.data;
 }
+
+// Интерфейсы для конфигурации таблиц
+export interface TableCell {
+  type: 'text' | 'tag-number' | 'tag-text';
+  value: string | null; // Для text - сам текст, для tag-number и tag-text - tag_id
+  tag_id?: string; // Для tag типов
+}
+
+export interface TableConfig {
+  page: string;
+  title?: string;
+  rows: number; // Количество строк
+  cols: number; // Количество столбцов
+  rowHeaders?: string[]; // Заголовки строк (опционально)
+  colHeaders?: string[]; // Заголовки столбцов (опционально)
+  cells: TableCell[][]; // Двумерный массив ячеек [row][col]
+}
+
+export interface TableConfigWithData extends TableConfig {
+  id: number;
+  data?: {
+    // Данные для тегов - массив значений по индексам ячеек
+    [rowIndex: number]: {
+      [colIndex: number]: {
+        value: number | null;
+        tag: {
+          id: string;
+          name: string;
+          comment: string;
+          unit_of_measurement: string;
+          min: number;
+          max: number;
+        } | null;
+        updatedAt: string | null;
+      } | null;
+    };
+  };
+}
+
+// Функции для работы с таблицами
+export async function getTableConfigByPage(page: string): Promise<TableConfigWithData | null> {
+  const response = await apiClient.get<TableConfigWithData | null>(`/edge/page/${page}/table-config`);
+  return response.data;
+}
+
+export async function getAllTableConfigs(): Promise<TableConfig[]> {
+  const response = await apiClient.get<TableConfig[]>('/edge/table-configs/all');
+  return response.data;
+}
+
+export async function createTableConfig(page: string, config: TableConfig): Promise<BaseCustomization> {
+  // Сохраняем конфигурацию таблицы через edge-customization
+  // edge_id = page, key = 'tableConfig', value = JSON.stringify(config)
+  return createEdgeCustomization({
+    edge_id: page,
+    key: 'tableConfig',
+    value: JSON.stringify(config)
+  });
+}
+
+export async function updateTableConfig(page: string, config: TableConfig): Promise<BaseCustomization> {
+  // Обновляем конфигурацию таблицы через edge-customization
+  return updateEdgeCustomization(page, 'tableConfig', {
+    value: JSON.stringify(config)
+  });
+}
+
+export async function deleteTableConfig(page: string): Promise<void> {
+  // Удаляем конфигурацию таблицы через edge-customization
+  return deleteEdgeCustomization(page, 'tableConfig');
+}
