@@ -3898,6 +3898,35 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     width: 100%;
 }
 
+.table-cell-type-toggle {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.table-cell-type-button {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    font-size: 10px;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.table-cell-type-button:hover {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.table-cell-type-button.is-active {
+    background: rgba(249, 115, 22, 0.2);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
 .table-cell-editor select {
     font-size: 11px;
     padding: 2px 4px;
@@ -3972,6 +4001,94 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     grid-template-columns: 400px 1fr;
     gap: 24px;
     margin-top: 24px;
+}
+
+.table-config-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    align-self: start;
+}
+
+.table-config-panel {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-config-panel-title {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-config-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.table-config-hints {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.table-config-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.table-config-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.table-config-editor-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-config-editor-title {
+    margin: 0 0 6px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.table-config-editor-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.table-config-editor-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    padding-top: 4px;
 }
 
 /* Панель с доступными элементами для перетаскивания */

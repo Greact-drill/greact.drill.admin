@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     getTableConfigByPage,
@@ -397,15 +397,132 @@ export default function TableConfigurator({ title }: Props) {
 interface TableConfigFormProps {
     config: TableConfig;
     tags: Tag[];
-    onConfigChange: (config: TableConfig) => void;
+    onConfigChange: React.Dispatch<React.SetStateAction<TableConfig | null>>;
     onSave: () => void;
     onCancel: () => void;
     isLoading: boolean;
 }
 
+type CellType = 'text' | 'tag-number' | 'tag-text';
+
+interface CellEditorProps {
+    rowIndex: number;
+    colIndex: number;
+    cell: TableCell;
+    tags: Tag[];
+    tagNameById: Map<string, string>;
+    cellInputStyle: React.CSSProperties;
+    cellSelectStyle: React.CSSProperties;
+    isActive: boolean;
+    onActivate: (row: number, col: number) => void;
+    onDeactivate: () => void;
+    onTypeChange: (row: number, col: number, type: CellType) => void;
+    onValueChange: (row: number, col: number, value: string) => void;
+}
+
+const CellEditor = React.memo(function CellEditor({
+    rowIndex,
+    colIndex,
+    cell,
+    tags,
+    tagNameById,
+    cellInputStyle,
+    cellSelectStyle,
+    isActive,
+    onActivate,
+    onDeactivate,
+    onTypeChange,
+    onValueChange
+}: CellEditorProps) {
+    const selectedTagLabel =
+        cell.value && tagNameById.has(cell.value) ? `${tagNameById.get(cell.value)} (${cell.value})` : cell.value || '';
+
+    return (
+        <div className="table-cell-editor">
+            <div className="table-cell-type-toggle">
+                <button
+                    type="button"
+                    className={`table-cell-type-button ${cell.type === 'text' ? 'is-active' : ''}`}
+                    onClick={() => onTypeChange(rowIndex, colIndex, 'text')}
+                >
+                    Текст
+                </button>
+                <button
+                    type="button"
+                    className={`table-cell-type-button ${cell.type === 'tag-number' ? 'is-active' : ''}`}
+                    onClick={() => onTypeChange(rowIndex, colIndex, 'tag-number')}
+                >
+                    Тег №
+                </button>
+                <button
+                    type="button"
+                    className={`table-cell-type-button ${cell.type === 'tag-text' ? 'is-active' : ''}`}
+                    onClick={() => onTypeChange(rowIndex, colIndex, 'tag-text')}
+                >
+                    Тег текст
+                </button>
+            </div>
+            {cell.type === 'text' ? (
+                <InputText
+                    value={cell.value || ''}
+                    onChange={(e) => onValueChange(rowIndex, colIndex, e.target.value)}
+                    placeholder="Введите текст"
+                    style={cellInputStyle}
+                />
+            ) : (
+                <select
+                    value={cell.value || ''}
+                    onChange={(e) => onValueChange(rowIndex, colIndex, e.target.value)}
+                    style={cellSelectStyle}
+                    onFocus={() => onActivate(rowIndex, colIndex)}
+                    onBlur={onDeactivate}
+                >
+                    {isActive ? (
+                        <>
+                            <option value="">Выберите тег</option>
+                            {tags.map(tag => (
+                                <option key={tag.id} value={tag.id}>
+                                    {tag.name} ({tag.id})
+                                </option>
+                            ))}
+                        </>
+                    ) : (
+                        <option value={cell.value || ''}>
+                            {selectedTagLabel || 'Выберите тег'}
+                        </option>
+                    )}
+                </select>
+            )}
+        </div>
+    );
+});
+
 function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoading }: TableConfigFormProps) {
-    const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
-    const labelStyle = { color: 'var(--text-primary)' };
+    const inputStyle = useMemo(
+        () => ({ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }),
+        []
+    );
+    const labelStyle = useMemo(() => ({ color: 'var(--text-primary)' }), []);
+    const emptyCell = useMemo<TableCell>(() => ({ type: 'text', value: '' }), []);
+    const cellInputStyle = useMemo(
+        () => ({ ...inputStyle, fontSize: '12px', padding: '4px 8px', width: '100%' }),
+        [inputStyle]
+    );
+    const cellSelectStyle = cellInputStyle;
+    const tagNameById = useMemo(() => {
+        const map = new Map<string, string>();
+        tags.forEach((tag) => map.set(tag.id, tag.name));
+        return map;
+    }, [tags]);
+    const [activeCell, setActiveCell] = useState<{ row: number; col: number } | null>(null);
+    const totalCells = config.rows * config.cols;
+
+    const updateConfig = useCallback(
+        (updater: (prev: TableConfig) => TableConfig) => {
+            onConfigChange((prev) => (prev ? updater(prev) : prev));
+        },
+        [onConfigChange]
+    );
 
     // Инициализация cells при изменении размеров
     useEffect(() => {
@@ -444,196 +561,245 @@ function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoa
             newRowHeaders.length = config.rows;
             newColHeaders.length = config.cols;
 
-            onConfigChange({
+            updateConfig(() => ({
                 ...config,
                 cells: newCells,
                 rowHeaders: newRowHeaders,
                 colHeaders: newColHeaders
-            });
+            }));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [config.rows, config.cols]);
 
-    const handleCellTypeChange = (row: number, col: number, type: 'text' | 'tag-number' | 'tag-text') => {
-        const newCells = config.cells.map((rowCells, r) => 
-            rowCells.map((cell, c) => {
-                if (r === row && c === col) {
-                    const isTagType = type === 'tag-number' || type === 'tag-text';
-                    return { 
-                        type, 
-                        value: type === 'text' ? (cell.value || '') : (cell.tag_id || cell.value || ''), 
-                        tag_id: isTagType ? (cell.tag_id || cell.value || '') : undefined 
-                    };
-                }
-                return cell;
-            })
-        );
-        onConfigChange({ ...config, cells: newCells });
-    };
+    const handleCellTypeChange = useCallback(
+        (row: number, col: number, type: CellType) => {
+            updateConfig((prev) => {
+                const hasSizedCells = prev.cells.length === prev.rows && prev.cells[0]?.length === prev.cols;
+                const baseCells = hasSizedCells
+                    ? prev.cells
+                    : Array.from({ length: prev.rows }, () =>
+                          Array.from({ length: prev.cols }, () => ({ type: 'text', value: '' }))
+                      );
+                const newCells = [...baseCells];
+                const newRow = [...newCells[row]];
+                const currentCell = newRow[col] || emptyCell;
+                const isTagType = type === 'tag-number' || type === 'tag-text';
+                newRow[col] = {
+                    ...currentCell,
+                    type,
+                    value: type === 'text' ? (currentCell.value || '') : (currentCell.tag_id || currentCell.value || ''),
+                    tag_id: isTagType ? (currentCell.tag_id || currentCell.value || '') : undefined
+                };
+                newCells[row] = newRow;
+                return { ...prev, cells: newCells };
+            });
+        },
+        [updateConfig, emptyCell]
+    );
 
-    const handleCellValueChange = (row: number, col: number, value: string) => {
-        const newCells = config.cells.map((rowCells, r) => 
-            rowCells.map((cell, c) => {
-                if (r === row && c === col) {
-                    const isTagType = cell.type === 'tag-number' || cell.type === 'tag-text';
-                    return { ...cell, value, tag_id: isTagType ? value : undefined };
-                }
-                return cell;
-            })
-        );
-        onConfigChange({ ...config, cells: newCells });
-    };
+    const handleCellValueChange = useCallback(
+        (row: number, col: number, value: string) => {
+            updateConfig((prev) => {
+                const hasSizedCells = prev.cells.length === prev.rows && prev.cells[0]?.length === prev.cols;
+                const baseCells = hasSizedCells
+                    ? prev.cells
+                    : Array.from({ length: prev.rows }, () =>
+                          Array.from({ length: prev.cols }, () => ({ type: 'text', value: '' }))
+                      );
+                const newCells = [...baseCells];
+                const newRow = [...newCells[row]];
+                const currentCell = newRow[col] || emptyCell;
+                const isTagType = currentCell.type === 'tag-number' || currentCell.type === 'tag-text';
+                newRow[col] = { ...currentCell, value, tag_id: isTagType ? value : undefined };
+                newCells[row] = newRow;
+                return { ...prev, cells: newCells };
+            });
+        },
+        [updateConfig, emptyCell]
+    );
 
-    const handleRowHeaderChange = (index: number, value: string) => {
-        const newRowHeaders = [...(config.rowHeaders || [])];
-        newRowHeaders[index] = value;
-        onConfigChange({ ...config, rowHeaders: newRowHeaders });
-    };
+    const handleRowHeaderChange = useCallback(
+        (index: number, value: string) => {
+            updateConfig((prev) => {
+                const newRowHeaders = [...(prev.rowHeaders || [])];
+                newRowHeaders[index] = value;
+                return { ...prev, rowHeaders: newRowHeaders };
+            });
+        },
+        [updateConfig]
+    );
 
-    const handleColHeaderChange = (index: number, value: string) => {
-        const newColHeaders = [...(config.colHeaders || [])];
-        newColHeaders[index] = value;
-        onConfigChange({ ...config, colHeaders: newColHeaders });
-    };
+    const handleColHeaderChange = useCallback(
+        (index: number, value: string) => {
+            updateConfig((prev) => {
+                const newColHeaders = [...(prev.colHeaders || [])];
+                newColHeaders[index] = value;
+                return { ...prev, colHeaders: newColHeaders };
+            });
+        },
+        [updateConfig]
+    );
+
+    const handleActivateCell = useCallback((row: number, col: number) => {
+        setActiveCell({ row, col });
+    }, []);
+
+    const handleDeactivateCell = useCallback(() => {
+        setActiveCell(null);
+    }, []);
 
     return (
         <div className="table-config-form">
-            <div className="field mb-4">
-                <label className="font-semibold mb-2 block" style={labelStyle}>Заголовок таблицы (опционально)</label>
-                <InputText
-                    value={config.title || ''}
-                    onChange={(e) => onConfigChange({ ...config, title: e.target.value })}
-                    placeholder="Введите заголовок таблицы"
-                    style={inputStyle}
-                />
-            </div>
+            <div className="table-config-form-grid">
+                <div className="table-config-sidebar">
+                    <div className="table-config-panel">
+                        <h3 className="table-config-panel-title">Основные параметры</h3>
+                        <div className="field mb-3">
+                            <label className="font-semibold mb-2 block" style={labelStyle}>Заголовок таблицы (опционально)</label>
+                            <InputText
+                                value={config.title || ''}
+                                onChange={(e) => updateConfig((prev) => ({ ...prev, title: e.target.value }))}
+                                placeholder="Введите заголовок таблицы"
+                                style={inputStyle}
+                            />
+                        </div>
 
-            <div className="field mb-4">
-                <div className="flex gap-4">
-                    <div className="flex-1">
-                        <label className="font-semibold mb-2 block" style={labelStyle}>Количество строк</label>
-                        <InputNumber
-                            value={config.rows}
-                            onValueChange={(e) => {
-                                const rows = e.value ? Math.max(1, Math.min(50, e.value)) : 1;
-                                onConfigChange({ ...config, rows });
-                            }}
-                            min={1}
-                            max={50}
-                            style={inputStyle}
-                            className="w-full"
-                        />
+                        <div className="field mb-3">
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <label className="font-semibold mb-2 block" style={labelStyle}>Строки</label>
+                                    <InputNumber
+                                        value={config.rows}
+                                        onValueChange={(e) => {
+                                            const rows = e.value ? Math.max(1, Math.min(50, e.value)) : 1;
+                                            updateConfig((prev) => ({ ...prev, rows }));
+                                        }}
+                                        min={1}
+                                        max={50}
+                                        style={inputStyle}
+                                        className="w-full"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="font-semibold mb-2 block" style={labelStyle}>Столбцы</label>
+                                    <InputNumber
+                                        value={config.cols}
+                                        onValueChange={(e) => {
+                                            const cols = e.value ? Math.max(1, Math.min(50, e.value)) : 1;
+                                            updateConfig((prev) => ({ ...prev, cols }));
+                                        }}
+                                        min={1}
+                                        max={50}
+                                        style={inputStyle}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                            <div className="table-config-meta">
+                                <span>Ячеек: {totalCells}</span>
+                                <span>Тегов доступно: {tags.length}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <label className="font-semibold mb-2 block" style={labelStyle}>Количество столбцов</label>
-                        <InputNumber
-                            value={config.cols}
-                            onValueChange={(e) => {
-                                const cols = e.value ? Math.max(1, Math.min(50, e.value)) : 1;
-                                onConfigChange({ ...config, cols });
-                            }}
-                            min={1}
-                            max={50}
-                            style={inputStyle}
-                            className="w-full"
+
+                    <div className="table-config-panel">
+                        <h3 className="table-config-panel-title">Подсказки</h3>
+                        <ul className="table-config-hints">
+                            <li>Заголовки строк и столбцов фиксируются при прокрутке.</li>
+                            <li>Тип «Тег» связывает ячейку с данными из списка тегов.</li>
+                            <li>Для текста используйте тип «Текст» и значение по умолчанию.</li>
+                        </ul>
+                    </div>
+
+                    <div className="table-config-actions">
+                        <Button
+                            label="Сохранить"
+                            icon="pi pi-check"
+                            onClick={onSave}
+                            disabled={isLoading}
+                            style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
+                        />
+                        <Button
+                            label="Отмена"
+                            icon="pi pi-times"
+                            className="p-button-secondary"
+                            onClick={onCancel}
+                            disabled={isLoading}
                         />
                     </div>
                 </div>
-            </div>
 
-            <div className="table-editor-container">
-                <div className="table-editor-wrapper">
-                    <table className="table-editor">
-                        <thead>
-                            <tr>
-                                <th className="table-editor-corner"></th>
-                                {/* Заголовки столбцов */}
-                                {Array.from({ length: config.cols }, (_, colIndex) => (
-                                    <th key={colIndex} className="table-editor-col-header">
-                                        <InputText
-                                            value={config.colHeaders?.[colIndex] || ''}
-                                            onChange={(e) => handleColHeaderChange(colIndex, e.target.value)}
-                                            placeholder={`Столбец ${colIndex + 1}`}
-                                            style={{ ...inputStyle, fontSize: '12px', padding: '4px 8px' }}
-                                        />
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {Array.from({ length: config.rows }, (_, rowIndex) => (
-                                <tr key={rowIndex}>
-                                    {/* Заголовок строки */}
-                                    <th className="table-editor-row-header">
-                                        <InputText
-                                            value={config.rowHeaders?.[rowIndex] || ''}
-                                            onChange={(e) => handleRowHeaderChange(rowIndex, e.target.value)}
-                                            placeholder={`Строка ${rowIndex + 1}`}
-                                            style={{ ...inputStyle, fontSize: '12px', padding: '4px 8px' }}
-                                        />
-                                    </th>
-                                    {/* Ячейки */}
-                                    {Array.from({ length: config.cols }, (_, colIndex) => {
-                                        const cell = config.cells?.[rowIndex]?.[colIndex] || { type: 'text', value: '' };
-                                        return (
-                                            <td key={colIndex} className="table-editor-cell">
-                                                <div className="table-cell-editor">
-                                                    <select
-                                                        value={cell.type}
-                                                        onChange={(e) => handleCellTypeChange(rowIndex, colIndex, e.target.value as 'text' | 'tag-number' | 'tag-text')}
-                                                        style={{ ...inputStyle, fontSize: '11px', padding: '2px 4px', marginBottom: '4px', width: '100%' }}
-                                                    >
-                                                        <option value="text">Текст</option>
-                                                        <option value="tag-number">Тег (число)</option>
-                                                        <option value="tag-text">Тег (текст)</option>
-                                                    </select>
-                                                    {cell.type === 'text' ? (
-                                                        <InputText
-                                                            value={cell.value || ''}
-                                                            onChange={(e) => handleCellValueChange(rowIndex, colIndex, e.target.value)}
-                                                            placeholder="Введите текст"
-                                                            style={{ ...inputStyle, fontSize: '12px', padding: '4px 8px', width: '100%' }}
-                                                        />
-                                                    ) : (
-                                                        <select
-                                                            value={cell.value || ''}
-                                                            onChange={(e) => handleCellValueChange(rowIndex, colIndex, e.target.value)}
-                                                            style={{ ...inputStyle, fontSize: '12px', padding: '4px 8px', width: '100%' }}
-                                                        >
-                                                            <option value="">Выберите тег</option>
-                                                            {tags.map(tag => (
-                                                                <option key={tag.id} value={tag.id}>
-                                                                    {tag.name} ({tag.id})
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="table-config-editor">
+                    <div className="table-config-editor-header">
+                        <div>
+                            <h3 className="table-config-editor-title">Редактор таблицы</h3>
+                            <p className="table-config-editor-subtitle">Настройте заголовки строк и столбцов, затем заполните ячейки.</p>
+                        </div>
+                        <div className="table-config-editor-meta">
+                            <span>Размер: {config.rows} × {config.cols}</span>
+                        </div>
+                    </div>
+
+                    <div className="table-editor-container">
+                        <div className="table-editor-wrapper">
+                            <table className="table-editor">
+                                <thead>
+                                    <tr>
+                                        <th className="table-editor-corner"></th>
+                                        {/* Заголовки столбцов */}
+                                        {Array.from({ length: config.cols }, (_, colIndex) => (
+                                            <th key={colIndex} className="table-editor-col-header">
+                                                <InputText
+                                                    value={config.colHeaders?.[colIndex] || ''}
+                                                    onChange={(e) => handleColHeaderChange(colIndex, e.target.value)}
+                                                    placeholder={`Столбец ${colIndex + 1}`}
+                                                    style={{ ...inputStyle, fontSize: '12px', padding: '4px 8px' }}
+                                                />
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Array.from({ length: config.rows }, (_, rowIndex) => (
+                                        <tr key={rowIndex}>
+                                            {/* Заголовок строки */}
+                                            <th className="table-editor-row-header">
+                                                <InputText
+                                                    value={config.rowHeaders?.[rowIndex] || ''}
+                                                    onChange={(e) => handleRowHeaderChange(rowIndex, e.target.value)}
+                                                    placeholder={`Строка ${rowIndex + 1}`}
+                                                    style={{ ...inputStyle, fontSize: '12px', padding: '4px 8px' }}
+                                                />
+                                            </th>
+                                            {/* Ячейки */}
+                                            {Array.from({ length: config.cols }, (_, colIndex) => {
+                                        const cell = config.cells?.[rowIndex]?.[colIndex] || emptyCell;
+                                                return (
+                                                    <td key={colIndex} className="table-editor-cell">
+                                                <CellEditor
+                                                    rowIndex={rowIndex}
+                                                    colIndex={colIndex}
+                                                    cell={cell}
+                                                    tags={tags}
+                                                    tagNameById={tagNameById}
+                                                    cellInputStyle={cellInputStyle}
+                                                    cellSelectStyle={cellSelectStyle}
+                                                    isActive={activeCell?.row === rowIndex && activeCell?.col === colIndex}
+                                                    onActivate={handleActivateCell}
+                                                    onDeactivate={handleDeactivateCell}
+                                                    onTypeChange={handleCellTypeChange}
+                                                    onValueChange={handleCellValueChange}
+                                                />
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <div className="form-actions mt-4 flex justify-end gap-2">
-                <Button
-                    label="Сохранить"
-                    icon="pi pi-check"
-                    onClick={onSave}
-                    disabled={isLoading}
-                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                />
-                <Button
-                    label="Отмена"
-                    icon="pi pi-times"
-                    className="p-button-secondary"
-                    onClick={onCancel}
-                    disabled={isLoading}
-                />
             </div>
         </div>
     );
