@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTagsForAdmin, deleteTag, createTag, updateTag, syncTags } from '../api/admin'; 
-import type { Tag } from '../api/admin';
+import type { Tag, TagPayload } from '../api/admin';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
@@ -14,6 +14,7 @@ import { Message } from 'primereact/message';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import type { DataTableFilterMeta } from 'primereact/datatable'; 
 import { SyncDialog } from './SyncDialog';
+import { getErrorMessage } from '../utils/errorUtils';
 
 interface Props {
     title: string;
@@ -52,7 +53,7 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
             onClose();
         },
         onError: (err: any) => {
-            setError(err.message || 'Ошибка выполнения операции.');
+            setError(getErrorMessage(err, 'Ошибка выполнения операции.'));
         },
     });
 
@@ -78,8 +79,8 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
         mutation.mutate(payload);
     };
     
-    const inputStyle = { backgroundColor: '#1e1e2f', borderColor: '#3a3c53' };
-    const labelStyle = { color: '#a0a2b8' };
+    const inputStyle = { backgroundColor: 'var(--white)', borderColor: 'var(--border-color)' };
+    const labelStyle = { color: 'var(--text-primary)' };
 
     return (
         <form onSubmit={handleSubmit} className="p-fluid">
@@ -168,7 +169,6 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
                     loading={mutation.isPending} 
                     tooltip={isEdit ? 'Сохранить' : 'Создать'} 
                     className="p-button-rounded" 
-                    style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3', width: '2.5rem', height: '2.5rem', padding: '0'}} 
                 />
                 <Button 
                     icon="pi pi-times" 
@@ -193,6 +193,10 @@ export default function TagsTable({ title }: Props) {
     // Состояния для загрузки файла
     const [uploadDialogVisible, setUploadDialogVisible] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    
+    // Состояния для создания тегов из файла
+    const [createTagsDialogVisible, setCreateTagsDialogVisible] = useState(false);
+    const [selectedTagsFile, setSelectedTagsFile] = useState<File | null>(null);
 
     const [filters, setFilters] = useState<DataTableFilterMeta>({
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -222,8 +226,28 @@ export default function TagsTable({ title }: Props) {
             setOpenSyncDialog(false);
         },
         onError: (err: any) => {
-            alert(`Ошибка синхронизации: ${err.message || 'Неизвестная ошибка'}`);
+            alert(`Ошибка синхронизации: ${getErrorMessage(err, 'Неизвестная ошибка')}`);
             setOpenSyncDialog(false);
+        },
+    });
+
+    const createTagsMutation = useMutation({
+        mutationFn: async (tags: TagPayload[]) => {
+            const results = await Promise.allSettled(
+                tags.map(tag => createTag(tag))
+            );
+            const successful = results.filter(r => r.status === 'fulfilled').length;
+            const failed = results.filter(r => r.status === 'rejected').length;
+            return { successful, failed, total: tags.length };
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['tags'] });
+            setCreateTagsDialogVisible(false);
+            setSelectedTagsFile(null);
+            alert(`Создано тегов: ${data.successful} из ${data.total}${data.failed > 0 ? `, ошибок: ${data.failed}` : ''}`);
+        },
+        onError: (err: any) => {
+            alert(`Ошибка создания тегов: ${getErrorMessage(err, 'Неизвестная ошибка')}`);
         },
     });
 
@@ -231,6 +255,43 @@ export default function TagsTable({ title }: Props) {
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setSelectedFile(e.target.files[0]);
+        }
+    };
+
+    // Функции для создания тегов из файла
+    const handleTagsFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedTagsFile(e.target.files[0]);
+        }
+    };
+
+    const handleCreateTagsSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedTagsFile) return;
+
+        try {
+            const text = await selectedTagsFile.text();
+            const tagsData = JSON.parse(text);
+            
+            if (!Array.isArray(tagsData)) {
+                alert('Файл должен содержать массив тегов');
+                return;
+            }
+
+            // Преобразуем данные в формат TagPayload
+            const tags: TagPayload[] = tagsData.map((tag: any) => ({
+                id: tag.id,
+                name: tag.name,
+                unit_of_measurement: tag.unit_of_measurement || '',
+                comment: tag.comment || '',
+                min: tag.min ?? 0,
+                max: tag.max ?? 0,
+            }));
+
+            createTagsMutation.mutate(tags);
+        } catch (error) {
+            console.error('Ошибка парсинга JSON:', error);
+            alert('Ошибка чтения файла. Убедитесь, что файл содержит валидный JSON.');
         }
     };
 
@@ -363,10 +424,17 @@ export default function TagsTable({ title }: Props) {
                     />
                 </span>
                 <Button 
-                    label="Загрузить JSON"
+                    label="Загрузить эмуляцию"
                     icon="pi pi-upload" 
                     className="p-button-secondary" 
                     onClick={() => setUploadDialogVisible(true)}
+                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
+                />
+                <Button 
+                    label="Создать теги из файла"
+                    icon="pi pi-file-import" 
+                    className="p-button-secondary" 
+                    onClick={() => setCreateTagsDialogVisible(true)}
                     style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
                 />
                 <Button 
@@ -392,7 +460,11 @@ export default function TagsTable({ title }: Props) {
     return (
         <div className="card">
             {(queryError || deleteMutation.error || syncMutation.error) && (
-                <Message severity="error" text={`Ошибка: ${queryError?.message || deleteMutation.error?.message || syncMutation.error?.message}`} className="mb-3" />
+                <Message 
+                    severity="error" 
+                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error || syncMutation.error, 'Произошла ошибка')}`} 
+                    className="mb-3" 
+                />
             )}
             {deleteMutation.isPending && 
             <Message
@@ -468,7 +540,7 @@ export default function TagsTable({ title }: Props) {
 
             <Dialog 
                 visible={openForm} 
-                style={{ width: '550px', backgroundColor: '#27293d', color: '#fff' }} 
+                style={{ width: '550px' }} 
                 header={selectedTag ? `Редактировать: ${selectedTag.id}` : 'Создать новый тег'} 
                 modal 
                 className="p-fluid admin-dialog" 
@@ -493,7 +565,7 @@ export default function TagsTable({ title }: Props) {
             {/* Новый диалог для загрузки файла */}
             <Dialog 
                 visible={uploadDialogVisible} 
-                style={{ width: '450px', backgroundColor: '#27293d', color: '#fff' }} 
+                style={{ width: '450px' }} 
                 header="Загрузить JSON файл с тегами" 
                 modal 
                 className="p-fluid admin-dialog" 
@@ -506,15 +578,14 @@ export default function TagsTable({ title }: Props) {
                     <Button 
                         label="Скачать пример файла"
                         icon="pi pi-download"
-                        className="p-button-outlined p-button-help"
+                        className="p-button-outlined"
                         onClick={handleDownloadExample}
-                        style={{borderColor: '#6c5dd3', color: '#6c5dd3'}}
                     />
                 </div>
 
                 <form onSubmit={handleUploadSubmit} className="p-fluid">
                     <div className="field">
-                        <label htmlFor="file" className="font-semibold mb-2 block" style={{ color: '#a0a2b8' }}>
+                        <label htmlFor="file" className="font-semibold mb-2 block">
                             Выберите JSON файл
                         </label>
                         <InputText 
@@ -522,10 +593,9 @@ export default function TagsTable({ title }: Props) {
                             id="file"
                             accept=".json"
                             onChange={handleFileSelect}
-                            style={{ backgroundColor: '#1e1e2f', borderColor: '#3a3c53', color: '#fff' }}
                         />
                         {selectedFile && (
-                            <div className="mt-2 text-sm" style={{ color: '#a0a2b8' }}>
+                            <div className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                                 Выбран файл: {selectedFile.name}
                             </div>
                         )}
@@ -538,7 +608,6 @@ export default function TagsTable({ title }: Props) {
                             disabled={!selectedFile}
                             tooltip="Загрузить"
                             className="p-button-rounded" 
-                            style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3', width: '2.5rem', height: '2.5rem', padding: '0'}} 
                         />
                         <Button 
                             icon="pi pi-times" 
@@ -547,6 +616,85 @@ export default function TagsTable({ title }: Props) {
                                 setSelectedFile(null);
                             }} 
                             className="p-button-danger p-button-rounded" 
+                            tooltip="Отмена" 
+                            style={{width: '2.5rem', height: '2.5rem', padding: '0'}}
+                        />
+                    </div>
+                </form>
+            </Dialog>
+
+            {/* Диалог для создания тегов из файла */}
+            <Dialog 
+                visible={createTagsDialogVisible} 
+                style={{ width: '450px' }} 
+                header="Создать теги из файла" 
+                modal 
+                className="p-fluid admin-dialog" 
+                onHide={() => {
+                    setCreateTagsDialogVisible(false);
+                    setSelectedTagsFile(null);
+                }}
+            >
+                <form onSubmit={handleCreateTagsSubmit} className="p-fluid">
+                    <div className="field">
+                        <label htmlFor="tagsFile" className="font-semibold mb-2 block">
+                            Выберите JSON файл с тегами
+                        </label>
+                        <input 
+                            type="file"
+                            id="tagsFile"
+                            accept=".json"
+                            onChange={handleTagsFileSelect}
+                            style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                        />
+                        {selectedTagsFile && (
+                            <div className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                Выбран файл: {selectedTagsFile.name}
+                            </div>
+                        )}
+                        <div className="mt-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            <p>Формат файла должен быть массив объектов:</p>
+                            <pre style={{ 
+                                fontSize: '0.85rem', 
+                                marginTop: '0.5rem', 
+                                padding: '0.5rem', 
+                                backgroundColor: 'var(--card-bg)', 
+                                borderColor: 'var(--border-color)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '4px',
+                                color: 'var(--text-primary)'
+                            }}>
+{`[
+  {
+    "id": "dc_out_300ms[0]",
+    "name": "Спидометр Н1 Давление на входе",
+    "unit_of_measurement": "стрелка",
+    "comment": "",
+    "min": 32.5,
+    "max": 87.2
+  }
+]`}
+                            </pre>
+                        </div>
+                    </div>
+                    
+                    <div className="flex justify-content-center gap-4 mt-4">
+                        <Button 
+                            icon="pi pi-check" 
+                            type="submit" 
+                            disabled={!selectedTagsFile || createTagsMutation.isPending}
+                            loading={createTagsMutation.isPending}
+                            tooltip="Создать теги"
+                            className="p-button-rounded" 
+                        />
+                        <Button 
+                            icon="pi pi-times" 
+                            onClick={() => {
+                                setCreateTagsDialogVisible(false);
+                                setSelectedTagsFile(null);
+                            }} 
+                            className="p-button-danger p-button-rounded" 
+                            disabled={createTagsMutation.isPending}
                             tooltip="Отмена" 
                             style={{width: '2.5rem', height: '2.5rem', padding: '0'}}
                         />

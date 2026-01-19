@@ -25,8 +25,8 @@ export const SyncDialog: React.FC<{
         }
     };
 
-    const inputStyle = { backgroundColor: '#1e1e2f', borderColor: '#3a3c53' };
-    const labelStyle = { color: '#a0a2b8' };
+    const inputStyle = { backgroundColor: 'var(--white)', borderColor: 'var(--border-color)' };
+    const labelStyle = { color: 'var(--text-primary)' };
 
     const dialogFooter = (
         <div className="flex gap-3 justify-content-end">
@@ -36,7 +36,6 @@ export const SyncDialog: React.FC<{
                 onClick={handleStartSync} 
                 loading={isSubmitting} 
                 disabled={!edgeValue.trim()}
-                style={{backgroundColor: '#6c5dd3', borderColor: '#6c5dd3'}}
             />
             <Button 
                 label="Отмена"
@@ -51,7 +50,7 @@ export const SyncDialog: React.FC<{
     return (
         <Dialog
             visible={isVisible}
-            style={{ width: '400px', backgroundColor: '#27293d', color: '#fff' }}
+            style={{ width: '400px' }}
             header="Запуск синхронизации тегов"
             modal
             className="p-fluid admin-dialog"

@@ -1,35 +1,154 @@
 @import 'primereact/resources/primereact.min.css';
 @import 'primeicons/primeicons.css';
 @import 'primeflex/primeflex.css';
-@import 'primereact/resources/themes/mdc-dark-deeppurple/theme.css'; 
+@import 'primereact/resources/themes/lara-dark-amber/theme.css';
 
-/* Сброс и глобальные переменные */
+/* Глобальные переопределения для PrimeReact - темная теплая тема */
+.p-component {
+    color: var(--text-primary) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+.p-component-overlay {
+    background: rgba(26, 22, 20, 0.8) !important;
+}
+
+/* Убеждаемся, что все поверхности используют правильные цвета */
+.p-datatable .p-datatable-table,
+.p-treetable .p-treetable-table {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Убираем все синие цвета из темы PrimeReact */
+.p-treetable .p-treetable-tbody > tr.p-selectable-row:not(.p-highlight):not(:hover) {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+.p-treetable .p-treetable-tbody > tr.p-selectable-row.p-highlight {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.15) 100%) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Убираем синие границы из всех элементов таблицы */
+.p-treetable * {
+    border-color: var(--border-color) !important;
+}
+
+.p-treetable .p-treetable-tbody > tr > td,
+.p-treetable .p-treetable-thead > tr > th {
+    border-color: var(--border-color) !important;
+}
+
+/* Убираем синий цвет из scrollable области */
+.p-treetable .p-treetable-scrollable-header-box,
+.p-treetable .p-treetable-scrollable-body-box,
+.p-treetable .p-treetable-scrollable-footer-box {
+    border: 1px solid var(--border-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Исправляем пагинацию - убираем переполнение */
+.p-paginator {
+    overflow: visible !important;
+    max-width: 100% !important;
+}
+
+.p-paginator .p-paginator-left-content,
+.p-paginator .p-paginator-right-content {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    overflow: visible !important;
+}
+
+.p-paginator .p-paginator-left-content {
+    margin-right: auto !important;
+}
+
+.p-paginator .p-paginator-right-content {
+    margin-left: auto !important;
+} 
+
+/* Премиальная цветовая схема в стиле piano.io */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  /* Премиальная типографика */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
   font-weight: 400;
 
-  /* Сохраняем темную схему по умолчанию, но меняем основной фон на более темный, как в Material Dark */
+  /* Теплая темная премиальная схема */
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #121212; /* Очень темный фон для Material Dark */
+  color: #f5f3f0;
+  background-color: #1a1614;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Переменная для верхнего бара (если используется) */
-  --topbar-height: 50px; 
+  /* Теплая цветовая палитра (янтарная/оранжевая) */
+  --primary-50: #fff7ed;
+  --primary-100: #ffedd5;
+  --primary-200: #fed7aa;
+  --primary-300: #fdba74;
+  --primary-400: #fb923c;
+  --primary-500: #f97316;
+  --primary-600: #ea580c;
+  --primary-700: #c2410c;
+  --primary-800: #9a3412;
+  --primary-900: #7c2d12;
+
+  /* Теплые серые */
+  --gray-50: #2d2825;
+  --gray-100: #3a3532;
+  --gray-200: #4a4542;
+  --gray-300: #5a5552;
+  --gray-400: #6b6663;
+  --gray-500: #8a8582;
+  --gray-600: #a5a09d;
+  --gray-700: #c0bbb8;
+  --gray-800: #d5d0cd;
+  --gray-900: #eae5e2;
+
+  --white: #ffffff;
+  --black: #0a0807;
+
+  /* Переменные для админ-панели (темная теплая) */
+  --admin-bg: #1a1614;
+  --sidebar-bg: #25201e;
+  --card-bg: #2d2825;
+  --border-color: #3a3532;
+  --text-primary: #f5f3f0;
+  --text-secondary: #a5a09d;
+  --accent-primary: #f97316;
+  --accent-hover: #ea580c;
+  --sidebar-width: 280px;
+  --sidebar-width-collapsed: 80px;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+  
+  --topbar-height: 64px;
+  
+  /* Плавные переходы */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  padding: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-x: hidden; /* Важно для предотвращения горизонтального скролла */
+  overflow-x: hidden;
+  background-color: var(--admin-bg);
+  color: var(--text-primary);
 }
 
 #root {
@@ -70,49 +189,1529 @@ body {
 }
 /* ... остальные стили из App.css (.rig-card, .rigs-grid и т.д.) */
 
-:root {
-    /* Цветовые переменные админ-панели, адаптированные под mdc-dark-deeppurple */
-    /* Deep Purple 500: #673AB7. Deep Purple 700: #512DA8. Deep Purple 900: #311B92 */
-    
-    /* Основной фон (Surface/Ground) */
-    --admin-bg: #121212;            /* Самый темный фон (аналог PrimeReact --surface-ground) */
-    
-    /* Фон боковой панели и карточек (Surface/Card) */
-    --sidebar-bg: #1e1e1e;          /* Темный фон для сайдбара/карточек */
-    --card-bg: #1e1e1e;             /* Тот же фон для карточек (аналог PrimeReact --surface-card) */
-    
-    /* Цвет границы/разделителя (Surface/Border) */
-    --border-color: #333333;        /* Более светлая и заметная граница на темном фоне */
-    
-    /* Основной и второстепенный текст */
-    --text-primary: #ffffff;        /* Белый текст (высокая контрастность) */
-    --text-secondary: #aaaaaa;      /* Серый текст (аналог PrimeReact --text-secondary-color) */
-    
-    /* Акцентный цвет (Primary Color) - Deep Purple 500 */
-    --accent-primary: #673AB7;      /* Deep Purple 500 */
-    --accent-hover: #512DA8;        /* Deep Purple 700 для ховера/более темного состояния */
-    
-    --sidebar-width: 260px;
+/* Премиальные стили для таблиц PrimeReact - темная теплая тема */
+.p-datatable {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-datatable-wrapper {
+    background: var(--card-bg) !important;
+}
+
+.p-datatable .p-datatable-header {
+    background: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 20px !important;
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, var(--gray-100) 100%) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 16px !important;
+    border-bottom: 2px solid rgba(249, 115, 22, 0.3) !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+.p-datatable .p-datatable-thead > tr > th:last-child {
+    border-right: none !important;
+}
+
+.p-datatable .p-datatable-tbody {
+    background: var(--card-bg) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+    transition: all var(--transition-fast) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    background: var(--card-bg) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:nth-child(even) {
+    background: rgba(249, 115, 22, 0.03) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.08) 100%) !important;
+    transform: scale(1.001);
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.2);
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+    padding: 16px !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    background: transparent !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr > td:last-child {
+    border-right: none !important;
+}
+
+.p-datatable .p-paginator {
+    background: var(--gray-100) !important;
+    border-top: 1px solid var(--border-color) !important;
+    padding: 12px 16px !important;
+    border-radius: 0 0 12px 12px !important;
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-paginator .p-paginator-page,
+.p-datatable .p-paginator .p-paginator-first,
+.p-datatable .p-paginator .p-paginator-prev,
+.p-datatable .p-paginator .p-paginator-next,
+.p-datatable .p-paginator .p-paginator-last {
+    border-radius: 8px !important;
+    min-width: 2.5rem !important;
+    height: 2.5rem !important;
+    transition: all var(--transition-base) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    margin: 0 2px !important;
+}
+
+.p-datatable .p-paginator .p-paginator-page:hover,
+.p-datatable .p-paginator .p-paginator-first:hover,
+.p-datatable .p-paginator .p-paginator-prev:hover,
+.p-datatable .p-paginator .p-paginator-next:hover,
+.p-datatable .p-paginator .p-paginator-last:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-datatable .p-paginator .p-paginator-page.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3) !important;
+}
+
+.p-datatable .p-paginator .p-paginator-pages .p-paginator-page {
+    margin: 0 2px !important;
+}
+
+.p-datatable .p-paginator .p-dropdown {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    min-width: 100px !important;
+    width: auto !important;
+}
+
+.p-datatable .p-paginator .p-dropdown .p-dropdown-label {
+    padding: 0.5rem 0.75rem !important;
+    min-width: 60px !important;
+    width: auto !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.p-datatable .p-paginator .p-dropdown .p-dropdown-label.p-inputtext {
+    padding: 0.5rem 0.75rem !important;
+    min-width: 60px !important;
+    width: auto !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+}
+
+.p-datatable .p-paginator .p-dropdown-panel {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    margin-top: 4px !important;
+}
+
+.p-datatable .p-paginator .p-dropdown-items .p-dropdown-item {
+    color: var(--text-primary) !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    margin: 2px 8px !important;
+}
+
+.p-datatable .p-paginator .p-dropdown-items .p-dropdown-item:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-datatable .p-paginator .p-dropdown-items .p-dropdown-item.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+}
+
+/* Текст количества записей в пагинации DataTable */
+.p-datatable .p-paginator .p-paginator-current {
+    color: var(--text-primary) !important;
+    background: transparent !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+}
+
+.p-datatable .p-paginator .p-paginator-rpp-options {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+}
+
+.p-datatable .p-paginator .p-paginator-rpp-options label {
+    color: var(--text-secondary) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* Фильтры в таблице */
+.p-datatable .p-column-filter-row {
+    background: var(--card-bg) !important;
+}
+
+.p-datatable .p-column-filter-element {
+    background: var(--card-bg) !important;
+}
+
+.p-datatable .p-column-filter-menu-button {
+    color: var(--text-secondary) !important;
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.p-datatable .p-column-filter-menu-button .pi {
+    font-size: 0.875rem !important;
+    line-height: 1 !important;
+}
+
+.p-datatable .p-column-filter-menu-button:hover {
+    background: rgba(249, 115, 22, 0.1) !important;
+    color: var(--accent-primary) !important;
+}
+
+/* Иконки фильтров в заголовках колонок */
+.p-datatable .p-datatable-thead > tr > th .p-column-filter-menu-button,
+.p-datatable .p-datatable-thead > tr > th .p-column-filter-button {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    padding: 0 !important;
+    margin-left: 4px !important;
+}
+
+.p-datatable .p-datatable-thead > tr > th .p-column-filter-menu-button .pi,
+.p-datatable .p-datatable-thead > tr > th .p-column-filter-button .pi {
+    font-size: 0.75rem !important;
+    line-height: 1 !important;
+}
+
+/* Иконки фильтров в TreeTable */
+.p-treetable .p-treetable-thead > tr > th .p-column-filter-menu-button,
+.p-treetable .p-treetable-thead > tr > th .p-column-filter-button {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    padding: 0 !important;
+    margin-left: 4px !important;
+}
+
+.p-treetable .p-treetable-thead > tr > th .p-column-filter-menu-button .pi,
+.p-treetable .p-treetable-thead > tr > th .p-column-filter-button .pi {
+    font-size: 0.75rem !important;
+    line-height: 1 !important;
+}
+
+/* Сортировка */
+.p-datatable .p-sortable-column-icon {
+    color: var(--text-secondary) !important;
+    font-size: 0.75rem !important;
+    margin-left: 4px !important;
+}
+
+.p-datatable .p-sortable-column:hover .p-sortable-column-icon {
+    color: var(--accent-primary) !important;
+}
+
+.p-datatable .p-sortable-column.p-highlight .p-sortable-column-icon {
+    color: var(--accent-primary) !important;
+}
+
+/* Иконки в заголовках колонок - общие стили */
+.p-datatable .p-datatable-thead > tr > th .p-column-header-content {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+.p-datatable .p-datatable-thead > tr > th .p-column-header-content .pi {
+    font-size: 0.75rem !important;
+    line-height: 1 !important;
+}
+
+/* TreeTable сортировка */
+.p-treetable .p-sortable-column-icon {
+    color: var(--text-secondary) !important;
+    font-size: 0.75rem !important;
+    margin-left: 4px !important;
+}
+
+.p-treetable .p-sortable-column:hover .p-sortable-column-icon {
+    color: var(--accent-primary) !important;
+}
+
+.p-treetable .p-sortable-column.p-highlight .p-sortable-column-icon {
+    color: var(--accent-primary) !important;
+}
+
+.p-treetable .p-treetable-thead > tr > th .p-column-header-content {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+.p-treetable .p-treetable-thead > tr > th .p-column-header-content .pi {
+    font-size: 0.75rem !important;
+    line-height: 1 !important;
+}
+
+/* Пустые состояния таблиц */
+.p-datatable .p-datatable-emptymessage {
+    background: var(--card-bg) !important;
+    color: var(--text-secondary) !important;
+    padding: 48px 24px !important;
+}
+
+.p-treetable .p-treetable-emptymessage {
+    background: var(--card-bg) !important;
+    color: var(--text-secondary) !important;
+    padding: 48px 24px !important;
+}
+
+/* Состояние загрузки */
+.p-datatable.p-datatable-loading-overlay {
+    background: rgba(26, 22, 20, 0.8) !important;
+}
+
+.p-datatable .p-datatable-loading-icon {
+    color: var(--accent-primary) !important;
+}
+
+/* Выделение строк */
+.p-datatable .p-datatable-tbody > tr.p-highlight {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.15) 100%) !important;
+    box-shadow: inset 0 0 0 2px rgba(249, 115, 22, 0.4);
+}
+
+.p-treetable .p-treetable-tbody > tr.p-highlight {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.15) 100%) !important;
+    box-shadow: inset 0 0 0 2px rgba(249, 115, 22, 0.4);
+}
+
+/* Скроллбары для таблиц */
+.p-datatable .p-datatable-scrollable-body::-webkit-scrollbar,
+.p-treetable .p-treetable-scrollable-body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.p-datatable .p-datatable-scrollable-body::-webkit-scrollbar-track,
+.p-treetable .p-treetable-scrollable-body::-webkit-scrollbar-track {
+    background: var(--gray-100);
+    border-radius: 4px;
+}
+
+.p-datatable .p-datatable-scrollable-body::-webkit-scrollbar-thumb,
+.p-treetable .p-treetable-scrollable-body::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 4px;
+}
+
+.p-datatable .p-datatable-scrollable-body::-webkit-scrollbar-thumb:hover,
+.p-treetable .p-treetable-scrollable-body::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
+/* Скрываем scrollbar при наведении на таблицу */
+.p-datatable:hover .p-datatable-scrollable-body::-webkit-scrollbar,
+.p-treetable:hover .p-treetable-scrollable-body::-webkit-scrollbar,
+.p-datatable:hover .p-datatable-wrapper::-webkit-scrollbar,
+.p-treetable:hover .p-treetable-wrapper::-webkit-scrollbar,
+.p-datatable:hover .p-datatable-table::-webkit-scrollbar,
+.p-treetable:hover .p-treetable-table::-webkit-scrollbar {
+    width: 0px !important;
+    height: 0px !important;
+    display: none !important;
+}
+
+/* Альтернативный способ - скрываем через overflow для всех браузеров */
+.p-datatable:hover .p-datatable-scrollable-body,
+.p-treetable:hover .p-treetable-scrollable-body,
+.p-datatable:hover .p-datatable-wrapper,
+.p-treetable:hover .p-treetable-wrapper {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+.p-datatable:hover .p-datatable-scrollable-body::-webkit-scrollbar,
+.p-treetable:hover .p-treetable-scrollable-body::-webkit-scrollbar,
+.p-datatable:hover .p-datatable-wrapper::-webkit-scrollbar,
+.p-treetable:hover .p-treetable-wrapper::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+}
+
+/* Скрываем scrollbar на самой таблице при hover */
+.p-datatable:hover,
+.p-treetable:hover {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+.p-datatable:hover::-webkit-scrollbar,
+.p-treetable:hover::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Скрываем scrollbar на карточке с таблицей при hover */
+.card:hover .p-datatable .p-datatable-scrollable-body::-webkit-scrollbar,
+.card:hover .p-treetable .p-treetable-scrollable-body::-webkit-scrollbar,
+.card:hover .p-datatable-wrapper::-webkit-scrollbar,
+.card:hover .p-treetable-wrapper::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.card:hover .p-datatable .p-datatable-scrollable-body,
+.card:hover .p-treetable .p-treetable-scrollable-body {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+/* Скрываем scrollbar на content-card при hover */
+.content-card:hover .p-datatable .p-datatable-scrollable-body::-webkit-scrollbar,
+.content-card:hover .p-treetable .p-treetable-scrollable-body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.content-card:hover .p-datatable .p-datatable-scrollable-body,
+.content-card:hover .p-treetable .p-treetable-scrollable-body {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+/* Фильтры в заголовках */
+.p-datatable .p-column-filter-menu,
+.p-datatable .p-column-filter {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    padding: 8px !important;
+    min-width: auto !important;
+    width: auto !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint {
+    background: var(--card-bg) !important;
+    padding: 4px 0 !important;
+    margin: 0 !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value {
+    padding: 4px !important;
+    margin: 4px 0 !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputtext {
+    padding: 0.5rem !important;
+    font-size: 0.875rem !important;
+    min-height: auto !important;
+    height: auto !important;
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown:focus,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputtext:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-panel {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-items .p-dropdown-item {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-items .p-dropdown-item:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-items .p-dropdown-item.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-add-button,
+.p-datatable .p-column-filter-menu .p-column-filter-remove-button {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    min-height: auto !important;
+    height: auto !important;
+    margin: 4px 2px !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-add-button:hover,
+.p-datatable .p-column-filter-menu .p-column-filter-remove-button:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-add-button .pi,
+.p-datatable .p-column-filter-menu .p-column-filter-remove-button .pi {
+    font-size: 0.75rem !important;
+}
+
+/* Уменьшаем размеры элементов внутри фильтра */
+.p-datatable .p-column-filter .p-field,
+.p-datatable .p-column-filter-menu .p-field {
+    margin-bottom: 8px !important;
+}
+
+.p-datatable .p-column-filter .p-field:last-child,
+.p-datatable .p-column-filter-menu .p-field:last-child {
+    margin-bottom: 0 !important;
+}
+
+.p-datatable .p-column-filter label,
+.p-datatable .p-column-filter-menu label {
+    font-size: 0.75rem !important;
+    margin-bottom: 4px !important;
+    padding: 0 !important;
+    color: var(--text-primary) !important;
+}
+
+/* Все элементы внутри меню фильтра */
+.p-datatable .p-column-filter-menu *,
+.p-datatable .p-column-filter * {
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator-label,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value-label {
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-label {
+    color: var(--text-primary) !important;
+    background: var(--card-bg) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-trigger {
+    color: var(--text-secondary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-trigger:hover {
+    color: var(--accent-primary) !important;
+}
+
+/* Overlay для меню фильтра - темная теплая тема */
+.p-column-filter-overlay,
+.p-column-filter-overlay-menu,
+.p-connected-overlay-enter-done {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    color: var(--text-primary) !important;
+    padding: 0 !important;
+}
+
+.p-column-filter-overlay.p-component,
+.p-column-filter-overlay-menu.p-component,
+.p-connected-overlay-enter-done.p-component {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-column-filter-overlay.p-fluid,
+.p-column-filter-overlay-menu.p-fluid {
+    background: var(--card-bg) !important;
+}
+
+.p-column-filter-overlay .p-column-filter-menu,
+.p-column-filter-overlay .p-column-filter,
+.p-column-filter-overlay-menu .p-column-filter-menu,
+.p-column-filter-overlay-menu .p-column-filter,
+.p-connected-overlay-enter-done .p-column-filter-menu,
+.p-connected-overlay-enter-done .p-column-filter {
+    background: var(--card-bg) !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 8px !important;
+    color: var(--text-primary) !important;
+}
+
+/* Все элементы внутри overlay */
+.p-column-filter-overlay *,
+.p-column-filter-overlay-menu *,
+.p-connected-overlay-enter-done * {
+    color: var(--text-primary) !important;
+}
+
+.p-column-filter-overlay .p-column-filter-menu,
+.p-column-filter-overlay-menu .p-column-filter-menu,
+.p-connected-overlay-enter-done .p-column-filter-menu {
+    background: var(--card-bg) !important;
+}
+
+/* Убираем светлые фоны из всех элементов overlay */
+.p-column-filter-overlay .p-field,
+.p-column-filter-overlay-menu .p-field,
+.p-connected-overlay-enter-done .p-field {
+    background: transparent !important;
+}
+
+.p-column-filter-overlay .p-inputtext,
+.p-column-filter-overlay-menu .p-inputtext,
+.p-connected-overlay-enter-done .p-inputtext {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-column-filter-overlay .p-dropdown,
+.p-column-filter-overlay-menu .p-dropdown,
+.p-connected-overlay-enter-done .p-dropdown {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-column-filter-overlay .p-dropdown-label,
+.p-column-filter-overlay-menu .p-dropdown-label,
+.p-connected-overlay-enter-done .p-dropdown-label {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-column-filter-overlay label,
+.p-column-filter-overlay-menu label,
+.p-connected-overlay-enter-done label {
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu-overlay,
+.p-treetable .p-column-filter-menu-overlay {
+    background: transparent !important;
+}
+
+/* Дополнительные переопределения для overlay - максимальная специфичность */
+body .p-column-filter-overlay,
+body .p-column-filter-overlay-menu,
+body .p-connected-overlay-enter-done {
+    background: var(--card-bg) !important;
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body .p-column-filter-overlay.p-component,
+body .p-column-filter-overlay-menu.p-component,
+body .p-connected-overlay-enter-done.p-component {
+    background: var(--card-bg) !important;
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Убираем все возможные светлые фоны */
+body .p-column-filter-overlay[style*="background"],
+body .p-column-filter-overlay-menu[style*="background"],
+body .p-connected-overlay-enter-done[style*="background"] {
+    background: var(--card-bg) !important;
+    background-color: var(--card-bg) !important;
+}
+
+/* Все текстовые элементы в меню фильтра */
+.p-datatable .p-column-filter-menu .p-column-filter-constraint p,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint span,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint div {
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputtext::placeholder {
+    color: var(--text-secondary) !important;
+    opacity: 0.6;
+}
+
+/* Кнопки действий в меню фильтра */
+.p-datatable .p-column-filter-menu .p-column-filter-buttonbar {
+    background: transparent !important;
+    padding: 8px 0 0 0 !important;
+    margin-top: 8px !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-buttonbar .p-button {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-buttonbar .p-button:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-buttonbar .p-button.p-button-primary {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    border-color: var(--accent-primary) !important;
+    color: white !important;
+}
+
+/* InputNumber и другие инпуты в меню фильтра */
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputnumber,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputnumber-input {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputnumber:focus,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputnumber-input:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+/* Calendar и другие компоненты в меню фильтра */
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-calendar,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-datepicker {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-calendar:focus,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-datepicker:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+/* Убираем все светлые фоны из меню фильтра */
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator,
+.p-datatable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value {
+    background: transparent !important;
+}
+
+/* Фильтры для TreeTable */
+.p-treetable .p-column-filter-menu,
+.p-treetable .p-column-filter {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    padding: 8px !important;
+    min-width: auto !important;
+    width: auto !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint {
+    background: var(--card-bg) !important;
+    padding: 4px 0 !important;
+    margin: 0 !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value {
+    padding: 4px !important;
+    margin: 4px 0 !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputtext {
+    padding: 0.5rem !important;
+    font-size: 0.875rem !important;
+    min-height: auto !important;
+    height: auto !important;
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown:focus,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputtext:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-panel {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-items .p-dropdown-item {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-items .p-dropdown-item:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-items .p-dropdown-item.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-add-button,
+.p-treetable .p-column-filter-menu .p-column-filter-remove-button {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    min-height: auto !important;
+    height: auto !important;
+    margin: 4px 2px !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-add-button:hover,
+.p-treetable .p-column-filter-menu .p-column-filter-remove-button:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-add-button .pi,
+.p-treetable .p-column-filter-menu .p-column-filter-remove-button .pi {
+    font-size: 0.75rem !important;
+}
+
+.p-treetable .p-column-filter .p-field,
+.p-treetable .p-column-filter-menu .p-field {
+    margin-bottom: 8px !important;
+}
+
+.p-treetable .p-column-filter .p-field:last-child,
+.p-treetable .p-column-filter-menu .p-field:last-child {
+    margin-bottom: 0 !important;
+}
+
+.p-treetable .p-column-filter label,
+.p-treetable .p-column-filter-menu label {
+    font-size: 0.75rem !important;
+    margin-bottom: 4px !important;
+    padding: 0 !important;
+    color: var(--text-primary) !important;
+}
+
+/* Стили для обычных HTML select элементов - темная теплая тема */
+select,
+select.p-dropdown {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    color: var(--text-primary) !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 14px !important;
+    transition: all var(--transition-base) !important;
+}
+
+select:focus,
+select.p-dropdown:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+    outline: none !important;
+}
+
+select option,
+select.p-dropdown option {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    padding: 0.5rem !important;
+}
+
+select option:hover,
+select option:checked {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+/* Стили для text-gray-500 и text-sm классов */
+.text-gray-500 {
+    color: var(--text-secondary) !important;
+}
+
+.text-sm {
+    font-size: 0.875rem !important;
+    color: var(--text-secondary) !important;
+}
+
+.text-xs {
+    font-size: 0.75rem !important;
+    color: var(--text-secondary) !important;
+}
+
+/* Стили для controls в constructor-header */
+.constructor-header .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.constructor-header .controls .p-input-icon-left {
+    position: relative;
+}
+
+.constructor-header .controls .p-input-icon-left i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    z-index: 1;
+}
+
+.constructor-header .controls .p-input-icon-left input {
+    padding-left: 36px;
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.constructor-header .controls .p-input-icon-left input::placeholder {
+    color: var(--text-secondary) !important;
+    opacity: 0.6;
+}
+
+.constructor-header .controls .p-input-icon-left input:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+/* Стили для node-selected в EdgeTreeSelector */
+.node-selected {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-radius: 8px;
+    padding: 4px 8px;
+}
+
+.node-selected span {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+}
+
+/* Все элементы внутри меню фильтра TreeTable */
+.p-treetable .p-column-filter-menu *,
+.p-treetable .p-column-filter * {
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator-label,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value-label {
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-label {
+    color: var(--text-primary) !important;
+    background: var(--card-bg) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-trigger {
+    color: var(--text-secondary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator .p-dropdown-trigger:hover {
+    color: var(--accent-primary) !important;
+}
+
+/* Все текстовые элементы в меню фильтра TreeTable */
+.p-treetable .p-column-filter-menu .p-column-filter-constraint p,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint span,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint div {
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputtext::placeholder {
+    color: var(--text-secondary) !important;
+    opacity: 0.6;
+}
+
+/* Кнопки действий в меню фильтра TreeTable */
+.p-treetable .p-column-filter-menu .p-column-filter-buttonbar {
+    background: transparent !important;
+    padding: 8px 0 0 0 !important;
+    margin-top: 8px !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-buttonbar .p-button {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.875rem !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-buttonbar .p-button:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-buttonbar .p-button.p-button-primary {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    border-color: var(--accent-primary) !important;
+    color: white !important;
+}
+
+/* InputNumber и другие инпуты в меню фильтра TreeTable */
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputnumber,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputnumber-input {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputnumber:focus,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-inputnumber-input:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+/* Calendar и другие компоненты в меню фильтра TreeTable */
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-calendar,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-datepicker {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-calendar:focus,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value .p-datepicker:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+/* Убираем все светлые фоны из меню фильтра TreeTable */
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-operator,
+.p-treetable .p-column-filter-menu .p-column-filter-constraint .p-column-filter-constraint-value {
+    background: transparent !important;
+}
+
+/* Премиальные диалоги */
+.p-dialog {
+    border-radius: 16px !important;
+    box-shadow: var(--shadow-xl) !important;
+    border: 1px solid var(--border-color) !important;
+    overflow: hidden !important;
+}
+
+.p-dialog .p-dialog-header {
+    background: linear-gradient(135deg, var(--gray-100) 0%, var(--card-bg) 100%) !important;
+    padding: 24px 32px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.p-dialog .p-dialog-header .p-dialog-title {
+    font-weight: 700 !important;
+    font-size: 20px !important;
+    color: var(--text-primary) !important;
+    letter-spacing: -0.3px !important;
+}
+
+.p-dialog .p-dialog-content {
+    padding: 32px !important;
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-dialog .p-dialog-footer {
+    background: var(--card-bg) !important;
+    border-top: 1px solid var(--border-color) !important;
+    padding: 20px 32px !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+}
+
+.p-dialog .p-dialog-footer .p-button {
+    min-width: 100px !important;
+    padding: 10px 20px !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all var(--transition-base) !important;
+}
+
+.p-dialog .p-dialog-footer .p-button:not(.p-button-danger):not(.p-button-primary) {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-dialog .p-dialog-footer .p-button:not(.p-button-danger):not(.p-button-primary):hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2) !important;
+}
+
+.p-dialog .p-dialog-footer .p-button.p-button-primary {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    border-color: var(--accent-primary) !important;
+    color: white !important;
+}
+
+.p-dialog .p-dialog-footer .p-button.p-button-primary:hover {
+    background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent-primary) 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4) !important;
+}
+
+.p-dialog .p-dialog-footer .p-button.p-button-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
+
+.p-dialog .p-dialog-footer .p-button.p-button-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    border-color: #dc2626 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+}
+
+.p-dialog .p-dialog-header-icon {
+    width: 2rem !important;
+    height: 2rem !important;
+    border-radius: 8px !important;
+    transition: all var(--transition-base) !important;
+}
+
+.p-dialog .p-dialog-header-icon:hover {
+    background-color: var(--gray-100) !important;
+    transform: rotate(90deg);
+}
+
+/* Премиальные формы */
+.p-fluid .field {
+    margin-bottom: 24px;
+}
+
+.p-fluid .field label {
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: var(--text-primary) !important;
+    margin-bottom: 8px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.p-inputtext,
+.p-dropdown,
+.p-inputnumber-input {
+    border-radius: 10px !important;
+    border: 1px solid var(--border-color) !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 14px !important;
+    transition: all var(--transition-base) !important;
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-inputtext:focus,
+.p-dropdown:focus,
+.p-inputnumber-input:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+    outline: none !important;
+}
+
+.p-dropdown-panel {
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    border: 1px solid var(--border-color) !important;
+    margin-top: 4px !important;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    margin: 2px 8px !important;
+    transition: all var(--transition-fast) !important;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
+    background-color: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3) !important;
+}
+
+/* Премиальные сообщения */
+.p-message {
+    border-radius: 12px !important;
+    padding: 16px 20px !important;
+    box-shadow: var(--shadow-sm) !important;
+    border: none !important;
+    margin-bottom: 16px !important;
+}
+
+.p-message.p-message-success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.1) 100%) !important;
+    color: #86efac !important;
+    border-left: 3px solid #22c55e !important;
+}
+
+.p-message.p-message-error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%) !important;
+    color: #fca5a5 !important;
+    border-left: 3px solid #ef4444 !important;
+}
+
+.p-message.p-message-info {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.1) 100%) !important;
+    color: #fdba74 !important;
+    border-left: 3px solid var(--accent-primary) !important;
+}
+
+/* Премиальные TreeTable - темная теплая тема */
+.p-treetable {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    border: 1px solid var(--border-color) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-treetable-header {
+    background: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 20px !important;
+    color: var(--text-primary) !important;
+}
+
+.p-treetable .p-treetable-thead > tr > th {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, var(--gray-100) 100%) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    padding: 16px !important;
+    border-bottom: 2px solid rgba(249, 115, 22, 0.3) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+.p-treetable .p-treetable-thead > tr > th:last-child {
+    border-right: none !important;
+}
+
+.p-treetable .p-treetable-tbody {
+    background: var(--card-bg) !important;
+}
+
+.p-treetable .p-treetable-tbody > tr {
+    transition: all var(--transition-fast) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    background: var(--card-bg) !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+}
+
+.p-treetable .p-treetable-tbody > tr:nth-child(even) {
+    background: rgba(249, 115, 22, 0.03) !important;
+}
+
+.p-treetable .p-treetable-tbody > tr:hover {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.08) 100%) !important;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.2);
+}
+
+.p-treetable .p-treetable-tbody > tr > td {
+    padding: 16px !important;
+    color: var(--text-primary) !important;
+    background: transparent !important;
+    border-right: 1px solid var(--border-color) !important;
+    border-left: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+}
+
+.p-treetable .p-treetable-tbody > tr > td:last-child {
+    border-right: none !important;
+}
+
+/* Убираем синие границы из темы PrimeReact */
+.p-treetable .p-treetable-tbody > tr,
+.p-treetable .p-treetable-tbody > tr > td {
+    border-color: var(--border-color) !important;
+}
+
+.p-treetable .p-treetable-tbody > tr:focus,
+.p-treetable .p-treetable-tbody > tr:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.p-treetable .p-treetable-toggler {
+    color: var(--text-secondary) !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    border-radius: 6px !important;
+    transition: all var(--transition-base) !important;
+}
+
+.p-treetable .p-treetable-toggler:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-treetable .p-treetable-toggler:focus {
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.3) !important;
+}
+
+/* Убираем синий блок справа (scrollbar area) */
+.p-treetable .p-treetable-scrollable-wrapper {
+    background: transparent !important;
+}
+
+.p-treetable .p-treetable-scrollable-header,
+.p-treetable .p-treetable-scrollable-footer {
+    background: transparent !important;
+    border-color: var(--border-color) !important;
+}
+
+.p-treetable .p-treetable-scrollable-body {
+    background: transparent !important;
+}
+
+/* Убираем синие границы из scrollable области */
+.p-treetable .p-treetable-scrollable-header-box,
+.p-treetable .p-treetable-scrollable-body-box,
+.p-treetable .p-treetable-scrollable-footer-box {
+    border-color: var(--border-color) !important;
+    background: transparent !important;
+}
+
+/* Исправляем скроллбар */
+.p-treetable .p-treetable-scrollable-body::-webkit-scrollbar-track {
+    background: var(--gray-100) !important;
+}
+
+.p-treetable .p-treetable-scrollable-body::-webkit-scrollbar-thumb {
+    background: var(--gray-300) !important;
+}
+
+.p-treetable .p-treetable-scrollable-body::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary) !important;
+}
+
+/* Исправляем пагинацию для TreeTable */
+.p-treetable .p-paginator {
+    background: var(--gray-100) !important;
+    border-top: 1px solid var(--border-color) !important;
+    padding: 12px 16px !important;
+    border-radius: 0 0 12px 12px !important;
+    color: var(--text-primary) !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+}
+
+.p-treetable .p-paginator .p-paginator-page,
+.p-treetable .p-paginator .p-paginator-first,
+.p-treetable .p-paginator .p-paginator-prev,
+.p-treetable .p-paginator .p-paginator-next,
+.p-treetable .p-paginator .p-paginator-last {
+    border-radius: 8px !important;
+    min-width: 2.5rem !important;
+    height: 2.5rem !important;
+    transition: all var(--transition-base) !important;
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    margin: 0 2px !important;
+}
+
+.p-treetable .p-paginator .p-paginator-page:hover,
+.p-treetable .p-paginator .p-paginator-first:hover,
+.p-treetable .p-paginator .p-paginator-prev:hover,
+.p-treetable .p-paginator .p-paginator-next:hover,
+.p-treetable .p-paginator .p-paginator-last:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-treetable .p-paginator .p-paginator-page.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3) !important;
+}
+
+/* Dropdown пагинации для TreeTable */
+.p-treetable .p-paginator .p-dropdown {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    min-width: 100px !important;
+    width: auto !important;
+}
+
+.p-treetable .p-paginator .p-dropdown .p-dropdown-label {
+    padding: 0.5rem 0.75rem !important;
+    min-width: 60px !important;
+    width: auto !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.p-treetable .p-paginator .p-dropdown .p-dropdown-label.p-inputtext {
+    padding: 0.5rem 0.75rem !important;
+    min-width: 60px !important;
+    width: auto !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+}
+
+.p-treetable .p-paginator .p-dropdown-panel {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    margin-top: 4px !important;
+}
+
+.p-treetable .p-paginator .p-dropdown-items .p-dropdown-item {
+    color: var(--text-primary) !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    margin: 2px 8px !important;
+}
+
+.p-treetable .p-paginator .p-dropdown-items .p-dropdown-item:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.p-treetable .p-paginator .p-dropdown-items .p-dropdown-item.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+}
+
+/* Текст количества записей в пагинации */
+.p-treetable .p-paginator .p-paginator-current {
+    color: var(--text-primary) !important;
+    background: transparent !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+}
+
+.p-treetable .p-paginator .p-paginator-rpp-options {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+}
+
+.p-treetable .p-paginator .p-paginator-rpp-options label {
+    color: var(--text-secondary) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* Премиальные карточки */
+.card {
+    background: var(--card-bg) !important;
+    border-radius: 16px !important;
+    padding: 0 !important;
+    box-shadow: var(--shadow-md) !important;
+    border: 1px solid var(--border-color) !important;
+    overflow: hidden !important;
+    color: var(--text-primary) !important;
+}
+
+/* Убеждаемся, что таблицы внутри карточек используют правильные цвета */
+.card .p-datatable,
+.card .p-treetable {
+    background: transparent !important;
+}
+
+.card .p-datatable .p-datatable-wrapper,
+.card .p-treetable .p-treetable-wrapper {
+    background: transparent !important;
 }
 
 .admin-layout {
     display: flex;
     min-height: 100vh;
-    /* --------------------------------------------------------------------------------- */
-    /* ИЗМЕНЕНИЕ: Усиленный градиент */
-    /* Используем Deep Purple 900 (#311B92) для основного свечения */
-    background: radial-gradient(
-        ellipse at top left, 
-        rgba(49, 27, 146, 0.4) 0%, /* Увеличиваем непрозрачность до 40% */
-        rgba(18, 18, 18, 1) 60%    /* Расширяем градиент до 60% */
-    );
-    background-color: var(--admin-bg); /* Сплошной цвет как запасной вариант */
-    /* --------------------------------------------------------------------------------- */
+    background: linear-gradient(135deg, #1a1614 0%, #25201e 50%, #1a1614 100%);
     color: var(--text-primary);
-    width: 100%; 
+    width: 100%;
+    position: relative;
 }
 
-/* Боковая панель */
+/* Боковая панель - премиальный дизайн */
 .admin-sidebar {
     width: var(--sidebar-width);
     min-width: var(--sidebar-width); 
@@ -121,20 +1720,117 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 10;
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(10px);
+    position: relative;
+    transition: width var(--transition-base), min-width var(--transition-base);
+    overflow: hidden;
+}
+
+/* Свернутое состояние сайдбара */
+.admin-sidebar.collapsed {
+    width: var(--sidebar-width-collapsed);
+    min-width: var(--sidebar-width-collapsed);
 }
 
 .sidebar-header {
-    /* Добавляем отступы и центрируем элементы */
-    padding: 20px 16px; 
-    display: flex; 
-    align-items: center; 
-    gap: 12px; /* Расстояние между иконкой и текстом */
+    padding: 24px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, var(--sidebar-bg) 100%);
+    position: relative;
+    min-height: 64px;
+}
+
+.admin-sidebar.collapsed .sidebar-header {
+    padding: 24px 12px;
+    justify-content: center;
+}
+
+.sidebar-toggle {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    min-width: 36px;
+    min-height: 36px;
+    flex-shrink: 0;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.sidebar-toggle:active {
+    transform: scale(0.95);
+}
+
+.sidebar-toggle i {
+    font-size: 1rem;
+    transition: transform var(--transition-base);
+}
+
+.admin-sidebar.collapsed .sidebar-toggle {
+    margin: 0 auto;
+}
+
+.logo-text {
+    transition: opacity var(--transition-base), transform var(--transition-base);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.admin-sidebar.collapsed .logo-text {
+    opacity: 0;
+    transform: translateX(-10px);
+    width: 0;
+    overflow: hidden;
+}
+
+.sidebar-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--border-color) 50%, transparent 100%);
 }
 
 .sidebar-nav {
-    padding: 16px;
+    padding: 20px 16px;
     flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-400);
 }
 
 .nav-list {
@@ -146,107 +1842,378 @@ body {
 .nav-link {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 14px 18px;
-    border-radius: 8px;
-    text-decoration: none; /* Гарантируем отсутствие подчеркивания */
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    text-decoration: none;
     color: var(--text-secondary);
     font-weight: 500;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    margin-bottom: 8px;
+    font-size: 14px;
+    transition: all var(--transition-base);
+    margin-bottom: 4px;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.admin-sidebar.collapsed .nav-link {
+    padding: 12px;
+    justify-content: center;
+    gap: 0;
+}
+
+.admin-sidebar.collapsed .nav-link span {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    transform: translateX(-10px);
+    transition: opacity var(--transition-base), width var(--transition-base), transform var(--transition-base);
+}
+
+.nav-link span {
+    transition: opacity var(--transition-base), width var(--transition-base), transform var(--transition-base);
+    white-space: nowrap;
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-primary);
+    transform: scaleY(0);
+    transition: transform var(--transition-base);
+    border-radius: 0 2px 2px 0;
 }
 
 .nav-link:hover {
-    /* Легкий ховер-эффект на темном фоне */
-    background-color: rgba(255, 255, 255, 0.08); /* Чуть более светлый, чем был */
+    background-color: rgba(249, 115, 22, 0.1);
     color: var(--text-primary);
+    transform: translateX(2px);
+}
+
+.nav-link:hover::before {
+    transform: scaleY(0.5);
 }
 
 .nav-link.active {
-    background-color: var(--accent-primary);
-    color: #ffffff;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.15) 100%);
+    color: var(--accent-primary);
     font-weight: 600;
-    /* Уменьшил тень, чтобы она выглядела менее агрессивно на темной теме */
-    box-shadow: 0 4px 12px rgba(103, 58, 183, 0.4); /* Используем цвет акцента (Deep Purple 500) для тени */
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2), var(--shadow-sm);
+}
+
+.nav-link.active::before {
+    transform: scaleY(1);
 }
 
 .nav-link .pi {
     font-size: 1.2rem;
+    width: 24px;
+    height: 24px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    opacity: 0.8;
 }
 
-/* --- Основной контент (ГДЕ ДОЛЖНА БЫТЬ ТАБЛИЦА) --- */
+.admin-sidebar.collapsed .nav-link .pi {
+    width: auto;
+    height: auto;
+    font-size: 1.4rem;
+}
+
+.nav-link:hover .pi {
+    transform: scale(1.1);
+    opacity: 1;
+    color: var(--accent-primary);
+    filter: drop-shadow(0 2px 4px rgba(249, 115, 22, 0.3));
+}
+
+.admin-sidebar.collapsed .nav-link:hover .pi {
+    transform: scale(1.15);
+    opacity: 1;
+    color: var(--accent-primary);
+    filter: drop-shadow(0 2px 6px rgba(249, 115, 22, 0.4));
+}
+
+.nav-link.active .pi {
+    color: var(--accent-primary);
+    opacity: 1;
+    filter: drop-shadow(0 2px 6px rgba(249, 115, 22, 0.5));
+    transform: scale(1.05);
+}
+
+.nav-link.active:hover .pi {
+    transform: scale(1.12);
+    filter: drop-shadow(0 3px 8px rgba(249, 115, 22, 0.6));
+}
+
+/* Tooltip для свернутого состояния */
+.admin-sidebar.collapsed .nav-link {
+    position: relative;
+}
+
+.admin-sidebar.collapsed .nav-link::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-base), transform var(--transition-base);
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+.admin-sidebar.collapsed .nav-link:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(4px);
+}
+
+/* Улучшаем активное состояние в свернутом режиме */
+.admin-sidebar.collapsed .nav-link.active {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(249, 115, 22, 0.2) 100%);
+}
+
+/* --- Основной контент --- */
 .admin-content {
-    flex: 1; /* КРИТИЧНО: Занимает ВСЮ доступную ширину после сайдбара */
-    padding: 24px 32px;
-    
-    display: flex; 
-    flex-direction: column; /* Контент идет сверху вниз */
-    overflow-x: hidden; /* Предотвращаем скролл от широкой таблицы */
+    flex: 1;
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    transition: padding var(--transition-base);
+}
+
+.admin-content.sidebar-collapsed {
+    padding: 32px 40px;
+    position: relative;
 }
 
 .content-header {
-    padding-bottom: 16px;
+    padding-bottom: 20px;
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 24px;
+    margin-bottom: 32px;
+    position: relative;
+}
+
+.content-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-primary) 0%, transparent 100%);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
 }
 
 .content-header h2 {
     margin: 0;
     color: var(--text-primary);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #f5f3f0 0%, #fb923c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .content-card {
     background-color: var(--card-bg);
-    padding: 24px;
-    border-radius: 12px;
-    /* Тень на темном фоне должна быть минимальной */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); 
-    flex-grow: 1; 
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    flex-grow: 1;
     min-height: 100px;
     display: flex;
     flex-direction: column;
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.content-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-500) 0%, var(--primary-400) 50%, var(--primary-500) 100%);
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.5);
+}
+
+.content-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.content-card:hover::before {
+    opacity: 1;
 }
 
 .content-card .p-datatable {
     flex-grow: 1;
 }
 
-/* Стили для инпутов PrimeReact (для лучшего соответствия) */
+/* Премиальные стили для инпутов PrimeReact */
+.p-input-icon-left {
+    position: relative;
+}
+
 .p-input-icon-left > .pi.pi-search {
-    /* Сдвигаем иконку на 1px вниз для лучшего вертикального центрирования */
-    transform: translateX(10px);
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    z-index: 1;
+    transition: color var(--transition-base);
+}
+
+.p-input-icon-left:focus-within > .pi.pi-search {
+    color: var(--accent-primary);
 }
 
 .p-input-icon-left input.p-inputtext {
-    /* Значение 3.5rem (56px) должно создать заметный отступ */
-    padding-left: 2rem !important; 
-    /* В Material Design часто используют более скругленные инпуты */
-    border-radius: 6px; 
+    padding-left: 2.75rem !important;
+    padding-right: 1rem !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    border-radius: 10px !important;
+    border: 1px solid var(--border-color) !important;
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    transition: all var(--transition-base) !important;
 }
 
-.p-input-icon-left > .pi {
-    transform: translateY(1px); 
+.p-input-icon-left input.p-inputtext:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+    outline: none !important;
+}
+
+.p-input-icon-left input.p-inputtext::placeholder {
+    color: var(--text-secondary) !important;
+    opacity: 0.6;
+}
+
+/* Премиальные кнопки */
+.p-button {
+    border-radius: 10px !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    transition: all var(--transition-base) !important;
+    border: none !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link) {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3) !important;
+}
+
+.p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link):hover {
+    box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4) !important;
+}
+
+.p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link):hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md) !important;
+}
+
+.p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link):active {
+    transform: translateY(0);
 }
 
 .p-button-label {
-    color: #ffffff;
+    color: inherit !important;
+}
+
+.p-button-rounded {
+    border-radius: 50% !important;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.p-button-text {
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.p-button-text:hover {
+    background-color: rgba(249, 115, 22, 0.1) !important;
+    transform: none !important;
+}
+
+/* Кнопки success в темной теплой теме */
+.p-button-success,
+.p-button.p-button-success {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    border-color: var(--accent-primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3) !important;
+}
+
+.p-button-success:hover,
+.p-button.p-button-success:hover {
+    box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+.p-button-success .p-button-label,
+.p-button.p-button-success .p-button-label {
+    color: white !important;
 }
 
 /* --- Стилизация логотипа "Drill" --- */
 .logo-text {
-    font-family: 'Consolas', 'Courier New', monospace; 
-       
-    font-size: 1.8rem; /* Достаточно крупный */
-    font-weight: 700; /* Жирный */
-    margin: 0; /* Убираем стандартные отступы */
-    text-transform: uppercase; /* Логотипы часто используют заглавные буквы */
-    letter-spacing: 2px; /* Небольшой разнос, чтобы выглядело более стильно */
-    
-    /* Добавляем мягкое свечение в цвете Deep Purple 500 */
-    color: var(--accent-primary);
-    text-shadow: 
-        0 0 5px rgba(103, 58, 183, 0.6), /* Мягкий, широкий свет */
-        0 0 10px rgba(103, 58, 183, 0.4); /* Чуть более сильный центр */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    display: inline-block;
+    transition: all var(--transition-base);
+    filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.3));
+}
+
+.logo-text:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.5));
 }
 
 .sidebar-header h1, 
@@ -264,16 +2231,27 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
+    gap: 24px;
 }
 
 .constructor-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding: 16px;
+    margin-bottom: 0;
+    padding: 24px 32px;
     background: var(--card-bg);
-    border-radius: 8px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.constructor-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.5px;
 }
 
 .controls {
@@ -287,8 +2265,14 @@ body {
     position: relative;
     background: var(--admin-bg);
     border: 2px dashed var(--border-color);
-    border-radius: 8px;
+    border-radius: 16px;
     min-height: 600px;
+    transition: all var(--transition-base);
+}
+
+.constructor-content:hover {
+    border-color: var(--accent-primary);
+    background: rgba(249, 115, 22, 0.05);
 }
 
 .drop-zone {
@@ -297,16 +2281,20 @@ body {
     height: 100%;
     min-height: 600px;
     border: 2px dashed var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
+    border-radius: 16px;
+    padding: 24px;
     background: 
-        linear-gradient(90deg, var(--border-color) 1px, transparent 1px) 0 0 / 20px 20px,
-        linear-gradient(var(--border-color) 1px, transparent 1px) 0 0 / 20px 20px;
+        linear-gradient(90deg, var(--gray-300) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(var(--gray-300) 1px, transparent 1px) 0 0 / 24px 24px,
+        var(--card-bg);
+    transition: all var(--transition-base);
 }
 
 .drop-zone.drop-over {
-    background-color: rgba(103, 58, 183, 0.1);
+    background-color: rgba(249, 115, 22, 0.1);
     border-color: var(--accent-primary);
+    border-style: solid;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2), 0 0 20px rgba(249, 115, 22, 0.3);
 }
 
 .drop-zone-header {
@@ -319,15 +2307,24 @@ body {
     position: absolute;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 12px;
+    padding: 16px;
     cursor: move;
     z-index: 10;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+    min-width: 200px;
 }
 
 .widget-item:hover {
-    box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
+    box-shadow: var(--shadow-lg);
     border-color: var(--accent-primary);
+    transform: translateY(-2px) scale(1.02);
+}
+
+.widget-item.dragging {
+    opacity: 0.6;
+    transform: rotate(2deg);
 }
 
 .widget-item.dragging {
@@ -382,4 +2379,1902 @@ body {
     justify-content: flex-end;
     gap: 8px;
     margin-top: 20px;
+}
+/* Добавьте это в ваш основной CSS файл, например App.css или index.css */
+
+/* Стили для иерархического отображения TreeTable - edges-tree-table */
+.edges-tree-table {
+    background: transparent !important;
+}
+
+.edges-tree-table .card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.edges-tree-table .card .p-treetable-header {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.edges-tree-table .card .p-treetable-header h2 {
+    color: var(--text-primary) !important;
+}
+
+.edges-tree-table .p-treetable {
+    background: transparent !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-wrapper {
+    background: transparent !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-table {
+    background: transparent !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="1"] > td {
+    padding-left: 2rem !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="2"] > td {
+    padding-left: 4rem !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="3"] > td {
+    padding-left: 6rem !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="4"] > td {
+    padding-left: 8rem !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr[data-level="5"] > td {
+    padding-left: 10rem !important;
+}
+
+/* Заголовки без отступов */
+.edges-tree-table .p-treetable-thead > tr > th {
+    padding-left: 1rem !important;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, var(--gray-100) 100%) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 2px solid rgba(249, 115, 22, 0.3) !important;
+}
+
+/* Стили для иконок - теплая тема */
+.edges-tree-table .pi-sitemap {
+    color: var(--accent-primary) !important;
+    filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.4));
+}
+
+.edges-tree-table .pi-folder {
+    color: #fb923c !important;
+    filter: drop-shadow(0 0 4px rgba(251, 146, 60, 0.4));
+}
+
+.edges-tree-table .pi-file {
+    color: var(--text-secondary) !important;
+}
+
+/* Кнопки в edges-tree-table */
+.edges-tree-table .p-button-text {
+    color: var(--text-secondary) !important;
+    background: transparent !important;
+}
+
+.edges-tree-table .p-button-text:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.edges-tree-table .p-button-text.text-primary {
+    color: var(--accent-primary) !important;
+}
+
+.edges-tree-table .p-button-text.text-primary:hover {
+    background: rgba(249, 115, 22, 0.2) !important;
+    color: var(--accent-primary) !important;
+}
+
+.edges-tree-table .p-button-text.p-button-danger {
+    color: #fca5a5 !important;
+}
+
+.edges-tree-table .p-button-text.p-button-danger:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+}
+
+/* Кнопки разворачивания в дереве */
+.edges-tree-table .p-button-plain {
+    color: var(--text-secondary) !important;
+    background: transparent !important;
+}
+
+.edges-tree-table .p-button-plain:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+/* Инпуты в header */
+.edges-tree-table .p-input-icon-left input.p-inputtext {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.edges-tree-table .p-input-icon-left input.p-inputtext::placeholder {
+    color: var(--text-secondary) !important;
+    opacity: 0.6;
+}
+
+.edges-tree-table .p-input-icon-left input.p-inputtext:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+.edges-tree-table .p-input-icon-left > .pi.pi-search {
+    color: var(--text-secondary) !important;
+}
+
+.edges-tree-table .p-input-icon-left:focus-within > .pi.pi-search {
+    color: var(--accent-primary) !important;
+}
+
+/* Header в edges-tree-table */
+.edges-tree-table .card .p-treetable-header {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    padding: 20px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.edges-tree-table .card .p-treetable-header h2 {
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+    /* margin-left: 8px !important; */
+}
+
+.edges-tree-table .card .p-treetable-header .flex {
+    color: var(--text-primary) !important;
+}
+
+/* Кнопки в header edges-tree-table */
+.edges-tree-table .card .p-treetable-header .p-button {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    border-color: var(--accent-primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3) !important;
+}
+
+.edges-tree-table .card .p-treetable-header .p-button:hover {
+    box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+.edges-tree-table .card .p-treetable-header .p-button:not(.p-button-text):not(.p-button-outlined) {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+}
+
+.edges-tree-table .card .p-treetable-header .p-button.p-button-success {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+.edges-tree-table .card .p-treetable-header .p-button.p-button-success .p-button-label {
+    color: white !important;
+}
+
+/* ProgressSpinner в edges-tree-table */
+.edges-tree-table .p-progress-spinner-circle {
+    stroke: var(--accent-primary) !important;
+}
+
+/* Пагинация в edges-tree-table */
+.edges-tree-table .p-paginator {
+    background: var(--gray-100) !important;
+    border-top: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.edges-tree-table .p-paginator .p-paginator-page,
+.edges-tree-table .p-paginator .p-paginator-first,
+.edges-tree-table .p-paginator .p-paginator-prev,
+.edges-tree-table .p-paginator .p-paginator-next,
+.edges-tree-table .p-paginator .p-paginator-last {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.edges-tree-table .p-paginator .p-paginator-page:hover,
+.edges-tree-table .p-paginator .p-paginator-first:hover,
+.edges-tree-table .p-paginator .p-paginator-prev:hover,
+.edges-tree-table .p-paginator .p-paginator-next:hover,
+.edges-tree-table .p-paginator .p-paginator-last:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+
+.edges-tree-table .p-paginator .p-paginator-page.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+    border-color: var(--accent-primary) !important;
+}
+
+/* Dropdown в edges-tree-table */
+.edges-tree-table .p-dropdown {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.edges-tree-table .p-paginator .p-dropdown {
+    min-width: 100px !important;
+    width: auto !important;
+}
+
+.edges-tree-table .p-paginator .p-dropdown .p-dropdown-label {
+    padding: 0.5rem 0.75rem !important;
+    min-width: 60px !important;
+    width: auto !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.edges-tree-table .p-paginator .p-dropdown .p-dropdown-label.p-inputtext {
+    padding: 0.5rem 0.75rem !important;
+    min-width: 60px !important;
+    width: auto !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+}
+
+.edges-tree-table .p-dropdown:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+.edges-tree-table .p-dropdown-panel {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+.edges-tree-table .p-dropdown-items .p-dropdown-item {
+    color: var(--text-primary) !important;
+}
+
+.edges-tree-table .p-dropdown-items .p-dropdown-item:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.edges-tree-table .p-dropdown-items .p-dropdown-item.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+}
+
+/* Пагинация в edges-tree-table - исправляем выпадающий список */
+.edges-tree-table .p-paginator .p-dropdown-panel {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    margin-top: 4px !important;
+}
+
+.edges-tree-table .p-paginator .p-dropdown-items .p-dropdown-item {
+    color: var(--text-primary) !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    margin: 2px 8px !important;
+}
+
+.edges-tree-table .p-paginator .p-dropdown-items .p-dropdown-item:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.edges-tree-table .p-paginator .p-dropdown-items .p-dropdown-item.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+}
+
+/* Исправляем число записей в edges-tree-table */
+.edges-tree-table .p-paginator {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    overflow: visible !important;
+}
+
+.edges-tree-table .p-paginator .p-paginator-current {
+    color: var(--text-primary) !important;
+    background: transparent !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+    flex-shrink: 0 !important;
+}
+
+.edges-tree-table .p-paginator .p-paginator-rpp-options {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.edges-tree-table .p-paginator .p-paginator-rpp-options label {
+    color: var(--text-secondary) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* Убираем синие границы в edges-tree-table */
+.edges-tree-table .p-treetable .p-treetable-tbody > tr,
+.edges-tree-table .p-treetable .p-treetable-tbody > tr > td {
+    border-color: var(--border-color) !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-tbody > tr:focus,
+.edges-tree-table .p-treetable .p-treetable-tbody > tr:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Убираем синий блок справа в edges-tree-table */
+.edges-tree-table .p-treetable .p-treetable-scrollable-wrapper {
+    background: transparent !important;
+}
+
+.edges-tree-table .p-treetable .p-treetable-scrollable-header-box,
+.edges-tree-table .p-treetable .p-treetable-scrollable-body-box,
+.edges-tree-table .p-treetable .p-treetable-scrollable-footer-box {
+    border-color: var(--border-color) !important;
+    background: transparent !important;
+}
+
+/* Пустые сообщения в edges-tree-table */
+.edges-tree-table .p-treetable-emptymessage {
+    background: var(--card-bg) !important;
+    color: var(--text-secondary) !important;
+    padding: 48px 24px !important;
+}
+
+/* Состояние загрузки в edges-tree-table */
+.edges-tree-table .p-treetable-loading-overlay {
+    background: rgba(26, 22, 20, 0.8) !important;
+}
+
+.edges-tree-table .p-treetable-loading-icon {
+    color: var(--accent-primary) !important;
+}
+
+/* Все текстовые элементы в edges-tree-table */
+.edges-tree-table span,
+.edges-tree-table div,
+.edges-tree-table p {
+    color: var(--text-primary) !important;
+}
+
+.edges-tree-table .text-secondary,
+.edges-tree-table [style*="color: var(--text-secondary)"] {
+    color: var(--text-secondary) !important;
+}
+
+.layout-constructor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.constructor-header {
+    padding: 1rem;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.constructor-header h2 {
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: -0.5px;
+}
+
+.constructor-content-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    padding: 0;
+    height: calc(100vh - 200px);
+    overflow: hidden;
+}
+
+.tree-column {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.tree-column::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tree-column::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+.widget-column {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.widget-column::-webkit-scrollbar {
+    width: 6px;
+}
+
+.widget-column::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+/* EdgeTreeSelector стили */
+.edge-tree-selector {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.tree-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color, #3a3a5e);
+}
+
+.tree-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.tree-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.tree-info i {
+    color: var(--accent-primary);
+}
+
+.tree-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.edge-tree {
+    background: transparent;
+    border: none;
+    color: var(--text-color, #ffffff);
+}
+
+.edge-tree .p-tree-node-content:hover {
+    background: var(--hover-bg, #3a3a5e);
+}
+
+.edge-tree .p-tree-node-selected {
+    background: var(--accent-color, #6366f1);
+    color: white;
+}
+
+.widget-count-badge {
+    background: var(--accent-color, #6366f1);
+    color: white;
+    border-radius: 12px;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    min-width: 1.5rem;
+    text-align: center;
+}
+
+/* EdgePathDisplay стили */
+.edge-path-display {
+    background: var(--background-darker, #1a1a2e);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--accent-color, #6366f1);
+}
+
+.path-label {
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.path-breadcrumbs {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.edge-name {
+    background: var(--card-bg, #2a2a3e);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.path-separator {
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.75rem;
+}
+
+.path-info {
+    display: flex;
+    gap: 0.5rem;
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.75rem;
+}
+
+/* BulkWidgetCreator стили */
+.bulk-creator-section {
+    background: var(--background-darker, #1a1a2e);
+    border-radius: 6px;
+    padding: 1rem;
+    border: 1px solid var(--border-color, #3a3a5e);
+}
+
+.children-selection {
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--card-bg, #2a2a3e);
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.children-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+
+.child-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem;
+    border-radius: 4px;
+    background: var(--background-darker, #1a1a2e);
+}
+
+.child-checkbox:hover {
+    background: var(--hover-bg, #3a3a5e);
+}
+
+/* DropZone обновленные стили */
+.drop-zone-header {
+    background: var(--background-darker, #1a1a2e);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color, #3a3a5e);
+}
+
+.drop-zone-header h3 {
+    margin: 0;
+    color: var(--accent-color, #6366f1);
+}
+
+.drop-zone-info {
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Page info стили */
+.page-info {
+    background: var(--background-darker, #1a1a2e);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.page-info h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--accent-color, #6366f1);
+}
+
+.page-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--card-bg, #2a2a3e);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+/* No selection message */
+.no-selection-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem;
+}
+
+.no-selection-message i {
+    margin-bottom: 1rem;
+    color: var(--accent-primary);
+    opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .constructor-content-grid {
+        grid-template-columns: 250px 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .constructor-content-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    
+    .tree-column {
+        height: 300px;
+    }
+}
+
+.edge-tree .p-treenode-content {
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 4px;
+  transition: all var(--transition-base);
+}
+
+.edge-tree .p-treenode-content:hover {
+  background-color: rgba(249, 115, 22, 0.1);
+  transform: translateX(4px);
+}
+
+.edge-tree .p-treenode-content.p-highlight {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.edge-tree .p-treenode-content .p-tree-toggler {
+  margin-right: 0.5rem;
+}
+
+/* Скрываем автоматически рендеримую иконку PrimeReact Tree, так как используем кастомный nodeTemplate */
+.edge-tree .p-treenode-content .p-treenode-icon {
+  display: none !important;
+}
+
+/* Иконка рендерится только в nodeTemplate */
+.edge-tree .p-treenode-content .node-selected i.pi,
+.edge-tree .p-treenode-content > div > i.pi {
+  margin-right: 0.5rem;
+  color: var(--accent-primary) !important;
+}
+
+.edge-tree .p-treenode-content.p-highlight .p-treenode-icon {
+  color: white !important;
+}
+
+/* Стили для всех иконок в дереве (pi-tag, pi-folder и т.д.) */
+.edge-tree .p-treenode-content i.pi,
+.edge-tree .p-treenode-content .pi,
+.edge-tree .p-treenode-content i[class*="pi-"],
+.edge-tree .p-treenode-content [class*="pi-"] {
+  color: var(--accent-primary) !important;
+}
+
+.edge-tree .p-treenode-content.p-highlight i.pi,
+.edge-tree .p-treenode-content.p-highlight .pi,
+.edge-tree .p-treenode-content.p-highlight i[class*="pi-"],
+.edge-tree .p-treenode-content.p-highlight [class*="pi-"] {
+  color: white !important;
+}
+
+/* Стили для иконок в nodeTemplate */
+.edge-tree .node-selected i.pi,
+.edge-tree .node-selected .pi,
+.edge-tree .node-selected i[class*="pi-"],
+.edge-tree .node-selected [class*="pi-"] {
+  color: var(--accent-primary) !important;
+}
+
+/* Стили для всех иконок в дереве - максимальная специфичность */
+.edge-tree-selector .p-tree .p-treenode-content .p-treenode-icon,
+.edge-tree-selector .p-tree .p-treenode-content i.pi,
+.edge-tree-selector .p-tree .p-treenode-content i[class*="pi-tag"],
+.edge-tree-selector .p-tree .p-treenode-content i[class*="pi-folder"],
+.edge-tree-selector .p-tree .p-treenode-content [class*="pi-tag"],
+.edge-tree-selector .p-tree .p-treenode-content [class*="pi-folder"] {
+  color: var(--accent-primary) !important;
+}
+
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight .p-treenode-icon,
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight i.pi,
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight i[class*="pi-tag"],
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight i[class*="pi-folder"],
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="pi-tag"],
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="pi-folder"] {
+  color: white !important;
+}
+
+/* Стили для иконок в кастомном nodeTemplate */
+.edge-tree-selector .p-tree .p-treenode-content .node-selected i.pi,
+.edge-tree-selector .p-tree .p-treenode-content .node-selected i[class*="pi-tag"],
+.edge-tree-selector .p-tree .p-treenode-content .node-selected i[class*="pi-folder"],
+.edge-tree-selector .p-tree .p-treenode-content .node-selected [class*="pi-tag"],
+.edge-tree-selector .p-tree .p-treenode-content .node-selected [class*="pi-folder"] {
+  color: var(--accent-primary) !important;
+}
+
+/* Стили для иконок, рендерящихся напрямую через PrimeReact Tree */
+.edge-tree-selector .p-tree .p-treenode-icon,
+.edge-tree-selector .p-tree i.p-treenode-icon,
+.edge-tree-selector .p-tree [class*="p-treenode-icon"],
+.edge-tree-selector .p-tree i.pi.p-treenode-icon,
+.edge-tree-selector .p-tree i[class*="pi-tag"][class*="p-treenode-icon"],
+.edge-tree-selector .p-tree i[class*="pi-folder"][class*="p-treenode-icon"] {
+  color: var(--accent-primary) !important;
+}
+
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight .p-treenode-icon,
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight i.p-treenode-icon,
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-treenode-icon"],
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight i.pi.p-treenode-icon,
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight i[class*="pi-tag"][class*="p-treenode-icon"],
+.edge-tree-selector .p-tree .p-treenode-content.p-highlight i[class*="pi-folder"][class*="p-treenode-icon"] {
+  color: white !important;
+}
+
+/* Глобальные стили для всех иконок в дереве - максимальная специфичность */
+body .edge-tree-selector .p-tree .p-treenode-content .p-treenode-icon,
+body .edge-tree-selector .p-tree .p-treenode-content i.pi,
+body .edge-tree-selector .p-tree .p-treenode-content i[class*="pi-tag"],
+body .edge-tree-selector .p-tree .p-treenode-content i[class*="pi-folder"],
+body .edge-tree-selector .p-tree .p-treenode-content [class*="pi-tag"],
+body .edge-tree-selector .p-tree .p-treenode-content [class*="pi-folder"],
+body .edge-tree-selector .p-tree .p-treenode-content i.p-treenode-icon,
+body .edge-tree-selector .p-tree .p-treenode-content [class*="p-treenode-icon"] {
+  color: var(--accent-primary) !important;
+}
+
+body .edge-tree-selector .p-tree .p-treenode-content.p-highlight .p-treenode-icon,
+body .edge-tree-selector .p-tree .p-treenode-content.p-highlight i.pi,
+body .edge-tree-selector .p-tree .p-treenode-content.p-highlight i[class*="pi-tag"],
+body .edge-tree-selector .p-tree .p-treenode-content.p-highlight i[class*="pi-folder"],
+body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="pi-tag"],
+body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="pi-folder"],
+body .edge-tree-selector .p-tree .p-treenode-content.p-highlight i.p-treenode-icon,
+body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-treenode-icon"] {
+  color: white !important;
+}
+
+.loading-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.loading-message i {
+  margin-right: 0.5rem;
+  color: var(--accent-primary);
+}
+
+.empty-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.empty-message i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* Премиальные анимации и переходы */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Применение анимаций */
+.admin-sidebar {
+  animation: slideIn 0.4s ease-out;
+}
+
+.admin-content {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.content-card {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.nav-link {
+  animation: fadeIn 0.3s ease-out;
+  animation-fill-mode: both;
+}
+
+.nav-link:nth-child(1) { animation-delay: 0.1s; }
+.nav-link:nth-child(2) { animation-delay: 0.2s; }
+.nav-link:nth-child(3) { animation-delay: 0.3s; }
+.nav-link:nth-child(4) { animation-delay: 0.4s; }
+
+/* Премиальные эффекты для интерактивных элементов */
+.p-button:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.p-inputtext:focus-visible,
+.p-dropdown:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Улучшенные стили для ProgressSpinner - темная теплая тема */
+.p-progress-spinner {
+    width: 50px;
+    height: 50px;
+}
+
+.p-progress-spinner-circle {
+    stroke: var(--accent-primary) !important;
+    stroke-width: 3;
+}
+
+.p-progress-spinner-svg {
+    color: var(--accent-primary) !important;
+}
+
+/* Премиальные стили для ConfirmDialog */
+.p-confirm-dialog {
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-xl) !important;
+}
+
+.p-confirm-dialog .p-dialog-header {
+    background: linear-gradient(135deg, var(--gray-100) 0%, var(--card-bg) 100%) !important;
+    padding: 24px 32px !important;
+}
+
+.p-confirm-dialog .p-dialog-content {
+  padding: 32px !important;
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer {
+  background: var(--card-bg) !important;
+  border-top: 1px solid var(--border-color) !important;
+  padding: 20px 32px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button {
+  min-width: 100px !important;
+  padding: 10px 20px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  transition: all var(--transition-base) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button:not(.p-button-danger) {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button:not(.p-button-danger):hover {
+  background: rgba(249, 115, 22, 0.15) !important;
+  border-color: var(--accent-primary) !important;
+  color: var(--accent-primary) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2) !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  border-color: #ef4444 !important;
+  color: white !important;
+}
+
+.p-confirm-dialog .p-dialog-footer .p-button.p-button-danger:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  border-color: #dc2626 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Премиальные стили для пустых состояний */
+.empty-state {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.empty-state i {
+  font-size: 64px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin: 8px 0;
+  color: var(--text-primary);
+}
+
+.empty-state .text-sm {
+  color: var(--text-secondary) !important;
+}
+
+/* Премиальные стили для виджетов в конструкторе - темная теплая тема */
+.widget-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.widget-header i {
+    color: var(--accent-primary);
+    font-size: 18px;
+    filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.4));
+}
+
+.widget-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.widget-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.widget-meta small {
+    background: var(--gray-200);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid var(--border-color);
+}
+
+.widget-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 12px;
+    justify-content: flex-end;
+}
+
+.widget-actions .p-button-text {
+    color: var(--text-secondary) !important;
+}
+
+.widget-actions .p-button-text:hover {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: var(--accent-primary) !important;
+}
+
+.widget-actions .p-button-text.p-button-danger {
+    color: #fca5a5 !important;
+}
+
+.widget-actions .p-button-text.p-button-danger:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+}
+
+/* Премиальные стили для EdgePathDisplay - темная теплая тема */
+.edge-path-display {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, var(--card-bg) 100%);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--accent-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.edge-path-display .path-label {
+    color: var(--text-secondary) !important;
+}
+
+.edge-path-display .path-breadcrumbs {
+    color: var(--text-primary) !important;
+}
+
+.edge-path-display .path-info {
+    color: var(--text-secondary) !important;
+}
+
+.edge-path-display .path-info small {
+    color: var(--text-secondary) !important;
+}
+
+.path-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.path-breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.edge-name {
+    background: var(--card-bg);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.path-separator {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.path-info {
+  display: flex;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* Премиальные стили для BulkWidgetCreator - темная теплая тема */
+.bulk-creator-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+}
+
+.bulk-widget-form {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+.bulk-widget-form h4 {
+    color: var(--text-primary) !important;
+}
+
+.bulk-widget-form label {
+    color: var(--text-primary) !important;
+}
+
+.bulk-widget-form input[type="text"] {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.bulk-widget-form input[type="text"]:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+}
+
+.children-selection {
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--gray-100);
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.children-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.child-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
+}
+
+.child-checkbox:hover {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Премиальные стили для drop-zone-header - темная теплая тема */
+.drop-zone-header {
+    background: linear-gradient(135deg, var(--gray-100) 0%, var(--card-bg) 100%);
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.drop-zone-header h3 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.drop-zone-info {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-top: 8px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.drop-zone-info .zone-type,
+.drop-zone-info .zone-id {
+    background: var(--card-bg);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* Премиальные стили для page-info - темная теплая тема */
+.page-info {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, var(--card-bg) 100%);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.page-info h3 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.page-info .stat-item {
+    color: var(--text-primary) !important;
+}
+
+.page-info .stat-item i {
+    color: var(--accent-primary) !important;
+}
+
+/* Стили для selection-info и selected-edge-info */
+.selection-info {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.selected-edge-info h4 {
+    color: var(--text-primary) !important;
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.selected-edge-info p {
+    color: var(--text-secondary) !important;
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Стили для display-type-info и display-type-badge */
+.display-type-info {
+    margin-top: 8px;
+}
+
+.display-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.display-type-badge i {
+    color: var(--accent-primary);
+}
+
+.display-type-badge.main-page {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, var(--card-bg) 100%);
+    border-color: var(--accent-primary);
+}
+
+.display-type-badge.widget-page {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, var(--card-bg) 100%);
+    border-color: var(--accent-primary);
+}
+
+.page-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card-bg);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-primary);
+}
+
+.stat-item i {
+  color: var(--accent-primary);
+}
+
+/* Премиальные стили для no-selection-message */
+.no-selection-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.no-selection-message i {
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  font-size: 64px;
+}
+
+.no-selection-message h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.no-selection-message p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 400px;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+  .constructor-content-grid {
+    grid-template-columns: 280px 1fr;
+  }
+  
+  .admin-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+  
+  .admin-sidebar {
+    width: 100%;
+    min-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .constructor-content-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  
+  .tree-column {
+    height: 300px;
+  }
+  
+  .admin-content {
+    padding: 20px 16px;
+  }
+  
+  .content-card {
+    padding: 20px;
+  }
+}
+
+/* Стили для редактора таблицы */
+.table-editor-container {
+    width: 100%;
+    overflow: auto;
+    max-height: 600px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-bg);
+}
+
+.table-editor-wrapper {
+    overflow: auto;
+    width: 100%;
+}
+
+.table-editor {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: var(--card-bg);
+}
+
+.table-editor th {
+    background: var(--background-darker);
+    border: 1px solid var(--border-color);
+    padding: 4px;
+    font-weight: 600;
+    text-align: center;
+    position: sticky;
+    z-index: 1;
+}
+
+.table-editor-corner {
+    background: var(--background-darker) !important;
+    border-right: 2px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+    min-width: 120px;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+.table-editor-col-header {
+    background: var(--background-darker) !important;
+    border-bottom: 2px solid var(--border-color);
+    min-width: 150px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.table-editor-row-header {
+    background: var(--background-darker) !important;
+    border-right: 2px solid var(--border-color);
+    min-width: 120px;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+
+.table-editor td {
+    border: 1px solid var(--border-color);
+    padding: 4px;
+    background: var(--card-bg);
+    min-width: 150px;
+    min-height: 50px;
+}
+
+.table-editor-cell {
+    vertical-align: top;
+}
+
+.table-cell-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.table-cell-editor select,
+.table-cell-editor input {
+    width: 100%;
+}
+
+.table-cell-type-toggle {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.table-cell-type-button {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    font-size: 10px;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.table-cell-type-button:hover {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.table-cell-type-button.is-active {
+    background: rgba(249, 115, 22, 0.2);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.table-cell-editor select {
+    font-size: 11px;
+    padding: 2px 4px;
+}
+
+.table-cell-editor input {
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+/* Стили для TableConfigurator */
+.table-configurator {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.config-column {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.config-column::-webkit-scrollbar {
+    width: 6px;
+}
+
+.config-column::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+.table-info {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-info h3 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.table-summary p {
+    margin: 8px 0;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.table-summary strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Стили для формы настройки таблицы */
+.table-config-form {
+    padding: 0;
+}
+
+.table-config-form-grid {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.table-config-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    align-self: start;
+}
+
+.table-config-panel {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-config-panel-title {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-config-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.table-config-hints {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.table-config-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.table-config-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.table-config-editor-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-config-editor-title {
+    margin: 0 0 6px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.table-config-editor-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.table-config-editor-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    padding-top: 4px;
+}
+
+/* Панель с доступными элементами для перетаскивания */
+.draggable-items-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.draggable-items-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.draggable-items-section h4 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.draggable-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.draggable-items-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.draggable-items-list::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+.draggable-tag,
+.draggable-edge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: move;
+    transition: all var(--transition-base);
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.draggable-tag:hover,
+.draggable-edge:hover {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
+.draggable-tag.dragging,
+.draggable-edge.dragging {
+    opacity: 0.6;
+    transform: rotate(2deg);
+}
+
+.draggable-tag.used,
+.draggable-edge.used {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--background-darker);
+}
+
+.draggable-tag i,
+.draggable-edge i {
+    color: var(--accent-primary);
+    font-size: 14px;
+}
+
+/* Панель с DropZone для заголовков */
+.drop-zones-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.vertical-headers-drop-zone,
+.horizontal-headers-drop-zone {
+    background: var(--card-bg);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 200px;
+    transition: all var(--transition-base);
+}
+
+.vertical-headers-drop-zone.drop-over,
+.horizontal-headers-drop-zone.drop-over {
+    background-color: rgba(249, 115, 22, 0.1);
+    border-color: var(--accent-primary);
+    border-style: solid;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2), 0 0 20px rgba(249, 115, 22, 0.3);
+}
+
+.drop-zone-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.headers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 100px;
+}
+
+.header-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--background-darker);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
+}
+
+.header-item:hover {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: var(--accent-primary);
+}
+
+.header-index {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 24px;
+}
+
+.header-id {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.empty-drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    color: var(--text-secondary);
+    text-align: center;
+    min-height: 150px;
+}
+
+.empty-drop-zone i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-drop-zone span {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .table-config-form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .draggable-items-panel {
+        max-height: 300px;
+        overflow-y: auto;
+    }
 }
