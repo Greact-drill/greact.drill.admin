@@ -54,9 +54,7 @@ const WIDGET_TYPES = [
     { label: 'Манометр', value: 'gauge', icon: 'pi pi-chart-line' },
     { label: 'Вертикальная шкала', value: 'bar', icon: 'pi pi-chart-bar' },
     { label: 'Числовое значение', value: 'number', icon: 'pi pi-hashtag' },
-    { label: 'Статус', value: 'status', icon: 'pi pi-info-circle' },
-    { label: 'Компактный вид', value: 'compact', icon: 'pi pi-th-large' },
-    { label: 'Карточка', value: 'card', icon: 'pi pi-id-card' }
+    { label: 'Статус', value: 'status', icon: 'pi pi-info-circle' }
 ];
 
 // Генерация доступных страниц на основе выбранного edge
@@ -77,6 +75,15 @@ const getAvailablePages = (selectedEdge: string, edgePath: Edge[]): Array<{label
         label: `Страница оборудования (${edgePath[edgePath.length - 1]?.name || selectedEdge})`, 
         value: selectedEdge 
     });
+
+    // 2.1 Специальные страницы статусов (уникальные для буровой)
+    if (edgePath.length > 0) {
+        const rootEdge = edgePath[0];
+        pages.push(
+            { label: `Состояние байпасов (${rootEdge.name})`, value: `BYPASS_${rootEdge.id}` },
+            { label: `Аварии приводов (${rootEdge.name})`, value: `ACCIDENT_${rootEdge.id}` }
+        );
+    }
     
     // 3. Родительские страницы (если есть)
     edgePath.forEach((edge, index) => {
@@ -221,7 +228,11 @@ const WidgetForm: React.FC<{
 
     useEffect(() => {
         if (item) {
-            setFormData(item);
+            const normalizedWidgetType =
+                item.widgetType === 'compact' || item.widgetType === 'card'
+                    ? 'number'
+                    : item.widgetType;
+            setFormData({ ...item, widgetType: normalizedWidgetType });
         }
     }, [item]);
 
@@ -231,10 +242,16 @@ const WidgetForm: React.FC<{
             return;
         }
 
+        const normalizedWidgetType =
+            formData.widgetType === 'compact' || formData.widgetType === 'card'
+                ? 'number'
+                : formData.widgetType;
+
         // Автоматически определяем displayType на основе типа страницы
         const displayType: 'widget' | 'compact' | 'card' = formData.page.startsWith('MAIN_') ? 'compact' : 'widget';
         const widgetData: LayoutItem = {
             ...formData,
+            widgetType: normalizedWidgetType,
             displayType
         };
 
