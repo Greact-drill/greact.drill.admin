@@ -60,6 +60,23 @@ export interface TagPayload {
 }
 export type Tag = TagPayload;
 
+export interface CurrentTagData {
+    tag: string;
+    value: number | string | boolean;
+    name?: string;
+    min?: number;
+    max?: number;
+    comment?: string;
+    unit_of_measurement?: string;
+}
+
+export async function getCurrentDetails(edge: string): Promise<CurrentTagData[]> {
+    const response = await apiClient.get<CurrentTagData[]>('/current/details', {
+        params: { edge }
+    });
+    return response.data;
+}
+
 export async function getTagsForAdmin(): Promise<Tag[]> {
     const response = await apiClient.get<Tag[]>('/tag');
     return response.data;
@@ -104,6 +121,11 @@ export interface TagCustomization extends CustomizationPayload {
 export async function getEdgeCustomizationForAdmin(): Promise<BaseCustomization[]> {
     const response = await apiClient.get<BaseCustomization[]>('/edge-customization');
     return response.data;
+}
+
+export async function getEdgeCustomizationByEdge(edgeId: string): Promise<BaseCustomization[]> {
+  const response = await apiClient.get<BaseCustomization[]>(`/edge-customization/${edgeId}`);
+  return response.data;
 }
 
 export async function createEdgeCustomization(data: { edge_id: string } & CustomizationPayload): Promise<BaseCustomization> {

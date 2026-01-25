@@ -4278,3 +4278,308 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
         overflow-y: auto;
     }
 }
+
+/* Emulation page */
+.emulation-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    flex: 1;
+    min-height: 0;
+}
+
+.emulation-header h3 {
+    margin: 0 0 8px;
+}
+
+.emulation-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.emulation-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 320px) 1fr;
+    gap: 24px;
+}
+
+.emulation-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.emulation-edge-info {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.emulation-edge-label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.emulation-edge-value {
+    color: var(--text-primary);
+}
+
+.emulation-table-panel {
+    padding: 24px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.emulation-table-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.emulation-loading {
+    padding: 16px 0;
+    color: var(--text-secondary);
+}
+
+.emulation-table {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.emulation-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 1.4fr) minmax(120px, 0.8fr) minmax(160px, 1fr) minmax(120px, 0.6fr);
+    gap: 12px;
+    align-items: center;
+}
+
+.emulation-row--group {
+    align-items: center;
+}
+
+.emulation-group {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.emulation-group + .emulation-group {
+    margin-top: 8px;
+}
+
+.emulation-group-summary {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.emulation-group-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.emulation-iterations {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.emulation-row--iteration {
+    grid-template-columns: minmax(90px, 0.6fr) minmax(160px, 1.4fr) 44px;
+    padding-left: 12px;
+    border-left: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.emulation-iterations-empty {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding-left: 12px;
+}
+
+.emulation-row--header {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Maintenance config page */
+.maintenance-config-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.maintenance-config-header h3 {
+    margin: 0 0 8px;
+}
+
+.maintenance-config-header p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.maintenance-config-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(360px, 2fr);
+    gap: 24px;
+}
+
+.maintenance-config-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.maintenance-config-edge {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
+}
+
+.maintenance-config-label {
+    color: var(--text-secondary);
+}
+
+.maintenance-config-value {
+    color: var(--text-primary);
+}
+
+.maintenance-config-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.maintenance-config-dropdown {
+    width: 100%;
+}
+
+.maintenance-config-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 120px;
+}
+
+.maintenance-config-empty {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 8px 0;
+}
+
+.maintenance-config-tag {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.maintenance-config-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tags-table-scroll {
+    overflow-x: auto !important;
+    padding-bottom: 8px;
+}
+
+.tags-table-scroll .p-datatable {
+    min-width: 70rem;
+}
+
+.tags-table-scroll .p-datatable-wrapper {
+    overflow-x: auto !important;
+    scrollbar-width: auto !important;
+    -ms-overflow-style: auto !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar {
+    height: 10px !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 999px;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Не скрываем scrollbar для таблицы тегов при hover */
+.tags-table-scroll .p-datatable-wrapper {
+    scrollbar-width: auto !important;
+    -ms-overflow-style: auto !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar {
+    display: block !important;
+    height: 10px !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.tags-table-scroll:hover .p-datatable-wrapper,
+.tags-table-scroll:hover .p-datatable-scrollable-body,
+.tags-table-scroll:hover .p-datatable-table,
+.card:hover .tags-table-scroll .p-datatable-wrapper,
+.content-card:hover .tags-table-scroll .p-datatable-wrapper {
+    overflow-x: auto !important;
+    scrollbar-width: auto !important;
+    -ms-overflow-style: auto !important;
+}
+
+.tags-table-scroll:hover .p-datatable-wrapper::-webkit-scrollbar,
+.tags-table-scroll:hover .p-datatable-scrollable-body::-webkit-scrollbar,
+.tags-table-scroll:hover .p-datatable-table::-webkit-scrollbar,
+.card:hover .tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar,
+.content-card:hover .tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar {
+    display: block !important;
+}
+
+@media (max-width: 1200px) {
+    .maintenance-config-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1200px) {
+    .emulation-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .emulation-row {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .emulation-row--header {
+        display: none;
+    }
+}

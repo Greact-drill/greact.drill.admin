@@ -193,6 +193,8 @@ export default function TagsTable({ title }: Props) {
     // Состояния для загрузки файла
     const [uploadDialogVisible, setUploadDialogVisible] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
+    const [uploadSuccessDialogVisible, setUploadSuccessDialogVisible] = useState(false);
     
     // Состояния для создания тегов из файла
     const [createTagsDialogVisible, setCreateTagsDialogVisible] = useState(false);
@@ -314,6 +316,9 @@ export default function TagsTable({ title }: Props) {
                 queryClient.invalidateQueries({ queryKey: ['tags'] });
                 setUploadDialogVisible(false);
                 setSelectedFile(null);
+                setUploadSuccessMessage('Файл эмуляции успешно загружен.');
+                setUploadSuccessDialogVisible(true);
+                window.setTimeout(() => setUploadSuccessMessage(null), 4000);
             } else {
                 console.error('Ошибка загрузки файла');
             }
@@ -468,6 +473,23 @@ export default function TagsTable({ title }: Props) {
                     className="mb-3" 
                 />
             )}
+            {uploadSuccessMessage && (
+                <Message
+                    severity="success"
+                    text={uploadSuccessMessage}
+                    className="mb-3"
+                />
+            )}
+            <Dialog
+                header="Загрузка завершена"
+                visible={uploadSuccessDialogVisible}
+                onHide={() => setUploadSuccessDialogVisible(false)}
+                style={{ width: '420px' }}
+                draggable={false}
+                resizable={false}
+            >
+                <p className="m-0">Файл эмуляции успешно загружен.</p>
+            </Dialog>
             {deleteMutation.isPending && 
             <Message
                 severity="info"
@@ -475,20 +497,21 @@ export default function TagsTable({ title }: Props) {
                 className="mb-3"
             />}
             
-            <DataTable 
-                value={tags || []} 
-                loading={isLoading}
-                paginator rows={10} 
-                rowsPerPageOptions={[5, 10, 25]}
-                header={header}
-                dataKey="id"
-                removableSort
-                tableStyle={{ minWidth: '70rem' }}
-                emptyMessage="Теги не найдены."
-                filters={filters}
-                globalFilterFields={['id', 'name', 'unit_of_measurement', 'min', 'max', 'comment']}
-                onFilter={(e) => setFilters(e.filters)}
-            >
+            <div className="tags-table-scroll">
+                <DataTable 
+                    value={tags || []} 
+                    loading={isLoading}
+                    paginator rows={10} 
+                    rowsPerPageOptions={[5, 10, 25]}
+                    header={header}
+                    dataKey="id"
+                    removableSort
+                    tableStyle={{ minWidth: '70rem' }}
+                    emptyMessage="Теги не найдены."
+                    filters={filters}
+                    globalFilterFields={['id', 'name', 'unit_of_measurement', 'min', 'max', 'comment']}
+                    onFilter={(e) => setFilters(e.filters)}
+                >
                 <Column 
                     field="id"
                     header="ID Тега"
@@ -538,7 +561,8 @@ export default function TagsTable({ title }: Props) {
                     filterPlaceholder="Поиск по комментарию"
                 />
                 <Column body={actionBodyTemplate} exportable={false} header="Действия" style={{ minWidth: '150px' }} />
-            </DataTable>
+                </DataTable>
+            </div>
 
             <Dialog 
                 visible={openForm} 
