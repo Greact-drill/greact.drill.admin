@@ -7,6 +7,7 @@ import TagLayoutConstructor from './components/TagLayoutConstructor';
 import TableConfigurator from './components/TableConfigurator';
 import EmulationDataPage from './components/EmulationDataPage';
 import MaintenanceConfigPage from './components/MaintenanceConfigPage';
+import MediaConfigPage from './components/MediaConfigPage';
 import './main.css';
 
 const navItems = [
@@ -14,6 +15,7 @@ const navItems = [
     { path: '/tags', name: 'Теги', icon: 'pi pi-bookmark' },
     { path: '/emulation', name: 'Эмуляция', icon: 'pi pi-database' },
     { path: '/maintenance-config', name: 'ТО', icon: 'pi pi-wrench' },
+    { path: '/media-config', name: 'Медиа', icon: 'pi pi-video' },
     { path: '/edge-customization', name: 'Компоненты Буровых', icon: 'pi pi-sliders-h' },
     { path: '/tag-customization', name: 'Компоненты Тегов', icon: 'pi pi-th-large' },
     { path: '/table-config', name: 'Настройка таблиц', icon: 'pi pi-table' },
@@ -78,6 +80,7 @@ export default function AdminApp() {
                         <Route path="tags" element={<TagsTable title="Теги"/>} />
                         <Route path="emulation" element={<EmulationDataPage title="Эмуляция"/>} />
                         <Route path="maintenance-config" element={<MaintenanceConfigPage />} />
+                        <Route path="media-config" element={<MediaConfigPage />} />
                         
                         <Route path="edge-customization" element={<CustomizationTable type="edge" title="Компоненты Буровых"/>} />
                         <Route path="tag-customization" element={<TagLayoutConstructor title="Конструктор размещения тегов"/>} />

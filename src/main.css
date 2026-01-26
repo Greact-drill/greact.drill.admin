@@ -4498,6 +4498,112 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     justify-content: flex-end;
 }
 
+/* Media config page */
+.media-config-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.media-config-header h3 {
+    margin: 0 0 8px;
+}
+
+.media-config-header p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.media-config-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(360px, 2fr);
+    gap: 24px;
+}
+
+.media-config-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.media-config-edge {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
+}
+
+.media-config-label {
+    color: var(--text-secondary);
+}
+
+.media-config-value {
+    color: var(--text-primary);
+}
+
+.media-config-global {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.media-config-dropdown {
+    width: 100%;
+}
+
+.media-config-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.media-config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.media-config-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(240px, 2fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.media-config-row--asset {
+    grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(240px, 2fr) auto;
+}
+
+.media-config-input {
+    width: 100%;
+}
+
+.media-config-input.wide {
+    width: 100%;
+}
+
+.media-config-empty {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 8px 0;
+}
+
+.media-config-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.media-config-subtitle {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-top: 12px;
+}
+
 .tags-table-scroll {
     overflow-x: auto !important;
     padding-bottom: 8px;
@@ -4565,6 +4671,12 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 
 @media (max-width: 1200px) {
     .maintenance-config-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1200px) {
+    .media-config-layout {
         grid-template-columns: 1fr;
     }
 }
