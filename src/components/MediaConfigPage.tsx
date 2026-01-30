@@ -5,7 +5,7 @@ import { Message } from 'primereact/message';
 import { Checkbox } from 'primereact/checkbox';
 import { Dropdown } from 'primereact/dropdown';
 import EdgeTreeSelector from './EdgeTreeSelector';
-import { getMediaConfig, presignUpload, putMediaConfig } from '../api/media';
+import { getMediaConfig, putMediaConfig, uploadMediaAsset } from '../api/media';
 import { getErrorMessage } from '../utils/errorUtils';
 
 interface CameraConfig {
@@ -156,19 +156,12 @@ export default function MediaConfigPage() {
       for (const file of uploads) {
         const safeName = file.name.replace(/\s+/g, '_');
         const key = `assets/${scopePrefix}/${rigPrefix}/${Date.now()}-${safeName}`;
-        const presign = await presignUpload({
+        const uploadResponse = await uploadMediaAsset({
           key,
+          file,
           contentType: file.type || 'application/octet-stream',
           cacheControl: 'public, max-age=31536000'
         });
-        const uploadResponse = await fetch(presign.url, {
-          method: 'PUT',
-          headers: presign.headers,
-          body: file
-        });
-        if (!uploadResponse.ok) {
-          throw new Error(`Upload failed: ${uploadResponse.status}`);
-        }
 
         const type: AssetConfig['type'] = isDocumentScope
           ? 'document'
@@ -183,8 +176,8 @@ export default function MediaConfigPage() {
           name: file.name,
           group: '',
           type,
-          url: presign.publicUrl || '',
-          key: presign.key,
+          url: uploadResponse.publicUrl || '',
+          key: uploadResponse.key,
           contentType: file.type
         });
       }
