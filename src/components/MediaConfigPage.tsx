@@ -25,7 +25,7 @@ interface AssetConfig {
   contentType?: string;
 }
 
-type MediaScope = 'video' | 'winch-block' | 'pump-block';
+type MediaScope = 'video' | 'winch-block' | 'pump-block' | 'documents';
 
 interface VideoConfigData {
   cameras?: CameraConfig[];
@@ -41,7 +41,8 @@ const assetTypeOptions = [
 const scopeOptions: Array<{ label: string; value: MediaScope }> = [
   { label: 'Видеонаблюдение', value: 'video' },
   { label: 'Лебедочный блок', value: 'winch-block' },
-  { label: 'Насосный блок', value: 'pump-block' }
+  { label: 'Насосный блок', value: 'pump-block' },
+  { label: 'Документы', value: 'documents' }
 ];
 
 export default function MediaConfigPage() {
@@ -56,12 +57,24 @@ export default function MediaConfigPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const activeRigId = useGlobalConfig ? undefined : selectedEdgeId;
   const isVideoScope = selectedScope === 'video';
+  const isDocumentScope = selectedScope === 'documents';
+  const useGlobalConfigAllowed = useGlobalConfig && !isDocumentScope;
+  const activeRigId = useGlobalConfigAllowed ? undefined : selectedEdgeId;
+  const assetTypeOptionsForScope = isDocumentScope
+    ? [{ label: 'Документ', value: 'document' as const }]
+    : assetTypeOptions;
 
   useEffect(() => {
-    if (!useGlobalConfig && !selectedEdgeId) {
+    if (isDocumentScope && useGlobalConfig) {
+      setUseGlobalConfig(false);
+    }
+  }, [isDocumentScope, useGlobalConfig]);
+
+  useEffect(() => {
+    if (!useGlobalConfigAllowed && !selectedEdgeId) {
       setCameras([]);
+      setAssets([]);
       return;
     }
     const fetchConfig = async () => {
@@ -74,7 +87,8 @@ export default function MediaConfigPage() {
           rowId: `${Date.now()}-${Math.random().toString(16).slice(2)}`
         }));
         setCameras(isVideoScope ? loadedCameras : []);
-        setAssets(response.data?.assets ?? []);
+        const loadedAssets = response.data?.assets ?? [];
+        setAssets(isDocumentScope ? loadedAssets.filter(asset => asset.type === 'document') : loadedAssets);
       } catch (error) {
         setErrorMessage(getErrorMessage(error, 'Не удалось загрузить конфигурацию медиа.'));
       } finally {
@@ -82,7 +96,7 @@ export default function MediaConfigPage() {
       }
     };
     fetchConfig();
-  }, [activeRigId, selectedEdgeId, useGlobalConfig, selectedScope, isVideoScope]);
+  }, [activeRigId, selectedEdgeId, useGlobalConfigAllowed, selectedScope, isVideoScope, isDocumentScope]);
 
   const handleSelectEdge = (edgeId: string, path: Array<{ name: string }>) => {
     setSelectedEdgeId(edgeId);
@@ -108,7 +122,8 @@ export default function MediaConfigPage() {
 
   const handleAddAsset = (type: AssetConfig['type']) => {
     const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    setAssets(prev => [...prev, { id, name: '', group: '', type, url: '' }]);
+    const resolvedType = isDocumentScope ? 'document' : type;
+    setAssets(prev => [...prev, { id, name: '', group: '', type: resolvedType, url: '' }]);
   };
 
   const handleAssetChange = (index: number, field: keyof AssetConfig, value: string) => {
@@ -126,7 +141,7 @@ export default function MediaConfigPage() {
   };
 
   const uploadFiles = async (files: FileList) => {
-    if (!useGlobalConfig && !selectedEdgeId) {
+    if (!useGlobalConfigAllowed && !selectedEdgeId) {
       setErrorMessage('Сначала выберите буровую или включите глобальную конфигурацию.');
       return;
     }
@@ -134,12 +149,13 @@ export default function MediaConfigPage() {
     setLoading(true);
     try {
       const rigPrefix = activeRigId ? `rigs/${activeRigId}` : 'global';
+      const scopePrefix = isDocumentScope ? 'documents' : selectedScope;
       const uploads = Array.from(files);
       const uploadedAssets: AssetConfig[] = [];
 
       for (const file of uploads) {
         const safeName = file.name.replace(/\s+/g, '_');
-        const key = `assets/${rigPrefix}/${Date.now()}-${safeName}`;
+        const key = `assets/${scopePrefix}/${rigPrefix}/${Date.now()}-${safeName}`;
         const presign = await presignUpload({
           key,
           contentType: file.type || 'application/octet-stream',
@@ -151,8 +167,9 @@ export default function MediaConfigPage() {
           body: file
         });
 
-        const type: AssetConfig['type'] =
-          file.type.startsWith('image/')
+        const type: AssetConfig['type'] = isDocumentScope
+          ? 'document'
+          : file.type.startsWith('image/')
             ? 'image'
             : file.type.startsWith('video/')
               ? 'video'
@@ -193,7 +210,10 @@ export default function MediaConfigPage() {
   }, [cameras]);
 
   const sanitizedAssets = useMemo(() => {
-    return assets
+    const filteredAssets = isDocumentScope
+      ? assets.filter(asset => asset.type === 'document')
+      : assets;
+    return filteredAssets
       .map(asset => ({
         id: asset.id.trim(),
         name: asset.name?.trim() || '',
@@ -207,7 +227,7 @@ export default function MediaConfigPage() {
   }, [assets]);
 
   const handleSave = async () => {
-    if (!useGlobalConfig && !selectedEdgeId) {
+    if (!useGlobalConfigAllowed && !selectedEdgeId) {
       setErrorMessage('Сначала выберите буровую или включите глобальную конфигурацию.');
       return;
     }
@@ -226,9 +246,9 @@ export default function MediaConfigPage() {
 
   return (
     <div className="media-config-page">
-      <div className="media-config-header">
+    <div className="media-config-header">
         <h3>Настройка медиа</h3>
-        <p>Настройте источники и файлы для выбранной буровой или глобально.</p>
+        <p>Настройте источники, файлы и документы для выбранной буровой или глобально.</p>
       </div>
 
       {(errorMessage || successMessage) && (
@@ -252,14 +272,21 @@ export default function MediaConfigPage() {
             placeholder="Выберите раздел"
             className="media-config-dropdown"
           />
-          <div className="media-config-global">
-            <Checkbox
-              inputId="media-global"
-              checked={useGlobalConfig}
-              onChange={(e) => setUseGlobalConfig(Boolean(e.checked))}
-            />
-            <label htmlFor="media-global">Использовать глобальную конфигурацию</label>
-          </div>
+          {!isDocumentScope && (
+            <div className="media-config-global">
+              <Checkbox
+                inputId="media-global"
+                checked={useGlobalConfig}
+                onChange={(e) => setUseGlobalConfig(Boolean(e.checked))}
+              />
+              <label htmlFor="media-global">Использовать глобальную конфигурацию</label>
+            </div>
+          )}
+          {isDocumentScope && (
+            <div className="media-config-note">
+              Документы сохраняются только для выбранной буровой.
+            </div>
+          )}
         </div>
 
         <div className="media-config-panel">
@@ -272,13 +299,13 @@ export default function MediaConfigPage() {
               />
             )}
             <Button
-              label="Загрузить файлы"
+              label={isDocumentScope ? 'Загрузить документы' : 'Загрузить файлы'}
               icon="pi pi-upload"
               onClick={handleSelectFiles}
               className="p-button-secondary"
             />
             <Button
-              label="Добавить ссылку"
+              label={isDocumentScope ? 'Добавить ссылку на документ' : 'Добавить ссылку'}
               icon="pi pi-link"
               onClick={() => handleAddAsset('document')}
               className="p-button-secondary"
@@ -321,14 +348,21 @@ export default function MediaConfigPage() {
             </div>
           )}
 
-          <div className="media-config-subtitle">Медиафайлы</div>
+          <div className="media-config-subtitle">
+            {isDocumentScope ? 'Документы' : 'Медиафайлы'}
+          </div>
           {!loading && assets.length === 0 && (
-            <div className="media-config-empty">Файлы и ссылки не добавлены.</div>
+            <div className="media-config-empty">
+              {isDocumentScope ? 'Документы не добавлены.' : 'Файлы и ссылки не добавлены.'}
+            </div>
           )}
           {!loading && assets.length > 0 && (
             <div className="media-config-list">
               {assets.map((asset, index) => (
-                <div className="media-config-row media-config-row--asset" key={asset.id}>
+                <div
+                  className={`media-config-row media-config-row--asset ${isDocumentScope ? 'media-config-row--document' : ''}`}
+                  key={asset.id}
+                >
                   <InputText
                     value={asset.name || ''}
                     onChange={(e) => handleAssetChange(index, 'name', e.target.value)}
@@ -341,12 +375,16 @@ export default function MediaConfigPage() {
                     placeholder="Группа"
                     className="media-config-input"
                   />
-                  <Dropdown
-                    value={asset.type}
-                    options={assetTypeOptions}
-                    onChange={(e) => handleAssetChange(index, 'type', e.value)}
-                    className="media-config-input"
-                  />
+                  {isDocumentScope ? (
+                    <div className="media-config-type-pill">Документ</div>
+                  ) : (
+                    <Dropdown
+                      value={asset.type}
+                      options={assetTypeOptionsForScope}
+                      onChange={(e) => handleAssetChange(index, 'type', e.value)}
+                      className="media-config-input"
+                    />
+                  )}
                   <InputText
                     value={asset.url || ''}
                     onChange={(e) => handleAssetChange(index, 'url', e.target.value)}
@@ -378,6 +416,7 @@ export default function MediaConfigPage() {
         type="file"
         multiple
         hidden
+        accept={isDocumentScope ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.zip,.rar' : undefined}
         onChange={(e) => {
           if (e.target.files) {
             uploadFiles(e.target.files);

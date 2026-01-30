@@ -4579,6 +4579,10 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(240px, 2fr) auto;
 }
 
+.media-config-row--document {
+    grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(140px, 0.8fr) minmax(240px, 2fr) auto;
+}
+
 .media-config-input {
     width: 100%;
 }
@@ -4602,6 +4606,27 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     font-size: 0.95rem;
     font-weight: 600;
     margin-top: 12px;
+}
+
+.media-config-note {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed var(--border-color);
+}
+
+.media-config-type-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
 }
 
 .tags-table-scroll {
