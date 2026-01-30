@@ -161,11 +161,14 @@ export default function MediaConfigPage() {
           contentType: file.type || 'application/octet-stream',
           cacheControl: 'public, max-age=31536000'
         });
-        await fetch(presign.url, {
+        const uploadResponse = await fetch(presign.url, {
           method: 'PUT',
           headers: presign.headers,
           body: file
         });
+        if (!uploadResponse.ok) {
+          throw new Error(`Upload failed: ${uploadResponse.status}`);
+        }
 
         const type: AssetConfig['type'] = isDocumentScope
           ? 'document'
