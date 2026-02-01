@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTagsForAdmin, deleteTag, createTag, updateTag, syncTags } from '../api/admin'; 
+import { getTagsForAdmin, deleteTag, createTag, updateTag, syncTags, getEdgesForAdmin } from '../api/admin'; 
 import type { Tag, TagPayload } from '../api/admin';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -8,6 +8,7 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
+import { MultiSelect } from 'primereact/multiselect';
 import { FilterMatchMode } from 'primereact/api';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
@@ -20,10 +21,16 @@ interface Props {
     title: string;
 }
 
-const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: boolean }> = ({ 
+const TagForm: React.FC<{ 
+    tag?: Tag | null; 
+    onClose: () => void; 
+    isSubmitting: boolean;
+    edges: { id: string; name: string }[];
+}> = ({ 
     tag, 
     onClose, 
-    isSubmitting
+    isSubmitting,
+    edges
 }) => {
     const queryClient = useQueryClient();
     const isEdit = !!tag;
@@ -33,20 +40,23 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
     const [max, setMax] = useState<number | null>(tag?.max ?? null);
     const [comment, setComment] = useState(tag?.comment || '');
     const [unitOfMeasurement, setUnitOfMeasurement] = useState(tag?.unit_of_measurement || '');
+    const [edgeIds, setEdgeIds] = useState<string[]>(tag?.edge_ids ?? []);
     const [error, setError] = useState('');
 
     const mutation = useMutation({
         mutationFn: (data: Partial<Tag>) => {
+            const tagId = isEdit ? tag!.id : (data.id as string);
             const payload: Tag = { 
-                ...data, 
+                ...data,
                 min: min ?? 0, 
                 max: max ?? 0, 
                 comment, 
                 unit_of_measurement: unitOfMeasurement,
-                id: data.id as string,
-                name: data.name as string
+                id: tagId,
+                name: data.name as string,
+                edge_ids: edgeIds
             };
-            return isEdit ? updateTag(tag!.id, data) : createTag(payload);
+            return isEdit ? updateTag(tagId, payload) : createTag(payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tags'] });
@@ -60,8 +70,8 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        if (!name || (!isEdit && !id) || min === null || max === null || !unitOfMeasurement) {
-            setError('ID, Название, Min, Max и Единица измерения не могут быть пустыми.');
+        if (!name || (!isEdit && !id) || min === null || max === null || !unitOfMeasurement || edgeIds.length === 0) {
+            setError('ID, Название, Min, Max, Единица измерения и привязка к оборудованию обязательны.');
             return;
         }
         
@@ -75,12 +85,17 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
         if (!isEdit) {
             payload.id = id;
         }
+        payload.edge_ids = edgeIds;
 
         mutation.mutate(payload);
     };
     
     const inputStyle = { backgroundColor: 'var(--white)', borderColor: 'var(--border-color)' };
     const labelStyle = { color: 'var(--text-primary)' };
+    const edgeOptions = edges.map(edge => ({
+        label: `${edge.name} (${edge.id})`,
+        value: edge.id
+    }));
 
     return (
         <form onSubmit={handleSubmit} className="p-fluid">
@@ -118,6 +133,21 @@ const TagForm: React.FC<{ tag?: Tag | null; onClose: () => void; isSubmitting: b
                     onChange={(e) => setUnitOfMeasurement(e.target.value)} 
                     required 
                     disabled={mutation.isPending} 
+                    style={inputStyle}
+                />
+            </div>
+
+            <div className="field mt-3">
+                <label htmlFor="edge-ids" className="font-semibold mb-2 block" style={labelStyle}>Привязка к оборудованию</label>
+                <MultiSelect
+                    id="edge-ids"
+                    value={edgeIds}
+                    options={edgeOptions}
+                    onChange={(e) => setEdgeIds(e.value ?? [])}
+                    display="chip"
+                    filter
+                    placeholder="Выберите буровую или блок"
+                    disabled={mutation.isPending || edges.length === 0}
                     style={inputStyle}
                 />
             </div>
@@ -199,6 +229,7 @@ export default function TagsTable({ title }: Props) {
     // Состояния для создания тегов из файла
     const [createTagsDialogVisible, setCreateTagsDialogVisible] = useState(false);
     const [selectedTagsFile, setSelectedTagsFile] = useState<File | null>(null);
+    const [bulkEdgeIds, setBulkEdgeIds] = useState<string[]>([]);
 
     const [filters, setFilters] = useState<DataTableFilterMeta>({
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -211,6 +242,11 @@ export default function TagsTable({ title }: Props) {
     const { data: tags, isLoading, error: queryError } = useQuery<Tag[]>({
         queryKey: ['tags'],
         queryFn: getTagsForAdmin,
+    });
+
+    const { data: edges = [], isLoading: edgesLoading, error: edgesError } = useQuery({
+        queryKey: ['edges'],
+        queryFn: getEdgesForAdmin,
     });
 
     const deleteMutation = useMutation({
@@ -269,7 +305,7 @@ export default function TagsTable({ title }: Props) {
 
     const handleCreateTagsSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedTagsFile) return;
+        if (!selectedTagsFile || bulkEdgeIds.length === 0) return;
 
         try {
             const text = await selectedTagsFile.text();
@@ -288,6 +324,7 @@ export default function TagsTable({ title }: Props) {
                 comment: tag.comment || '',
                 min: tag.min ?? 0,
                 max: tag.max ?? 0,
+                edge_ids: bulkEdgeIds
             }));
 
             createTagsMutation.mutate(tags);
@@ -403,6 +440,13 @@ export default function TagsTable({ title }: Props) {
         );
     };
 
+    const edgeIdsBodyTemplate = (rowData: Tag) => {
+        if (!rowData.edge_ids || rowData.edge_ids.length === 0) {
+            return <span style={{ color: 'var(--text-secondary)' }}>—</span>;
+        }
+        return rowData.edge_ids.join(', ');
+    };
+
     const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         
@@ -466,10 +510,10 @@ export default function TagsTable({ title }: Props) {
 
     return (
         <div className="card">
-            {(queryError || deleteMutation.error || syncMutation.error) && (
+            {(queryError || deleteMutation.error || syncMutation.error || edgesError) && (
                 <Message 
                     severity="error" 
-                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error || syncMutation.error, 'Произошла ошибка')}`} 
+                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error || syncMutation.error || edgesError, 'Произошла ошибка')}`} 
                     className="mb-3" 
                 />
             )}
@@ -560,6 +604,12 @@ export default function TagsTable({ title }: Props) {
                     filter
                     filterPlaceholder="Поиск по комментарию"
                 />
+                <Column
+                    field="edge_ids"
+                    header="Привязка"
+                    body={edgeIdsBodyTemplate}
+                    style={{ width: '20%' }}
+                />
                 <Column body={actionBodyTemplate} exportable={false} header="Действия" style={{ minWidth: '150px' }} />
                 </DataTable>
             </div>
@@ -576,7 +626,8 @@ export default function TagsTable({ title }: Props) {
                 <TagForm 
                     tag={selectedTag} 
                     onClose={handleHideForm} 
-                    isSubmitting={deleteMutation.isPending}
+                    isSubmitting={deleteMutation.isPending || edgesLoading}
+                    edges={edges}
                 />
             </Dialog>
 
@@ -585,7 +636,8 @@ export default function TagsTable({ title }: Props) {
                 isVisible={openSyncDialog}
                 onClose={() => setOpenSyncDialog(false)}
                 onSync={handleSync}
-                isSubmitting={syncMutation.isPending}
+                isSubmitting={syncMutation.isPending || edgesLoading}
+                edges={edges}
             />
 
             {/* Новый диалог для загрузки файла */}
@@ -659,9 +711,33 @@ export default function TagsTable({ title }: Props) {
                 onHide={() => {
                     setCreateTagsDialogVisible(false);
                     setSelectedTagsFile(null);
+                    setBulkEdgeIds([]);
                 }}
             >
                 <form onSubmit={handleCreateTagsSubmit} className="p-fluid">
+                    <div className="field">
+                        <label htmlFor="bulk-edge-ids" className="font-semibold mb-2 block">
+                            Привязка к оборудованию
+                        </label>
+                        <MultiSelect
+                            id="bulk-edge-ids"
+                            value={bulkEdgeIds}
+                            options={edges.map(edge => ({
+                                label: `${edge.name} (${edge.id})`,
+                                value: edge.id
+                            }))}
+                            onChange={(e) => setBulkEdgeIds(e.value ?? [])}
+                            display="chip"
+                            filter
+                            placeholder="Выберите буровую или блок"
+                            disabled={createTagsMutation.isPending || edgesLoading}
+                        />
+                        {!bulkEdgeIds.length && (
+                            <small style={{ color: 'var(--text-secondary)' }}>
+                                Необходимо выбрать хотя бы один элемент.
+                            </small>
+                        )}
+                    </div>
                     <div className="field">
                         <label htmlFor="tagsFile" className="font-semibold mb-2 block">
                             Выберите JSON файл с тегами
@@ -708,7 +784,7 @@ export default function TagsTable({ title }: Props) {
                         <Button 
                             icon="pi pi-check" 
                             type="submit" 
-                            disabled={!selectedTagsFile || createTagsMutation.isPending}
+                            disabled={!selectedTagsFile || createTagsMutation.isPending || bulkEdgeIds.length === 0}
                             loading={createTagsMutation.isPending}
                             tooltip="Создать теги"
                             className="p-button-rounded" 

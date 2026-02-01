@@ -57,6 +57,7 @@ export interface TagPayload {
     max: number;
     comment: string;
     unit_of_measurement: string;
+    edge_ids: string[];
 }
 export type Tag = TagPayload;
 
