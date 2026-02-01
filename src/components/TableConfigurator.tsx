@@ -227,6 +227,12 @@ export default function TableConfigurator({ title }: Props) {
         return getAvailablePages(selectedEdge, selectedEdgePath);
     }, [selectedEdge, selectedEdgePath]);
 
+    const filteredTags = useMemo(() => {
+        if (!tags) return [];
+        if (!selectedEdge) return tags;
+        return tags.filter(tag => tag.edge_ids?.includes(selectedEdge));
+    }, [tags, selectedEdge]);
+
     const selectedPageName = useMemo(() => {
         const page = availablePages.find(p => p.value === selectedPage);
         return page ? page.label : `Страница ${selectedPage}`;
@@ -379,7 +385,7 @@ export default function TableConfigurator({ title }: Props) {
                 {tableConfig && (
                     <TableConfigForm
                         config={tableConfig}
-                        tags={tags || []}
+                        tags={filteredTags}
                         onConfigChange={setTableConfig}
                         onSave={handleSaveTable}
                         onCancel={() => setShowConfigDialog(false)}

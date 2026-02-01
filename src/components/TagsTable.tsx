@@ -90,7 +90,7 @@ const TagForm: React.FC<{
         mutation.mutate(payload);
     };
     
-    const inputStyle = { backgroundColor: 'var(--white)', borderColor: 'var(--border-color)' };
+    const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
     const labelStyle = { color: 'var(--text-primary)' };
     const edgeOptions = edges.map(edge => ({
         label: `${edge.name} (${edge.id})`,
@@ -565,6 +565,12 @@ export default function TagsTable({ title }: Props) {
                     filterPlaceholder="Поиск по ID"
                 />
                 <Column
+                    field="edge_ids"
+                    header="Привязка"
+                    body={edgeIdsBodyTemplate}
+                    style={{ width: '20%' }}
+                />
+                <Column
                     field="name"
                     header="Название"
                     sortable
@@ -603,12 +609,6 @@ export default function TagsTable({ title }: Props) {
                     style={{ width: '20%' }}
                     filter
                     filterPlaceholder="Поиск по комментарию"
-                />
-                <Column
-                    field="edge_ids"
-                    header="Привязка"
-                    body={edgeIdsBodyTemplate}
-                    style={{ width: '20%' }}
                 />
                 <Column body={actionBodyTemplate} exportable={false} header="Действия" style={{ minWidth: '150px' }} />
                 </DataTable>

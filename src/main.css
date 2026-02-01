@@ -4354,7 +4354,7 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 
 .emulation-row {
     display: grid;
-    grid-template-columns: minmax(160px, 1.4fr) minmax(120px, 0.8fr) minmax(160px, 1fr) minmax(120px, 0.6fr);
+    grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(120px, 0.6fr) minmax(140px, 0.8fr) minmax(120px, 0.6fr);
     gap: 12px;
     align-items: center;
 }
@@ -4377,6 +4377,14 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 .emulation-group-summary {
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+.emulation-tag-meta {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .emulation-group-actions {

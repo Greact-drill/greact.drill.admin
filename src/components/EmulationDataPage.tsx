@@ -5,7 +5,7 @@ import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Message } from 'primereact/message';
 import EdgeTreeSelector from './EdgeTreeSelector';
-import { type Edge } from '../api/admin';
+import { getEdgesForAdmin, getTagsForAdmin, type Edge, type Tag } from '../api/admin';
 import { getErrorMessage } from '../utils/errorUtils';
 
 interface EmulationIteration {
@@ -80,6 +80,26 @@ export default function EmulationDataPage({ title }: Props) {
         queryKey: ['emulation-data'],
         queryFn: fetchEmulationData
     });
+    const { data: tags = [] } = useQuery<Tag[]>({
+        queryKey: ['tags'],
+        queryFn: getTagsForAdmin
+    });
+    const { data: edges = [] } = useQuery<Edge[]>({
+        queryKey: ['edges'],
+        queryFn: getEdgesForAdmin
+    });
+
+    const tagById = useMemo(() => {
+        const map = new Map<string, Tag>();
+        tags.forEach((tag) => map.set(tag.id, tag));
+        return map;
+    }, [tags]);
+
+    const edgeNameById = useMemo(() => {
+        const map = new Map<string, string>();
+        edges.forEach((edge) => map.set(edge.id, edge.name));
+        return map;
+    }, [edges]);
 
     useEffect(() => {
         if (!data) {
@@ -370,74 +390,90 @@ export default function EmulationDataPage({ title }: Props) {
                 {groups.length > 0 && (
                     <div className="emulation-table">
                         <div className="emulation-row emulation-row--header">
-                            <span>Тег</span>
+                            <span>Тег (ID)</span>
+                            <span>Название</span>
+                            <span>Блок</span>
                             <span>Итерации</span>
                             <span>Значение</span>
                             <span></span>
                         </div>
-                        {groups.map((group, index) => (
-                            <div className="emulation-group" key={group.id}>
-                                <div className="emulation-row emulation-row--group">
-                                    <InputText
-                                        value={group.tag}
-                                        onChange={(event) => handleTagChange(index, event.target.value)}
-                                        placeholder="tag_id"
-                                    />
-                                    <div className="emulation-group-summary">
-                                        {group.iterations.length} знач.
+                        {groups.map((group, index) => {
+                            const tagInfo = tagById.get(group.tag);
+                            const edgeLabels = tagInfo?.edge_ids?.length
+                                ? tagInfo.edge_ids.map((edgeId) => edgeNameById.get(edgeId) || edgeId).join(', ')
+                                : '—';
+
+                            return (
+                                <div className="emulation-group" key={group.id}>
+                                    <div className="emulation-row emulation-row--group">
+                                        <InputText
+                                            value={group.tag}
+                                            onChange={(event) => handleTagChange(index, event.target.value)}
+                                            placeholder="tag_id"
+                                        />
+                                        <span className="emulation-tag-meta">
+                                            {tagInfo?.name || '—'}
+                                        </span>
+                                        <span className="emulation-tag-meta">
+                                            {edgeLabels}
+                                        </span>
+                                        <div className="emulation-group-summary">
+                                            {group.iterations.length} знач.
+                                        </div>
+                                        <span className="emulation-tag-meta">—</span>
+                                        <div className="emulation-group-actions">
+                                            <Button
+                                                label={group.isExpanded ? 'Скрыть' : 'Показать'}
+                                                icon={group.isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'}
+                                                className="p-button-text"
+                                                onClick={() => handleGroupToggle(index)}
+                                            />
+                                            <Button
+                                                icon="pi pi-plus"
+                                                className="p-button-text"
+                                                onClick={() => handleAddIteration(index)}
+                                                tooltip="Добавить итерацию"
+                                            />
+                                            <Button
+                                                icon="pi pi-trash"
+                                                className="p-button-rounded p-button-text p-button-danger"
+                                                onClick={() => handleRemoveGroup(index)}
+                                                tooltip="Удалить тег"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="emulation-group-actions">
-                                        <Button
-                                            label={group.isExpanded ? 'Скрыть' : 'Показать'}
-                                            icon={group.isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'}
-                                            className="p-button-text"
-                                            onClick={() => handleGroupToggle(index)}
-                                        />
-                                        <Button
-                                            icon="pi pi-plus"
-                                            className="p-button-text"
-                                            onClick={() => handleAddIteration(index)}
-                                            tooltip="Добавить итерацию"
-                                        />
-                                        <Button
-                                            icon="pi pi-trash"
-                                            className="p-button-rounded p-button-text p-button-danger"
-                                            onClick={() => handleRemoveGroup(index)}
-                                            tooltip="Удалить тег"
-                                        />
-                                    </div>
+                                    {group.isExpanded && (
+                                        <div className="emulation-iterations">
+                                            {group.iterations.map((iteration, iterationIndex) => (
+                                                <div className="emulation-row emulation-row--iteration" key={`${group.id}-${iteration.iteration}-${iterationIndex}`}>
+                                                    <InputText
+                                                        value={String(iteration.iteration)}
+                                                        onChange={(event) => handleIterationChange(index, iterationIndex, 'iteration', event.target.value)}
+                                                        placeholder="0"
+                                                        type="number"
+                                                    />
+                                                    <InputText
+                                                        value={iteration.value}
+                                                        onChange={(event) => handleIterationChange(index, iterationIndex, 'value', event.target.value)}
+                                                        placeholder="Значение"
+                                                    />
+                                                    <Button
+                                                        icon="pi pi-trash"
+                                                        className="p-button-rounded p-button-text p-button-danger"
+                                                        onClick={() => handleRemoveIteration(index, iterationIndex)}
+                                                    />
+                                                </div>
+                                            ))}
+                                            {group.iterations.length === 0 && (
+                                                <div className="emulation-iterations-empty">
+                                                    Нет итераций. Добавьте значение.
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                                {group.isExpanded && (
-                                    <div className="emulation-iterations">
-                                        {group.iterations.map((iteration, iterationIndex) => (
-                                            <div className="emulation-row emulation-row--iteration" key={`${group.id}-${iteration.iteration}-${iterationIndex}`}>
-                                                <InputText
-                                                    value={String(iteration.iteration)}
-                                                    onChange={(event) => handleIterationChange(index, iterationIndex, 'iteration', event.target.value)}
-                                                    placeholder="0"
-                                                    type="number"
-                                                />
-                                                <InputText
-                                                    value={iteration.value}
-                                                    onChange={(event) => handleIterationChange(index, iterationIndex, 'value', event.target.value)}
-                                                    placeholder="Значение"
-                                                />
-                                                <Button
-                                                    icon="pi pi-trash"
-                                                    className="p-button-rounded p-button-text p-button-danger"
-                                                    onClick={() => handleRemoveIteration(index, iterationIndex)}
-                                                />
-                                            </div>
-                                        ))}
-                                        {group.iterations.length === 0 && (
-                                            <div className="emulation-iterations-empty">
-                                                Нет итераций. Добавьте значение.
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -403,6 +403,12 @@ export default function TagLayoutConstructor({ title }: Props) {
         return new Map(tags.map(tag => [tag.id, tag.name]));
     }, [tags]);
 
+    const filteredTags = useMemo(() => {
+        if (!tags) return [];
+        if (!selectedEdge) return tags;
+        return tags.filter(tag => tag.edge_ids?.includes(selectedEdge));
+    }, [tags, selectedEdge]);
+
     // Загрузка дочерних элементов выбранного edge
     useEffect(() => {
         if (selectedEdge) {
@@ -517,11 +523,15 @@ export default function TagLayoutConstructor({ title }: Props) {
             alert('Сначала выберите элемент в дереве');
             return;
         }
+        if (filteredTags.length === 0) {
+            alert('Для выбранного блока нет привязанных тегов.');
+            return;
+        }
 
         setEditingItem({
             id: `new-${Date.now()}`,
             edge_id: selectedEdge,
-            tag_id: tags?.[0]?.id || '',
+            tag_id: filteredTags[0]?.id || '',
             page: selectedPage,
             widgetType: 'gauge',
             position: { x: 50, y: 50 },
@@ -751,7 +761,7 @@ export default function TagLayoutConstructor({ title }: Props) {
                 >
                     <WidgetForm
                         item={editingItem}
-                        tags={tags || []}
+                        tags={filteredTags}
                         availablePages={availablePages}
                         onSave={handleSaveWidget}
                         onCancel={() => {
