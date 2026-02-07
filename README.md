@@ -1,75 +1,52 @@
-# React + TypeScript + Vite
+# Drill Admin Service
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Административная панель для управления данными буровых установок: иерархией `edge`, тегами, связью тегов с блоками, конфигурациями виджетов и таблиц, а также загрузкой файлов эмуляции.
 
-Currently, two official plugins are available:
+## Назначение
+- централизованное управление справочниками (`edge`, `tag`)
+- настройка отображения в `view` (виджеты, таблицы, страницы)
+- контроль связки тегов с блоками (edge↔tag)
+- загрузка/синхронизация данных эмуляции
+- конфигурация медиа/документов
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Ключевые экраны
+- **Edges**: дерево оборудования и дочерних блоков
+- **Tags**: создание/редактирование тегов с привязкой к блокам
+- **Widget Layout**: конструктор виджетов по страницам
+- **Table Configurator**: конструктор таблиц
+- **Emulation**: загрузка и правка данных эмуляции
+- **Maintenance/Media**: техобслуживание и медиа‑конфигурации
 
-## React Compiler
+## Интеграции
+- `cloud` API: CRUD для `edge`, `tag`, `current`, `customization`
+- `media` API: пресайны и выдача медиа/документов
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```mermaid
+flowchart LR
+  Admin[Admin UI] -->|REST| Cloud[Cloud API]
+  Admin -->|REST| Media[Media Service]
+  Cloud --> DB[(PostgreSQL)]
+  Media --> S3[(S3/MinIO)]
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Переменные окружения
+- `VITE_API_URL` — базовый URL `cloud` API
+- `VITE_MEDIA_API_URL` — базовый URL `media` API (если не задан, берется `VITE_API_URL`)
+- `VITE_FILE_UPLOAD` — endpoint загрузки файла эмуляции
+- `VITE_FILE_EXAMPLE` — endpoint получения примера JSON файла
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Запуск
+```bash
+npm install
+npm run dev
 ```
+
+## Сборка
+```bash
+npm run build
+npm run preview
+```
+
+## Замечания по логике
+- **Теги привязаны к блокам**: все операции в UI исходят из `edge_ids` тега.
+- Конфигурации виджетов и таблиц сохраняются как кастомизации на стороне `cloud`.

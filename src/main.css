@@ -552,78 +552,6 @@ body {
     background: var(--accent-primary);
 }
 
-/* Скрываем scrollbar при наведении на таблицу */
-.p-datatable:hover .p-datatable-scrollable-body::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-scrollable-body::-webkit-scrollbar,
-.p-datatable:hover .p-datatable-wrapper::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-wrapper::-webkit-scrollbar,
-.p-datatable:hover .p-datatable-table::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-table::-webkit-scrollbar {
-    width: 0px !important;
-    height: 0px !important;
-    display: none !important;
-}
-
-/* Альтернативный способ - скрываем через overflow для всех браузеров */
-.p-datatable:hover .p-datatable-scrollable-body,
-.p-treetable:hover .p-treetable-scrollable-body,
-.p-datatable:hover .p-datatable-wrapper,
-.p-treetable:hover .p-treetable-wrapper {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-}
-
-.p-datatable:hover .p-datatable-scrollable-body::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-scrollable-body::-webkit-scrollbar,
-.p-datatable:hover .p-datatable-wrapper::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-wrapper::-webkit-scrollbar {
-    display: none !important; /* Chrome, Safari, Opera */
-}
-
-/* Скрываем scrollbar на самой таблице при hover */
-.p-datatable:hover,
-.p-treetable:hover {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-}
-
-.p-datatable:hover::-webkit-scrollbar,
-.p-treetable:hover::-webkit-scrollbar {
-    display: none !important; /* Chrome, Safari, Opera */
-    width: 0 !important;
-    height: 0 !important;
-}
-
-/* Скрываем scrollbar на карточке с таблицей при hover */
-.card:hover .p-datatable .p-datatable-scrollable-body::-webkit-scrollbar,
-.card:hover .p-treetable .p-treetable-scrollable-body::-webkit-scrollbar,
-.card:hover .p-datatable-wrapper::-webkit-scrollbar,
-.card:hover .p-treetable-wrapper::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-.card:hover .p-datatable .p-datatable-scrollable-body,
-.card:hover .p-treetable .p-treetable-scrollable-body {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-}
-
-/* Скрываем scrollbar на content-card при hover */
-.content-card:hover .p-datatable .p-datatable-scrollable-body::-webkit-scrollbar,
-.content-card:hover .p-treetable .p-treetable-scrollable-body::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-.content-card:hover .p-datatable .p-datatable-scrollable-body,
-.content-card:hover .p-treetable .p-treetable-scrollable-body {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-}
-
 /* Фильтры в заголовках */
 .p-datatable .p-column-filter-menu,
 .p-datatable .p-column-filter {
@@ -4640,16 +4568,17 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 .tags-table-scroll {
     overflow-x: auto !important;
     padding-bottom: 8px;
+    position: relative;
 }
 
 .tags-table-scroll .p-datatable {
-    min-width: 70rem;
+    min-width: 1000px;
 }
 
 .tags-table-scroll .p-datatable-wrapper {
     overflow-x: auto !important;
-    scrollbar-width: auto !important;
-    -ms-overflow-style: auto !important;
+    overflow-y: hidden;
+    min-height: 400px;
 }
 
 .tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar {
@@ -4662,7 +4591,7 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 
 .tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2) !important;
-    border-radius: 999px;
+    border-radius: 4px;
 }
 
 .tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-thumb:hover {

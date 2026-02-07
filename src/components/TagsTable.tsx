@@ -550,7 +550,7 @@ export default function TagsTable({ title }: Props) {
                     header={header}
                     dataKey="id"
                     removableSort
-                    tableStyle={{ minWidth: '70rem' }}
+                    tableStyle={{ minWidth: '100%' }}
                     emptyMessage="Теги не найдены."
                     filters={filters}
                     globalFilterFields={['id', 'name', 'unit_of_measurement', 'min', 'max', 'comment']}
