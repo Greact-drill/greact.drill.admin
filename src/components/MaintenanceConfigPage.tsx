@@ -13,6 +13,7 @@ import {
   type Tag
 } from '../api/admin';
 import { getErrorMessage } from '../utils/errorUtils';
+import { getSortedTagOptions } from '../utils/tagUtils';
 
 type MaintenanceType =
   | 'daily_maintenance'
@@ -88,11 +89,7 @@ export default function MaintenanceConfigPage() {
   }, [edgeCustomizations]);
 
   const tagOptions = useMemo(() => {
-    if (!tags) return [];
-    return tags.map(tag => ({
-      label: tag.name ? `${tag.name} (${tag.id})` : tag.id,
-      value: tag.id
-    }));
+      return getSortedTagOptions(tags || []);
   }, [tags]);
 
   const tagNameMap = useMemo(() => {

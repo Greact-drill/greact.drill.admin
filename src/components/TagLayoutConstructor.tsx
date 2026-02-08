@@ -1,12 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-    getTagCustomizationForAdmin, 
     createTagCustomization, 
     deleteTagCustomization,
     getEdgeChildren,
     getTagsForAdmin,
-    type TagCustomization,
     type Edge,
     type Tag,
     getAllWidgetConfigs
@@ -20,8 +18,8 @@ import { Message } from 'primereact/message';
 import { InputText } from 'primereact/inputtext';
 import EdgeTreeSelector from './EdgeTreeSelector';
 import EdgePathDisplay from './EdgePathDisplay';
-import BulkWidgetCreator from './BulkWidgetCreator';
 import { getErrorMessage } from '../utils/errorUtils';
+import { sortTagsByName, getFilteredAndSortedTags } from '../utils/tagUtils';
 
 // Интерфейс для конфигурации виджета из JSON
 interface WidgetConfig {
@@ -37,13 +35,6 @@ interface LayoutItem extends WidgetConfig {
     id: string;
     edge_id: string;
     tag_id: string;
-}
-
-// Интерфейс для данных конфигурации с сервера
-interface ServerWidgetConfig {
-    edge_id: string;
-    tag_id: string;
-    config: WidgetConfig;
 }
 
 interface Props {
@@ -398,16 +389,19 @@ export default function TagLayoutConstructor({ title }: Props) {
         refetchOnWindowFocus: false
     });
 
-    const tagsMap = useMemo(() => {
-        if (!tags) return new Map();
-        return new Map(tags.map(tag => [tag.id, tag.name]));
+    const sortedTags = useMemo(() => {
+        if (!tags) return [];
+        return sortTagsByName(tags);
     }, [tags]);
 
+    const tagsMap = useMemo(() => {
+        if (!sortedTags) return new Map();
+        return new Map(sortedTags.map(tag => [tag.id, tag.name]));
+    }, [sortedTags]);
+
     const filteredTags = useMemo(() => {
-        if (!tags) return [];
-        if (!selectedEdge) return tags;
-        return tags.filter(tag => tag.edge_ids?.includes(selectedEdge));
-    }, [tags, selectedEdge]);
+        return getFilteredAndSortedTags(sortedTags || [], selectedEdge);
+    }, [sortedTags, selectedEdge]);
 
     // Загрузка дочерних элементов выбранного edge
     useEffect(() => {

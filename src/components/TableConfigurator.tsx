@@ -2,13 +2,11 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     getTableConfigByPage,
-    getAllTableConfigs,
     createTableConfig,
     updateTableConfig,
     deleteTableConfig,
     getEdgeChildren,
     getTagsForAdmin,
-    getEdgesForAdmin,
     type Edge,
     type Tag,
     type TableConfig,
@@ -23,6 +21,7 @@ import { InputNumber } from 'primereact/inputnumber';
 import EdgeTreeSelector from './EdgeTreeSelector';
 import EdgePathDisplay from './EdgePathDisplay';
 import { getErrorMessage } from '../utils/errorUtils';
+import { getFilteredAndSortedTags } from '../utils/tagUtils';
 
 interface Props {
     title: string;
@@ -72,17 +71,6 @@ export default function TableConfigurator({ title }: Props) {
     const { data: tags } = useQuery({
         queryKey: ['tags'],
         queryFn: getTagsForAdmin
-    });
-
-    const { data: edges } = useQuery({
-        queryKey: ['edges'],
-        queryFn: getEdgesForAdmin
-    });
-
-    const { data: tableConfigs } = useQuery({
-        queryKey: ['table-configs'],
-        queryFn: getAllTableConfigs,
-        refetchOnWindowFocus: false
     });
 
     // Загрузка конфигурации таблицы для выбранной страницы
@@ -228,15 +216,8 @@ export default function TableConfigurator({ title }: Props) {
     }, [selectedEdge, selectedEdgePath]);
 
     const filteredTags = useMemo(() => {
-        if (!tags) return [];
-        if (!selectedEdge) return tags;
-        return tags.filter(tag => tag.edge_ids?.includes(selectedEdge));
+        return getFilteredAndSortedTags(tags || [], selectedEdge);
     }, [tags, selectedEdge]);
-
-    const selectedPageName = useMemo(() => {
-        const page = availablePages.find(p => p.value === selectedPage);
-        return page ? page.label : `Страница ${selectedPage}`;
-    }, [selectedPage, availablePages]);
 
     const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
     const labelStyle = { color: 'var(--text-primary)' };
