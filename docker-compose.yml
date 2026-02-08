@@ -8,6 +8,7 @@ services:
     environment:
       - NODE_ENV=production
       - VITE_API_URL=${VITE_API_URL}
+      - VITE_MEDIA_API_URL=${VITE_MEDIA_API_URL}
     networks:
       - proxy
 

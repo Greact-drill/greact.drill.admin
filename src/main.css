@@ -552,78 +552,6 @@ body {
     background: var(--accent-primary);
 }
 
-/* Скрываем scrollbar при наведении на таблицу */
-.p-datatable:hover .p-datatable-scrollable-body::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-scrollable-body::-webkit-scrollbar,
-.p-datatable:hover .p-datatable-wrapper::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-wrapper::-webkit-scrollbar,
-.p-datatable:hover .p-datatable-table::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-table::-webkit-scrollbar {
-    width: 0px !important;
-    height: 0px !important;
-    display: none !important;
-}
-
-/* Альтернативный способ - скрываем через overflow для всех браузеров */
-.p-datatable:hover .p-datatable-scrollable-body,
-.p-treetable:hover .p-treetable-scrollable-body,
-.p-datatable:hover .p-datatable-wrapper,
-.p-treetable:hover .p-treetable-wrapper {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-}
-
-.p-datatable:hover .p-datatable-scrollable-body::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-scrollable-body::-webkit-scrollbar,
-.p-datatable:hover .p-datatable-wrapper::-webkit-scrollbar,
-.p-treetable:hover .p-treetable-wrapper::-webkit-scrollbar {
-    display: none !important; /* Chrome, Safari, Opera */
-}
-
-/* Скрываем scrollbar на самой таблице при hover */
-.p-datatable:hover,
-.p-treetable:hover {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-}
-
-.p-datatable:hover::-webkit-scrollbar,
-.p-treetable:hover::-webkit-scrollbar {
-    display: none !important; /* Chrome, Safari, Opera */
-    width: 0 !important;
-    height: 0 !important;
-}
-
-/* Скрываем scrollbar на карточке с таблицей при hover */
-.card:hover .p-datatable .p-datatable-scrollable-body::-webkit-scrollbar,
-.card:hover .p-treetable .p-treetable-scrollable-body::-webkit-scrollbar,
-.card:hover .p-datatable-wrapper::-webkit-scrollbar,
-.card:hover .p-treetable-wrapper::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-.card:hover .p-datatable .p-datatable-scrollable-body,
-.card:hover .p-treetable .p-treetable-scrollable-body {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-}
-
-/* Скрываем scrollbar на content-card при hover */
-.content-card:hover .p-datatable .p-datatable-scrollable-body::-webkit-scrollbar,
-.content-card:hover .p-treetable .p-treetable-scrollable-body::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-.content-card:hover .p-datatable .p-datatable-scrollable-body,
-.content-card:hover .p-treetable .p-treetable-scrollable-body {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-}
-
 /* Фильтры в заголовках */
 .p-datatable .p-column-filter-menu,
 .p-datatable .p-column-filter {
@@ -4276,5 +4204,456 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     .draggable-items-panel {
         max-height: 300px;
         overflow-y: auto;
+    }
+}
+
+/* Emulation page */
+.emulation-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    flex: 1;
+    min-height: 0;
+}
+
+.emulation-header h3 {
+    margin: 0 0 8px;
+}
+
+.emulation-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.emulation-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 320px) 1fr;
+    gap: 24px;
+}
+
+.emulation-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.emulation-edge-info {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.emulation-edge-label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.emulation-edge-value {
+    color: var(--text-primary);
+}
+
+.emulation-table-panel {
+    padding: 24px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.emulation-table-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.emulation-loading {
+    padding: 16px 0;
+    color: var(--text-secondary);
+}
+
+.emulation-table {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.emulation-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(120px, 0.6fr) minmax(140px, 0.8fr) minmax(120px, 0.6fr);
+    gap: 12px;
+    align-items: center;
+}
+
+.emulation-row--group {
+    align-items: center;
+}
+
+.emulation-group {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.emulation-group + .emulation-group {
+    margin-top: 8px;
+}
+
+.emulation-group-summary {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.emulation-tag-meta {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.emulation-group-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.emulation-iterations {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.emulation-row--iteration {
+    grid-template-columns: minmax(90px, 0.6fr) minmax(160px, 1.4fr) 44px;
+    padding-left: 12px;
+    border-left: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.emulation-iterations-empty {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding-left: 12px;
+}
+
+.emulation-row--header {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Maintenance config page */
+.maintenance-config-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.maintenance-config-header h3 {
+    margin: 0 0 8px;
+}
+
+.maintenance-config-header p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.maintenance-config-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(360px, 2fr);
+    gap: 24px;
+}
+
+.maintenance-config-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.maintenance-config-edge {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
+}
+
+.maintenance-config-label {
+    color: var(--text-secondary);
+}
+
+.maintenance-config-value {
+    color: var(--text-primary);
+}
+
+.maintenance-config-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.maintenance-config-dropdown {
+    width: 100%;
+}
+
+.maintenance-config-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 120px;
+}
+
+.maintenance-config-empty {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 8px 0;
+}
+
+.maintenance-config-tag {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.maintenance-config-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Media config page */
+.media-config-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.media-config-header h3 {
+    margin: 0 0 8px;
+}
+
+.media-config-header p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.media-config-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(360px, 2fr);
+    gap: 24px;
+}
+
+.media-config-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.media-config-edge {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9rem;
+}
+
+.media-config-label {
+    color: var(--text-secondary);
+}
+
+.media-config-value {
+    color: var(--text-primary);
+}
+
+.media-config-global {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.media-config-dropdown {
+    width: 100%;
+}
+
+.media-config-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.media-config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.media-config-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(240px, 2fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.media-config-row--asset {
+    grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(240px, 2fr) auto;
+}
+
+.media-config-row--document {
+    grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(140px, 0.8fr) minmax(240px, 2fr) auto;
+}
+
+.media-config-input {
+    width: 100%;
+}
+
+.media-config-input.wide {
+    width: 100%;
+}
+
+.media-config-empty {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 8px 0;
+}
+
+.media-config-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.media-config-subtitle {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-top: 12px;
+}
+
+.media-config-note {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed var(--border-color);
+}
+
+.media-config-type-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+}
+
+.tags-table-scroll {
+    overflow-x: auto !important;
+    padding-bottom: 8px;
+    position: relative;
+}
+
+.tags-table-scroll .p-datatable {
+    min-width: 1000px;
+}
+
+.tags-table-scroll .p-datatable-wrapper {
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    min-height: 400px;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar {
+    height: 10px !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 4px;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Не скрываем scrollbar для таблицы тегов при hover */
+.tags-table-scroll .p-datatable-wrapper {
+    scrollbar-width: auto !important;
+    -ms-overflow-style: auto !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar {
+    display: block !important;
+    height: 10px !important;
+}
+
+.tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.tags-table-scroll:hover .p-datatable-wrapper,
+.tags-table-scroll:hover .p-datatable-scrollable-body,
+.tags-table-scroll:hover .p-datatable-table,
+.card:hover .tags-table-scroll .p-datatable-wrapper,
+.content-card:hover .tags-table-scroll .p-datatable-wrapper {
+    overflow-x: auto !important;
+    scrollbar-width: auto !important;
+    -ms-overflow-style: auto !important;
+}
+
+.tags-table-scroll:hover .p-datatable-wrapper::-webkit-scrollbar,
+.tags-table-scroll:hover .p-datatable-scrollable-body::-webkit-scrollbar,
+.tags-table-scroll:hover .p-datatable-table::-webkit-scrollbar,
+.card:hover .tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar,
+.content-card:hover .tags-table-scroll .p-datatable-wrapper::-webkit-scrollbar {
+    display: block !important;
+}
+
+@media (max-width: 1200px) {
+    .maintenance-config-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1200px) {
+    .media-config-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1200px) {
+    .emulation-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .emulation-row {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .emulation-row--header {
+        display: none;
     }
 }
