@@ -216,6 +216,7 @@ const WidgetForm: React.FC<{
 }> = ({ item, tags, availablePages, onSave, onCancel }) => {
     const [formData, setFormData] = useState<LayoutItem>(item!);
     const [error, setError] = useState('');
+    const tagSelectRef = useRef<HTMLSelectElement>(null);
 
     useEffect(() => {
         if (item) {
@@ -226,6 +227,14 @@ const WidgetForm: React.FC<{
             setFormData({ ...item, widgetType: normalizedWidgetType });
         }
     }, [item]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            tagSelectRef.current?.focus();
+        }, 120);
+
+        return () => window.clearTimeout(timer);
+    }, [item?.id]);
 
     const handleSave = () => {
         if (!formData.tag_id || !formData.widgetType || !formData.page) {
@@ -261,6 +270,7 @@ const WidgetForm: React.FC<{
             <div className="field mt-3">
                 <label className="font-semibold mb-2 block" style={labelStyle}>Тег</label>
                 <select
+                    ref={tagSelectRef}
                     value={formData.tag_id}
                     onChange={(e) => setFormData({ ...formData, tag_id: e.target.value })}
                     className="p-dropdown w-full"
@@ -534,6 +544,11 @@ export default function TagLayoutConstructor({ title }: Props) {
         setShowForm(true);
     };
 
+    const handleEditWidget = (item: LayoutItem) => {
+        setEditingItem(item);
+        setShowForm(true);
+    };
+
     const handleSaveWidget = (item: LayoutItem) => {
         const existingIndex = layoutsRef.current.findIndex(l => l.id === item.id);
         let newLayouts: LayoutItem[];
@@ -715,7 +730,7 @@ export default function TagLayoutConstructor({ title }: Props) {
                                             key={item.id}
                                             item={item}
                                             tagName={tagsMap.get(item.tag_id) || `Тег ${item.tag_id}`}
-                                            onEdit={setEditingItem}
+                                            onEdit={handleEditWidget}
                                             onDelete={handleDeleteWidget}
                                         />
                                     ))}
