@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
+import { Dropdown } from 'primereact/dropdown';
 import { Message } from 'primereact/message';
 import EdgeTreeSelector from './EdgeTreeSelector';
 import { getEdgesForAdmin, getTagsForAdmin, type Edge, type Tag } from '../api/admin';
@@ -100,6 +101,17 @@ export default function EmulationDataPage({ title }: Props) {
         edges.forEach((edge) => map.set(edge.id, edge.name));
         return map;
     }, [edges]);
+
+    const tagOptions = useMemo(
+        () =>
+            [...tags]
+                .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+                .map((tag) => ({
+                    label: `${tag.name} (${tag.id})`,
+                    value: tag.id
+                })),
+        [tags]
+    );
 
     useEffect(() => {
         if (!data) {
@@ -406,10 +418,14 @@ export default function EmulationDataPage({ title }: Props) {
                             return (
                                 <div className="emulation-group" key={group.id}>
                                     <div className="emulation-row emulation-row--group">
-                                        <InputText
+                                        <Dropdown
                                             value={group.tag}
-                                            onChange={(event) => handleTagChange(index, event.target.value)}
-                                            placeholder="tag_id"
+                                            options={tagOptions}
+                                            onChange={(event) => handleTagChange(index, event.value || '')}
+                                            placeholder="Выберите тег"
+                                            filter
+                                            showClear
+                                            className="w-full"
                                         />
                                         <span className="emulation-tag-meta">
                                             {tagInfo?.name || '—'}

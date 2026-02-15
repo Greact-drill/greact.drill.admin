@@ -4282,7 +4282,7 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 
 .emulation-row {
     display: grid;
-    grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(120px, 0.6fr) minmax(140px, 0.8fr) minmax(120px, 0.6fr);
+    grid-template-columns: minmax(220px, 1.5fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(110px, 0.6fr) minmax(120px, 0.6fr) minmax(260px, 1.2fr);
     gap: 12px;
     align-items: center;
 }
@@ -4319,7 +4319,8 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     display: flex;
     align-items: center;
     gap: 6px;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    flex-wrap: wrap;
 }
 
 .emulation-iterations {
