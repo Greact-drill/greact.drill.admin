@@ -57,9 +57,11 @@ export interface TagPayload {
     max: number;
     comment: string;
     unit_of_measurement: string;
+    edge_ids?: string[];
+}
+export interface Tag extends Omit<TagPayload, 'edge_ids'> {
     edge_ids: string[];
 }
-export type Tag = TagPayload;
 
 export interface CurrentTagData {
     tag: string;
