@@ -10,7 +10,6 @@ import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { MultiSelect } from 'primereact/multiselect';
 import { FilterMatchMode } from 'primereact/api';
-import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import type { DataTableFilterMeta } from 'primereact/datatable'; 
@@ -24,12 +23,10 @@ interface Props {
 const TagForm: React.FC<{ 
     tag?: Tag | null; 
     onClose: () => void; 
-    isSubmitting: boolean;
     edges: { id: string; name: string; parent_id?: string }[];
 }> = ({ 
     tag, 
     onClose, 
-    isSubmitting,
     edges
 }) => {
     const queryClient = useQueryClient();
@@ -92,9 +89,7 @@ const TagForm: React.FC<{
     
     const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
     const labelStyle = { color: 'var(--text-primary)' };
-    const blockOptions = edges
-        .filter(edge => Boolean(edge.parent_id))
-        .map(edge => ({
+    const edgeOptions = edges.map(edge => ({
         label: `${edge.name} (${edge.id})`,
         value: edge.id
     }));
@@ -144,12 +139,12 @@ const TagForm: React.FC<{
                 <MultiSelect
                     id="edge-ids"
                     value={edgeIds}
-                    options={blockOptions}
+                    options={edgeOptions}
                     onChange={(e) => setEdgeIds(e.value ?? [])}
                     display="chip"
                     filter
-                    placeholder="Выберите блок (опционально)"
-                    disabled={mutation.isPending || blockOptions.length === 0}
+                    placeholder="Выберите оборудование (опционально)"
+                    disabled={mutation.isPending || edgeOptions.length === 0}
                     style={inputStyle}
                 />
             </div>
@@ -251,7 +246,7 @@ export default function TagsTable({ title }: Props) {
         queryKey: ['edges'],
         queryFn: getEdgesForAdmin,
     });
-    const blockEdges = edges.filter(edge => Boolean(edge.parent_id));
+    const assignableEdges = edges;
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteTag(id),
@@ -641,8 +636,7 @@ export default function TagsTable({ title }: Props) {
                 <TagForm 
                     tag={selectedTag} 
                     onClose={handleHideForm} 
-                    isSubmitting={deleteMutation.isPending || edgesLoading}
-                    edges={blockEdges}
+                    edges={assignableEdges}
                 />
             </Dialog>
 
@@ -737,15 +731,15 @@ export default function TagsTable({ title }: Props) {
                         <MultiSelect
                             id="bulk-edge-ids"
                             value={bulkEdgeIds}
-                            options={blockEdges.map(edge => ({
+                            options={assignableEdges.map(edge => ({
                                 label: `${edge.name} (${edge.id})`,
                                 value: edge.id
                             }))}
                             onChange={(e) => setBulkEdgeIds(e.value ?? [])}
                             display="chip"
                             filter
-                            placeholder="Выберите блоки (опционально)"
-                            disabled={createTagsMutation.isPending || edgesLoading || blockEdges.length === 0}
+                            placeholder="Выберите оборудование (опционально)"
+                            disabled={createTagsMutation.isPending || edgesLoading || assignableEdges.length === 0}
                         />
                         <small style={{ color: 'var(--text-secondary)' }}>
                             Можно оставить пустым, чтобы создать неразмеченные теги.

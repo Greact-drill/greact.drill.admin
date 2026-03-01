@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import CustomizationTable from './components/CustomizationTable';
 import EdgesTable from './components/EdgesTable';
-import TagsTable from './components/TagsTable';
-import TagLayoutConstructor from './components/TagLayoutConstructor';
+import TagsPage from './components/TagsPage';
 import TableConfigurator from './components/TableConfigurator';
-import EmulationDataPage from './components/EmulationDataPage';
 import MaintenanceConfigPage from './components/MaintenanceConfigPage';
 import MediaConfigPage from './components/MediaConfigPage';
 import './main.css';
@@ -13,11 +11,9 @@ import './main.css';
 const navItems = [
     { path: '/edges', name: 'Буровые', icon: 'pi pi-building' },
     { path: '/tags', name: 'Теги', icon: 'pi pi-bookmark' },
-    { path: '/emulation', name: 'Эмуляция', icon: 'pi pi-database' },
     { path: '/maintenance-config', name: 'ТО', icon: 'pi pi-wrench' },
     { path: '/media-config', name: 'Медиа', icon: 'pi pi-video' },
     { path: '/edge-customization', name: 'Компоненты Буровых', icon: 'pi pi-sliders-h' },
-    { path: '/tag-customization', name: 'Компоненты Тегов', icon: 'pi pi-th-large' },
     { path: '/table-config', name: 'Настройка таблиц', icon: 'pi pi-table' },
 ];
 
@@ -77,13 +73,13 @@ export default function AdminApp() {
                     <Routes>
                         <Route index element={<Navigate to="edges" replace />} />
                         <Route path="edges" element={<EdgesTable title="Буровые"/>} />
-                        <Route path="tags" element={<TagsTable title="Теги"/>} />
-                        <Route path="emulation" element={<EmulationDataPage title="Эмуляция"/>} />
+                        <Route path="tags" element={<TagsPage />} />
+                        <Route path="emulation" element={<Navigate to="/tags?tab=emulation" replace />} />
+                        <Route path="tag-customization" element={<Navigate to="/tags?tab=components" replace />} />
                         <Route path="maintenance-config" element={<MaintenanceConfigPage />} />
                         <Route path="media-config" element={<MediaConfigPage />} />
                         
                         <Route path="edge-customization" element={<CustomizationTable type="edge" title="Компоненты Буровых"/>} />
-                        <Route path="tag-customization" element={<TagLayoutConstructor title="Конструктор размещения тегов"/>} />
                         <Route path="table-config" element={<TableConfigurator title="Настройка таблиц"/>} />
                     </Routes>
                 </div>

@@ -5,7 +5,6 @@ import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
 import { Message } from 'primereact/message';
-import EdgeTreeSelector from './EdgeTreeSelector';
 import { getEdgesForAdmin, getTagsForAdmin, type Edge, type Tag } from '../api/admin';
 import { getErrorMessage } from '../utils/errorUtils';
 
@@ -46,8 +45,8 @@ const parseValue = (raw: string): number | string | boolean => {
 
 export default function EmulationDataPage({ title }: Props) {
     const groupIdCounter = useRef(0);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [selectedEdgeId, setSelectedEdgeId] = useState('');
-    const [edgePath, setEdgePath] = useState<Edge[]>([]);
     const [groups, setGroups] = useState<EmulationGroup[]>([]);
     const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
     const [uploadErrorMessage, setUploadErrorMessage] = useState<string | null>(null);
@@ -113,6 +112,12 @@ export default function EmulationDataPage({ title }: Props) {
         [tags]
     );
 
+    const rootEdges = useMemo(() => edges.filter((e) => !e.parent_id), [edges]);
+    const rootEdgeOptions = useMemo(
+        () => rootEdges.map((e) => ({ label: e.name || e.id, value: e.id })),
+        [rootEdges]
+    );
+
     useEffect(() => {
         if (!data) {
             return;
@@ -139,9 +144,8 @@ export default function EmulationDataPage({ title }: Props) {
         setGroups(nextGroups);
     }, [data]);
 
-    const handleSelectEdge = (edgeId: string, path: Edge[]) => {
+    const handleSelectEdge = (edgeId: string) => {
         setSelectedEdgeId(edgeId);
-        setEdgePath(path);
     };
 
     const handleGroupToggle = (index: number) => {
@@ -185,6 +189,10 @@ export default function EmulationDataPage({ title }: Props) {
 
     const handleRemoveGroup = (groupIndex: number) => {
         setGroups(prev => prev.filter((_, idx) => idx !== groupIndex));
+    };
+
+    const handleClearAllGroups = () => {
+        setGroups([]);
     };
 
     const handleAddIteration = (groupIndex: number) => {
@@ -259,8 +267,8 @@ export default function EmulationDataPage({ title }: Props) {
         }
     };
 
-    const handleFileUpload = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleFileUpload = async (e?: React.FormEvent) => {
+        e?.preventDefault();
         if (!selectedFile) return;
 
         setUploadErrorMessage(null);
@@ -291,11 +299,6 @@ export default function EmulationDataPage({ title }: Props) {
             setUploadErrorMessage(getErrorMessage(err, 'Ошибка загрузки файла эмуляции.'));
         }
     };
-
-    const edgePathLabel = useMemo(() => {
-        if (!edgePath.length) return 'Не выбрано';
-        return edgePath.map(edge => edge.name).join(' / ');
-    }, [edgePath]);
 
     return (
         <div className="emulation-page">
@@ -328,44 +331,40 @@ export default function EmulationDataPage({ title }: Props) {
             </Dialog>
 
             <div className="emulation-layout">
-                <div className="emulation-panel">
-                    <EdgeTreeSelector selectedEdgeId={selectedEdgeId} onSelectEdge={handleSelectEdge} />
-                    <div className="emulation-edge-info">
-                        <span className="emulation-edge-label">Текущий путь:</span>
-                        <span className="emulation-edge-value">{edgePathLabel}</span>
+                <div className="emulation-panel emulation-toolbar">
+                    <div className="emulation-edge-select">
+                        <label className="emulation-edge-label">Буровая</label>
+                        <Dropdown
+                            value={selectedEdgeId}
+                            onChange={(e) => handleSelectEdge(e.value ?? '')}
+                            options={rootEdgeOptions}
+                            placeholder="Выберите буровую..."
+                            className="emulation-edge-dropdown"
+                            filter
+                            filterPlaceholder="Поиск..."
+                        />
                     </div>
-                </div>
-
-                <div className="emulation-panel">
-                    <h4 className="mb-3">Загрузка файла эмуляции</h4>
-                    <form onSubmit={handleFileUpload} className="p-fluid">
-                        <div className="field">
-                            <label htmlFor="emu-file" className="font-semibold mb-2 block">
-                                Выберите JSON файл
-                            </label>
-                            <InputText
-                                type="file"
-                                id="emu-file"
-                                accept=".json"
-                                onChange={(event) =>
-                                    setSelectedFile(event.target.files ? event.target.files[0] : null)
-                                }
-                            />
-                            {selectedFile && (
-                                <div className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                    Выбран файл: {selectedFile.name}
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex justify-content-start gap-3 mt-3">
-                            <Button
-                                label="Загрузить файл"
-                                icon="pi pi-upload"
-                                type="submit"
-                                disabled={!selectedFile}
-                            />
-                        </div>
-                    </form>
+                    <div className="emulation-file-upload">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".json"
+                            onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+                            className="emulation-file-input-hidden"
+                        />
+                        <Button
+                            label="Выбрать файл"
+                            icon="pi pi-folder-open"
+                            className="p-button-outlined"
+                            onClick={() => fileInputRef.current?.click()}
+                        />
+                        <Button
+                            label="Загрузить"
+                            icon="pi pi-upload"
+                            onClick={() => handleFileUpload()}
+                            disabled={!selectedFile}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -383,10 +382,16 @@ export default function EmulationDataPage({ title }: Props) {
                             className="p-button-outlined"
                         />
                         <Button
+                            label="Удалить все"
+                            icon="pi pi-trash"
+                            onClick={handleClearAllGroups}
+                            className="p-button-danger p-button-outlined"
+                            disabled={!groups.length}
+                        />
+                        <Button
                             label="Загрузить данные"
                             icon="pi pi-cloud-upload"
                             onClick={handleUploadCurrent}
-                            disabled={!groups.length}
                         />
                     </div>
                 </div>

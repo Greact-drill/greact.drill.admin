@@ -4226,9 +4226,41 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 }
 
 .emulation-layout {
-    display: grid;
-    grid-template-columns: minmax(260px, 320px) 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 24px;
+}
+
+.emulation-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.emulation-edge-select {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 200px;
+}
+
+.emulation-edge-dropdown {
+    width: 100%;
+}
+
+.emulation-file-upload {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.emulation-file-input-hidden {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .emulation-panel {
@@ -4248,6 +4280,8 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 .emulation-edge-label {
     display: block;
     margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
 }
 
 .emulation-edge-value {
@@ -4365,16 +4399,21 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 .maintenance-config-header p {
     margin: 0;
     color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.maintenance-config-messages {
+    margin-bottom: 0;
 }
 
 .maintenance-config-layout {
-    display: grid;
-    grid-template-columns: minmax(280px, 1fr) minmax(360px, 2fr);
-    gap: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
 
 .maintenance-config-panel {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 20px;
@@ -4383,56 +4422,244 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     gap: 16px;
 }
 
-.maintenance-config-edge {
+.maintenance-config-edge-select {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-size: 0.9rem;
+    gap: 6px;
+    min-width: 200px;
+}
+
+.maintenance-config-edge-dropdown {
+    width: 100%;
 }
 
 .maintenance-config-label {
     color: var(--text-secondary);
+    font-size: 0.8rem;
 }
 
 .maintenance-config-value {
     color: var(--text-primary);
+    font-weight: 500;
 }
 
-.maintenance-config-controls {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
+.maintenance-config-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .maintenance-config-dropdown {
     width: 100%;
 }
 
+.maintenance-config-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 280px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.maintenance-config-placeholder i {
+    font-size: 3rem;
+    opacity: 0.5;
+}
+
+.maintenance-config-placeholder p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.maintenance-config-toolbar {
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.maintenance-config-toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.maintenance-config-add-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 280px;
+}
+
+.maintenance-config-tag-dropdown {
+    flex: 1;
+    min-width: 200px;
+}
+
+.maintenance-config-add-btn {
+    flex-shrink: 0;
+}
+
+.maintenance-config-save-btn {
+    flex-shrink: 0;
+    background: var(--accent-primary) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+.maintenance-config-tabs {
+    margin-top: 16px;
+}
+
+.maintenance-config-tabs .p-tabview {
+    background: transparent !important;
+    border: none !important;
+}
+
+.maintenance-config-tabs .p-tabview-panels {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    padding: 16px !important;
+    color: var(--text-primary) !important;
+}
+
+.maintenance-config-tabs .p-tabview-panel {
+    padding: 0 !important;
+}
+
+.maintenance-config-tabs .p-tabview-nav-container {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 6px;
+    margin-bottom: 16px;
+}
+
+.maintenance-config-tabs .p-tabview-nav-link,
+.maintenance-config-tabs .p-tabview-nav .p-unselectable-text {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+}
+
+.maintenance-config-tabs .p-tabview-nav-link:hover,
+.maintenance-config-tabs .p-tabview-nav .p-unselectable-text:hover {
+    background: rgba(249, 115, 22, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+.maintenance-config-tabs .p-tabview-nav .p-tabview-selected.p-highlight {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.15) 100%) !important;
+    color: var(--accent-primary) !important;
+}
+
+.maintenance-tab-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.maintenance-tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(249, 115, 22, 0.25);
+    color: var(--accent-primary);
+    border-radius: 10px;
+}
+
+.maintenance-config-tabs .p-tabview-nav .p-tabview-selected .maintenance-tab-badge {
+    background: rgba(249, 115, 22, 0.4);
+}
+
 .maintenance-config-tags {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    min-height: 120px;
+    min-height: 160px;
 }
 
 .maintenance-config-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 160px;
     color: var(--text-secondary);
     font-size: 0.9rem;
-    padding: 8px 0;
+    text-align: center;
+}
+
+.maintenance-config-empty i {
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+.maintenance-config-empty span {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.maintenance-config-tag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .maintenance-config-tag {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 12px 16px;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
 }
 
-.maintenance-config-footer {
+.maintenance-config-tag:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.maintenance-config-tag-info {
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.maintenance-config-tag-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.maintenance-config-tag-unit {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.maintenance-config-summary {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.maintenance-config-summary strong {
+    color: var(--accent-primary);
 }
 
 /* Media config page */
@@ -4632,9 +4859,14 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     display: block !important;
 }
 
-@media (max-width: 1200px) {
-    .maintenance-config-layout {
-        grid-template-columns: 1fr;
+@media (max-width: 768px) {
+    .maintenance-config-toolbar-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .maintenance-config-edge-select {
+        min-width: 100%;
     }
 }
 
@@ -4644,9 +4876,78 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     }
 }
 
+/* Стили вкладок страницы Теги — в стиле приложения (тёмная тёплая тема) */
+.tags-page .p-tabview {
+    background: transparent !important;
+    border: none !important;
+}
+
+.tags-page .p-tabview-nav-container {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    padding: 6px !important;
+    margin-bottom: 24px !important;
+}
+
+.tags-page .p-tabview-nav {
+    background: transparent !important;
+    border: none !important;
+    gap: 4px !important;
+}
+
+.tags-page .p-tabview-nav-link,
+.tags-page .p-tabview-nav .p-unselectable-text {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    padding: 12px 18px !important;
+    border-radius: 8px !important;
+    transition: all var(--transition-base) !important;
+}
+
+.tags-page .p-tabview-nav-link:hover,
+.tags-page .p-tabview-nav .p-unselectable-text:hover {
+    background: rgba(249, 115, 22, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+.tags-page .p-tabview-nav-link.p-highlight,
+.tags-page .p-tabview-nav .p-tabview-selected.p-highlight {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.15) 100%) !important;
+    color: var(--accent-primary) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2), var(--shadow-sm) !important;
+}
+
+.tags-page .p-tabview-nav-link .p-icon,
+.tags-page .p-tabview-nav .p-unselectable-text .p-icon {
+    color: inherit !important;
+}
+
+.tags-page .p-tabview-ink-bar {
+    background: var(--accent-primary) !important;
+}
+
+.tags-page .p-tabview-panels {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.tags-page .p-tabview-panel {
+    padding: 0 !important;
+}
+
 @media (max-width: 1200px) {
-    .emulation-layout {
-        grid-template-columns: 1fr;
+    .emulation-toolbar {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .emulation-row {

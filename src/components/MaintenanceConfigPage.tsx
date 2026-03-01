@@ -3,13 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { Message } from 'primereact/message';
-import EdgeTreeSelector from './EdgeTreeSelector';
+import { TabView, TabPanel } from 'primereact/tabview';
 import {
   createEdgeCustomization,
   getEdgeCustomizationByEdge,
+  getEdgesForAdmin,
   getTagsForAdmin,
   updateEdgeCustomization,
   type BaseCustomization,
+  type Edge,
   type Tag
 } from '../api/admin';
 import { getErrorMessage } from '../utils/errorUtils';
@@ -22,12 +24,12 @@ type MaintenanceType =
   | 'semiannual_maintenance'
   | 'annual_maintenance';
 
-const maintenanceTypeOptions: Array<{ label: string; value: MaintenanceType }> = [
-  { label: 'Ежедневное ТО', value: 'daily_maintenance' },
-  { label: 'Еженедельное ТО', value: 'weekly_maintenance' },
-  { label: 'Ежемесячное ТО', value: 'monthly_maintenance' },
-  { label: 'Полугодовое ТО', value: 'semiannual_maintenance' },
-  { label: 'Годовое ТО', value: 'annual_maintenance' }
+const MAINTENANCE_TYPES: Array<{ label: string; value: MaintenanceType; icon: string }> = [
+  { label: 'Ежедневное', value: 'daily_maintenance', icon: 'pi pi-calendar' },
+  { label: 'Еженедельное', value: 'weekly_maintenance', icon: 'pi pi-calendar-plus' },
+  { label: 'Ежемесячное', value: 'monthly_maintenance', icon: 'pi pi-calendar-minus' },
+  { label: 'Полугодовое', value: 'semiannual_maintenance', icon: 'pi pi-calendar-times' },
+  { label: 'Годовое', value: 'annual_maintenance', icon: 'pi pi-calendar' }
 ];
 
 const emptyConfig: Record<MaintenanceType, string[]> = {
@@ -40,17 +42,23 @@ const emptyConfig: Record<MaintenanceType, string[]> = {
 
 export default function MaintenanceConfigPage() {
   const [selectedEdgeId, setSelectedEdgeId] = useState('');
-  const [selectedMaintenanceType, setSelectedMaintenanceType] = useState<MaintenanceType>('daily_maintenance');
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [selectedTagId, setSelectedTagId] = useState<string>('');
-  const [edgePathLabel, setEdgePathLabel] = useState('Не выбрано');
   const [config, setConfig] = useState<Record<MaintenanceType, string[]>>(emptyConfig);
   const [hasConfig, setHasConfig] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const selectedMaintenanceType = MAINTENANCE_TYPES[activeTabIndex]?.value ?? 'daily_maintenance';
+
   const { data: tags, isLoading: tagsLoading } = useQuery<Tag[]>({
     queryKey: ['tags'],
     queryFn: getTagsForAdmin
+  });
+
+  const { data: edges = [] } = useQuery<Edge[]>({
+    queryKey: ['edges'],
+    queryFn: getEdgesForAdmin
   });
 
   const { data: edgeCustomizations, refetch: refetchCustomizations } = useQuery<BaseCustomization[]>({
@@ -88,9 +96,12 @@ export default function MaintenanceConfigPage() {
     }
   }, [edgeCustomizations]);
 
-  const tagOptions = useMemo(() => {
-      return getSortedTagOptions(tags || []);
-  }, [tags]);
+  const tagOptions = useMemo(() => getSortedTagOptions(tags || []), [tags]);
+
+  const availableTagOptions = useMemo(() => {
+    const assigned = config[selectedMaintenanceType] ?? [];
+    return tagOptions.filter(opt => !assigned.includes(opt.value));
+  }, [tagOptions, config, selectedMaintenanceType]);
 
   const tagNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -100,20 +111,32 @@ export default function MaintenanceConfigPage() {
     return map;
   }, [tags]);
 
-  const handleSelectEdge = (edgeId: string, path: Array<{ name: string }>) => {
+  const tagUnitMap = useMemo(() => {
+    const map = new Map<string, string>();
+    tags?.forEach(tag => {
+      map.set(tag.id, tag.unit_of_measurement || '');
+    });
+    return map;
+  }, [tags]);
+
+  const rootEdges = useMemo(() => {
+    return edges.filter(e => !e.parent_id);
+  }, [edges]);
+
+  const rootEdgeOptions = useMemo(() => {
+    return rootEdges.map(e => ({ label: e.name || e.id, value: e.id }));
+  }, [rootEdges]);
+
+  const handleSelectEdge = (edgeId: string) => {
     setSelectedEdgeId(edgeId);
-    setEdgePathLabel(path.map(edge => edge.name).join(' / ') || 'Не выбрано');
+    setSelectedTagId('');
   };
 
   const handleAddTag = () => {
-    if (!selectedTagId) {
-      return;
-    }
+    if (!selectedTagId) return;
     setConfig(prev => {
       const current = prev[selectedMaintenanceType];
-      if (current.includes(selectedTagId)) {
-        return prev;
-      }
+      if (current.includes(selectedTagId)) return prev;
       return {
         ...prev,
         [selectedMaintenanceType]: [...current, selectedTagId]
@@ -151,80 +174,135 @@ export default function MaintenanceConfigPage() {
     }
   };
 
+  const totalTagsCount = Object.values(config).reduce((sum, arr) => sum + arr.length, 0);
+
   return (
     <div className="maintenance-config-page">
       <div className="maintenance-config-header">
         <h3>Настройка ТО по буровым</h3>
-        <p>Привяжите теги к каждому типу ТО для выбранной буровой установки.</p>
+        <p>Выберите буровую и привяжите теги к каждому типу технического обслуживания.</p>
       </div>
 
       {(errorMessage || successMessage) && (
-        <div className="mb-3">
+        <div className="maintenance-config-messages">
           {errorMessage && <Message severity="error" text={errorMessage} />}
           {successMessage && <Message severity="success" text={successMessage} />}
         </div>
       )}
 
       <div className="maintenance-config-layout">
-        <div className="maintenance-config-panel">
-          <EdgeTreeSelector selectedEdgeId={selectedEdgeId} onSelectEdge={handleSelectEdge} />
-          <div className="maintenance-config-edge">
-            <span className="maintenance-config-label">Текущий путь:</span>
-            <span className="maintenance-config-value">{edgePathLabel}</span>
+        <div className="maintenance-config-panel maintenance-config-main">
+          <div className="maintenance-config-toolbar">
+            <div className="maintenance-config-toolbar-row">
+              <div className="maintenance-config-edge-select">
+                <Dropdown
+                  value={selectedEdgeId}
+                  onChange={(e) => handleSelectEdge(e.value ?? '')}
+                  options={rootEdgeOptions}
+                  placeholder="Выберите буровую..."
+                  className="maintenance-config-edge-dropdown"
+                  filter
+                  filterPlaceholder="Поиск..."
+                />
+              </div>
+              <div className="maintenance-config-add-row">
+                <Dropdown
+                  value={selectedTagId}
+                  onChange={(e) => setSelectedTagId(e.value ?? '')}
+                  options={availableTagOptions}
+                  placeholder={tagsLoading ? 'Загрузка...' : 'Выберите тег'}
+                  filter
+                  filterPlaceholder="Поиск тега..."
+                  className="maintenance-config-tag-dropdown"
+                  disabled={tagsLoading || !selectedEdgeId}
+                />
+                <Button
+                  label="Добавить"
+                  icon="pi pi-plus"
+                  onClick={handleAddTag}
+                  disabled={!selectedTagId}
+                  className="maintenance-config-add-btn"
+                />
+              </div>
+              <Button
+                label="Сохранить"
+                icon="pi pi-save"
+                onClick={handleSave}
+                disabled={!selectedEdgeId}
+                className="maintenance-config-save-btn"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="maintenance-config-panel">
-          <div className="maintenance-config-controls">
-            <Dropdown
-              value={selectedMaintenanceType}
-              onChange={(e) => setSelectedMaintenanceType(e.value)}
-              options={maintenanceTypeOptions}
-              placeholder="Выберите тип ТО"
-              className="maintenance-config-dropdown"
-            />
-            <Dropdown
-              value={selectedTagId}
-              onChange={(e) => setSelectedTagId(e.value)}
-              options={tagOptions}
-              placeholder={tagsLoading ? 'Загрузка тегов...' : 'Выберите тег'}
-              filter
-              className="maintenance-config-dropdown"
-              disabled={tagsLoading}
-            />
-            <Button
-              label="Добавить тег"
-              icon="pi pi-plus"
-              onClick={handleAddTag}
-              disabled={!selectedTagId}
-            />
-          </div>
+          {!selectedEdgeId ? (
+            <div className="maintenance-config-placeholder">
+              <i className="pi pi-info-circle" />
+              <p>Выберите буровую установку для настройки тегов ТО.</p>
+            </div>
+          ) : (
+            <>
+              <TabView
+                activeIndex={activeTabIndex}
+                onTabChange={(e) => setActiveTabIndex(e.index)}
+                className="maintenance-config-tabs"
+              >
+                {MAINTENANCE_TYPES.map((mt) => (
+                  <TabPanel
+                    key={mt.value}
+                    header={
+                      <span className="maintenance-tab-header">
+                        <i className={mt.icon} />
+                        {mt.label}
+                        <span className="maintenance-tab-badge">
+                          {config[mt.value]?.length ?? 0}
+                        </span>
+                      </span>
+                    }
+                  >
+                    <div className="maintenance-config-tags">
+                      {config[selectedMaintenanceType].length === 0 ? (
+                        <div className="maintenance-config-empty">
+                          <i className="pi pi-inbox" />
+                          <p>Теги для данного ТО не назначены.</p>
+                          <span>Выберите тег выше и нажмите «Добавить»</span>
+                        </div>
+                      ) : (
+                        <div className="maintenance-config-tag-list">
+                          {config[selectedMaintenanceType].map(tagId => (
+                            <div key={tagId} className="maintenance-config-tag">
+                              <div className="maintenance-config-tag-info">
+                                <span className="maintenance-config-tag-name">
+                                  {tagNameMap.get(tagId) ?? tagId}
+                                </span>
+                                {tagUnitMap.get(tagId) && (
+                                  <span className="maintenance-config-tag-unit">
+                                    {tagUnitMap.get(tagId)}
+                                  </span>
+                                )}
+                              </div>
+                              <Button
+                                icon="pi pi-times"
+                                className="p-button-text p-button-danger p-button-rounded"
+                                onClick={() => handleRemoveTag(tagId)}
+                                tooltip="Удалить"
+                                tooltipOptions={{ position: 'top' }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </TabPanel>
+                ))}
+              </TabView>
 
-          <div className="maintenance-config-tags">
-            {config[selectedMaintenanceType].length === 0 ? (
-              <div className="maintenance-config-empty">Теги для данного ТО не назначены.</div>
-            ) : (
-              config[selectedMaintenanceType].map(tagId => (
-                <div key={tagId} className="maintenance-config-tag">
-                  <span>{tagNameMap.get(tagId) ?? tagId}</span>
-                  <Button
-                    icon="pi pi-times"
-                    className="p-button-text p-button-danger"
-                    onClick={() => handleRemoveTag(tagId)}
-                  />
+              {totalTagsCount > 0 && (
+                <div className="maintenance-config-summary">
+                  Всего тегов: <strong>{totalTagsCount}</strong>
                 </div>
-              ))
-            )}
-          </div>
-
-          <div className="maintenance-config-footer">
-            <Button
-              label="Сохранить"
-              icon="pi pi-save"
-              onClick={handleSave}
-              disabled={!selectedEdgeId}
-            />
-          </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
