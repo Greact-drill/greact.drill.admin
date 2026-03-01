@@ -10,7 +10,6 @@ import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { MultiSelect } from 'primereact/multiselect';
 import { FilterMatchMode } from 'primereact/api';
-import { ProgressSpinner } from 'primereact/progressspinner';
 import { Message } from 'primereact/message';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import type { DataTableFilterMeta } from 'primereact/datatable'; 
@@ -24,12 +23,10 @@ interface Props {
 const TagForm: React.FC<{ 
     tag?: Tag | null; 
     onClose: () => void; 
-    isSubmitting: boolean;
-    edges: { id: string; name: string }[];
+    edges: { id: string; name: string; parent_id?: string }[];
 }> = ({ 
     tag, 
     onClose, 
-    isSubmitting,
     edges
 }) => {
     const queryClient = useQueryClient();
@@ -70,8 +67,8 @@ const TagForm: React.FC<{
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        if (!name || (!isEdit && !id) || min === null || max === null || !unitOfMeasurement || edgeIds.length === 0) {
-            setError('ID, Название, Min, Max, Единица измерения и привязка к оборудованию обязательны.');
+        if (!name || (!isEdit && !id) || min === null || max === null || !unitOfMeasurement) {
+            setError('ID, Название, Min, Max и Единица измерения обязательны.');
             return;
         }
         
@@ -146,8 +143,8 @@ const TagForm: React.FC<{
                     onChange={(e) => setEdgeIds(e.value ?? [])}
                     display="chip"
                     filter
-                    placeholder="Выберите буровую или блок"
-                    disabled={mutation.isPending || edges.length === 0}
+                    placeholder="Выберите оборудование (опционально)"
+                    disabled={mutation.isPending || edgeOptions.length === 0}
                     style={inputStyle}
                 />
             </div>
@@ -230,6 +227,7 @@ export default function TagsTable({ title }: Props) {
     const [createTagsDialogVisible, setCreateTagsDialogVisible] = useState(false);
     const [selectedTagsFile, setSelectedTagsFile] = useState<File | null>(null);
     const [bulkEdgeIds, setBulkEdgeIds] = useState<string[]>([]);
+    const [showUnassignedOnly, setShowUnassignedOnly] = useState(false);
 
     const [filters, setFilters] = useState<DataTableFilterMeta>({
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -248,6 +246,7 @@ export default function TagsTable({ title }: Props) {
         queryKey: ['edges'],
         queryFn: getEdgesForAdmin,
     });
+    const assignableEdges = edges;
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteTag(id),
@@ -305,7 +304,7 @@ export default function TagsTable({ title }: Props) {
 
     const handleCreateTagsSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedTagsFile || bulkEdgeIds.length === 0) return;
+        if (!selectedTagsFile) return;
 
         try {
             const text = await selectedTagsFile.text();
@@ -487,6 +486,13 @@ export default function TagsTable({ title }: Props) {
                     style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
                 />
                 <Button 
+                    label={showUnassignedOnly ? "Показать все" : "Непривязанные"}
+                    icon="pi pi-filter"
+                    className="p-button-secondary"
+                    onClick={() => setShowUnassignedOnly(prev => !prev)}
+                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
+                />
+                <Button 
                     label="Создать новый тег" 
                     icon="pi pi-plus" 
                     className="p-button-primary" 
@@ -540,8 +546,11 @@ export default function TagsTable({ title }: Props) {
             />}
             
             <div className="tags-table-scroll">
+                {/** Фильтр отображения неразмеченных тегов применяем до DataTable */}
+                {/** eslint-disable-next-line react/jsx-no-useless-fragment */}
+                <>
                 <DataTable 
-                    value={tags || []} 
+                    value={(tags || []).filter(tag => !showUnassignedOnly || !tag.edge_ids?.length)} 
                     loading={isLoading}
                     paginator rows={10} 
                     rowsPerPageOptions={[5, 10, 25]}
@@ -610,6 +619,7 @@ export default function TagsTable({ title }: Props) {
                 />
                 <Column body={actionBodyTemplate} exportable={false} header="Действия" style={{ minWidth: '150px' }} />
                 </DataTable>
+                </>
             </div>
 
             <Dialog 
@@ -624,8 +634,7 @@ export default function TagsTable({ title }: Props) {
                 <TagForm 
                     tag={selectedTag} 
                     onClose={handleHideForm} 
-                    isSubmitting={deleteMutation.isPending || edgesLoading}
-                    edges={edges}
+                    edges={assignableEdges}
                 />
             </Dialog>
 
@@ -720,21 +729,19 @@ export default function TagsTable({ title }: Props) {
                         <MultiSelect
                             id="bulk-edge-ids"
                             value={bulkEdgeIds}
-                            options={edges.map(edge => ({
+                            options={assignableEdges.map(edge => ({
                                 label: `${edge.name} (${edge.id})`,
                                 value: edge.id
                             }))}
                             onChange={(e) => setBulkEdgeIds(e.value ?? [])}
                             display="chip"
                             filter
-                            placeholder="Выберите буровую или блок"
-                            disabled={createTagsMutation.isPending || edgesLoading}
+                            placeholder="Выберите оборудование (опционально)"
+                            disabled={createTagsMutation.isPending || edgesLoading || assignableEdges.length === 0}
                         />
-                        {!bulkEdgeIds.length && (
-                            <small style={{ color: 'var(--text-secondary)' }}>
-                                Необходимо выбрать хотя бы один элемент.
-                            </small>
-                        )}
+                        <small style={{ color: 'var(--text-secondary)' }}>
+                            Можно оставить пустым, чтобы создать неразмеченные теги.
+                        </small>
                     </div>
                     <div className="field">
                         <label htmlFor="tagsFile" className="font-semibold mb-2 block">
@@ -782,7 +789,7 @@ export default function TagsTable({ title }: Props) {
                         <Button 
                             icon="pi pi-check" 
                             type="submit" 
-                            disabled={!selectedTagsFile || createTagsMutation.isPending || bulkEdgeIds.length === 0}
+                            disabled={!selectedTagsFile || createTagsMutation.isPending}
                             loading={createTagsMutation.isPending}
                             tooltip="Создать теги"
                             className="p-button-rounded" 
