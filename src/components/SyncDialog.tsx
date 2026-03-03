@@ -55,10 +55,9 @@ export const SyncDialog: React.FC<{
     return (
         <Dialog
             visible={isVisible}
-            style={{ width: '400px' }}
+            className="responsive-dialog responsive-dialog-sm p-fluid admin-dialog"
             header="Запуск синхронизации тегов"
             modal
-            className="p-fluid admin-dialog"
             onHide={onClose}
             footer={dialogFooter}
             closable={!isSubmitting}

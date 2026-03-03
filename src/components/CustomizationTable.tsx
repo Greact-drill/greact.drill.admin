@@ -459,12 +459,11 @@ export default function CustomizationTable({ title, type }: Props) {
                 <Column body={actionBodyTemplate} exportable={false} header="Действия" style={{ minWidth: '150px' }} />
             </DataTable>
 
-            <Dialog 
-                visible={openForm} 
-                style={{ width: '450px' }} 
+            <Dialog
+                visible={openForm}
+                className="responsive-dialog responsive-dialog-md p-fluid admin-dialog"
                 header={selectedData ? `Редактировать ключ: ${selectedData.key}` : 'Создать новый ключ кастомизации'} 
                 modal 
-                className="p-fluid admin-dialog" 
                 onHide={handleHideForm}
                 closable={false}
             >

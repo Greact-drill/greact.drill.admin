@@ -759,10 +759,9 @@ export default function TagLayoutConstructor({ title }: Props) {
 
                 <Dialog
                     visible={showForm}
-                    style={{ width: '500px' }}
+                    className="responsive-dialog responsive-dialog-md p-fluid admin-dialog"
                     header={editingItem?.id.startsWith('new') ? 'Добавить виджет' : 'Редактировать виджет'}
                     modal
-                    className="p-fluid admin-dialog"
                     onHide={() => {
                         setShowForm(false);
                         setEditingItem(null);
