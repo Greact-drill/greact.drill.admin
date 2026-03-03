@@ -4929,6 +4929,7 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     display: grid;
     grid-template-columns: minmax(280px, 1fr) minmax(360px, 2fr);
     gap: 24px;
+    min-width: 0;
 }
 
 .media-config-panel {
@@ -4939,6 +4940,8 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .media-config-edge {
@@ -4977,21 +4980,47 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+}
+
+.media-config-list::-webkit-scrollbar {
+    height: 8px;
+}
+
+.media-config-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+}
+
+.media-config-list::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 4px;
+}
+
+.media-config-list::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-400);
 }
 
 .media-config-row {
     display: grid;
-    grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(240px, 2fr) auto;
+    grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) minmax(160px, 2fr) auto;
     gap: 12px;
     align-items: center;
+    flex-shrink: 0;
+    min-width: 520px;
 }
 
 .media-config-row--asset {
-    grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(240px, 2fr) auto;
+    grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(160px, 2fr) auto;
+    min-width: 600px;
 }
 
 .media-config-row--document {
-    grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(140px, 0.8fr) minmax(240px, 2fr) auto;
+    grid-template-columns: minmax(120px, 1.2fr) minmax(100px, 1fr) minmax(100px, 0.8fr) minmax(160px, 2fr) auto;
+    min-width: 600px;
 }
 
 .media-config-input {
@@ -5120,6 +5149,56 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 @media (max-width: 1200px) {
     .media-config-layout {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .media-config-panel {
+        padding: 16px;
+    }
+    
+    .media-config-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .media-config-controls .p-button {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .media-config-row,
+    .media-config-row--asset,
+    .media-config-row--document {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        min-width: unset;
+        gap: 10px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .media-config-row .media-config-input,
+    .media-config-row--asset .media-config-input,
+    .media-config-row--asset .media-config-type-pill,
+    .media-config-row--asset .p-dropdown,
+    .media-config-row--document .media-config-input,
+    .media-config-row--document .media-config-type-pill {
+        width: 100%;
+    }
+    
+    .media-config-row .p-button,
+    .media-config-row--asset .p-button,
+    .media-config-row--document .p-button {
+        align-self: flex-end;
+    }
+    
+    .media-config-list {
+        overflow-x: visible;
     }
 }
 
