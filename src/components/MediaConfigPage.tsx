@@ -374,19 +374,21 @@ export default function MediaConfigPage() {
                   {isDocumentScope ? (
                     <div className="media-config-type-pill">Документ</div>
                   ) : (
-                    <Dropdown
-                      value={asset.type}
-                      options={assetTypeOptionsForScope}
-                      onChange={(e) => handleAssetChange(index, 'type', e.value)}
-                      className="media-config-input"
-                    />
+                    <>
+                      <Dropdown
+                        value={asset.type}
+                        options={assetTypeOptionsForScope}
+                        onChange={(e) => handleAssetChange(index, 'type', e.value)}
+                        className="media-config-input"
+                      />
+                      <InputText
+                        value={asset.url || ''}
+                        onChange={(e) => handleAssetChange(index, 'url', e.target.value)}
+                        placeholder="URL (если без загрузки)"
+                        className="media-config-input wide"
+                      />
+                    </>
                   )}
-                  <InputText
-                    value={asset.url || ''}
-                    onChange={(e) => handleAssetChange(index, 'url', e.target.value)}
-                    placeholder="URL (если без загрузки)"
-                    className="media-config-input wide"
-                  />
                   <Button
                     icon="pi pi-times"
                     className="p-button-text p-button-danger"

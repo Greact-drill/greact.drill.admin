@@ -5019,8 +5019,8 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 }
 
 .media-config-row--document {
-    grid-template-columns: minmax(120px, 1.2fr) minmax(100px, 1fr) minmax(100px, 0.8fr) minmax(160px, 2fr) auto;
-    min-width: 600px;
+    grid-template-columns: minmax(120px, 1.2fr) minmax(100px, 1fr) minmax(100px, 0.8fr) auto;
+    min-width: 420px;
 }
 
 .media-config-input {
