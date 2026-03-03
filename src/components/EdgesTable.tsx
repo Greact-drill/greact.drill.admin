@@ -442,12 +442,11 @@ export default function EdgesTable({ title }: Props) {
                 )}
             </div>
 
-            <Dialog 
+            <Dialog
                 visible={openForm}
-                style={{ width: '500px' }}
+                className="responsive-dialog responsive-dialog-md p-fluid"
                 header={selectedEdge ? `Редактировать: ${selectedEdge.id}` : 'Создать новый Edge'}
                 modal
-                className="p-fluid"
                 onHide={handleHideForm}
             >
                 <EdgeForm 

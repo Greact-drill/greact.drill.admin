@@ -534,7 +534,7 @@ export default function TagsTable({ title }: Props) {
                 header="Загрузка завершена"
                 visible={uploadSuccessDialogVisible}
                 onHide={() => setUploadSuccessDialogVisible(false)}
-                style={{ width: '420px' }}
+                className="responsive-dialog responsive-dialog-sm"
                 draggable={false}
                 resizable={false}
             >
@@ -624,12 +624,11 @@ export default function TagsTable({ title }: Props) {
                 </>
             </div>
 
-            <Dialog 
-                visible={openForm} 
-                style={{ width: '550px' }} 
-                header={selectedTag ? `Редактировать: ${selectedTag.id}` : 'Создать новый тег'} 
-                modal 
-                className="p-fluid admin-dialog" 
+            <Dialog
+                visible={openForm}
+                className="responsive-dialog responsive-dialog-lg p-fluid admin-dialog"
+                header={selectedTag ? `Редактировать: ${selectedTag.id}` : 'Создать новый тег'}
+                modal
                 onHide={handleHideForm}
                 closable={false}
             >
@@ -650,12 +649,11 @@ export default function TagsTable({ title }: Props) {
             />
 
             {/* Новый диалог для загрузки файла */}
-            <Dialog 
-                visible={uploadDialogVisible} 
-                style={{ width: '450px' }} 
+            <Dialog
+                visible={uploadDialogVisible}
+                className="responsive-dialog responsive-dialog-md p-fluid admin-dialog"
                 header="Загрузить JSON файл с тегами" 
                 modal 
-                className="p-fluid admin-dialog" 
                 onHide={() => {
                     setUploadDialogVisible(false);
                     setSelectedFile(null);
@@ -711,12 +709,11 @@ export default function TagsTable({ title }: Props) {
             </Dialog>
 
             {/* Диалог для создания тегов из файла */}
-            <Dialog 
-                visible={createTagsDialogVisible} 
-                style={{ width: '450px' }} 
-                header="Создать теги из файла" 
-                modal 
-                className="p-fluid admin-dialog" 
+            <Dialog
+                visible={createTagsDialogVisible}
+                className="responsive-dialog responsive-dialog-md p-fluid admin-dialog"
+                header="Создать теги из файла"
+                modal
                 onHide={() => {
                     setCreateTagsDialogVisible(false);
                     setSelectedTagsFile(null);

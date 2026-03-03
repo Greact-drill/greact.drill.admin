@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import CustomizationTable from './components/CustomizationTable';
 import EdgesTable from './components/EdgesTable';
@@ -17,27 +17,64 @@ const navItems = [
     { path: '/table-config', name: 'Настройка таблиц', icon: 'pi pi-table' },
 ];
 
+const MOBILE_BREAKPOINT = 768;
+
 export default function AdminApp() {
     const location = useLocation();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [location.pathname]);
 
     const toggleSidebar = () => {
         setSidebarCollapsed(!sidebarCollapsed);
     };
 
+    const closeMobileMenu = () => setMobileMenuOpen(false);
+
     return (
-        <div className="admin-layout"> 
-            <aside className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className={`admin-layout ${mobileMenuOpen ? 'mobile-menu-open' : ''}`}> 
+            {isMobile && mobileMenuOpen && (
+                <div 
+                    className="admin-sidebar-overlay" 
+                    onClick={closeMobileMenu}
+                    aria-hidden="true"
+                />
+            )}
+            <aside className={`admin-sidebar ${sidebarCollapsed && !isMobile ? 'collapsed' : ''} ${isMobile ? 'mobile-drawer' : ''}`}>
                 <div className="sidebar-header">
-                    {!sidebarCollapsed && <h1 className="logo-text">Drill</h1>}
-                    <button 
-                        className="sidebar-toggle"
-                        onClick={toggleSidebar}
-                        aria-label={sidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
-                        title={sidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
-                    >
-                        <i className={sidebarCollapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'}></i>
-                    </button>
+                    {(!sidebarCollapsed || isMobile) && <h1 className="logo-text">Drill</h1>}
+                    <div className="sidebar-header-actions">
+                        {isMobile ? (
+                            <button 
+                                className="sidebar-toggle"
+                                onClick={closeMobileMenu}
+                                aria-label="Закрыть меню"
+                                title="Закрыть меню"
+                            >
+                                <i className="pi pi-times"></i>
+                            </button>
+                        ) : (
+                            <button 
+                                className="sidebar-toggle"
+                                onClick={toggleSidebar}
+                                aria-label={sidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
+                                title={sidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
+                            >
+                                <i className={sidebarCollapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'}></i>
+                            </button>
+                        )}
+                    </div>
                 </div>
                 
                 <nav className="sidebar-nav">
@@ -65,7 +102,17 @@ export default function AdminApp() {
             </aside>
             <main className={`admin-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
                 <div className="content-header">
-                    <h2 className="text-3xl font-semibold">
+                    {isMobile && (
+                        <button 
+                            className="mobile-menu-trigger"
+                            onClick={() => setMobileMenuOpen(true)}
+                            aria-label="Открыть меню"
+                            title="Меню"
+                        >
+                            <i className="pi pi-bars"></i>
+                        </button>
+                    )}
+                    <h2 className="content-header-title">
                        Администрирование
                     </h2>
                 </div>
