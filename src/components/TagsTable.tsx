@@ -37,6 +37,7 @@ const TagForm: React.FC<{
     const [max, setMax] = useState<number | null>(tag?.max ?? null);
     const [comment, setComment] = useState(tag?.comment || '');
     const [unitOfMeasurement, setUnitOfMeasurement] = useState(tag?.unit_of_measurement || '');
+    const [precision, setPrecision] = useState<number | null>(tag?.precision ?? null);
     const [edgeIds, setEdgeIds] = useState<string[]>(tag?.edge_ids ?? []);
     const [error, setError] = useState('');
 
@@ -49,6 +50,7 @@ const TagForm: React.FC<{
                 max: max ?? 0, 
                 comment, 
                 unit_of_measurement: unitOfMeasurement,
+                precision: precision ?? undefined,
                 id: tagId,
                 name: data.name as string,
                 edge_ids: edgeIds
@@ -77,7 +79,8 @@ const TagForm: React.FC<{
             min: min as number, 
             max: max as number, 
             comment, 
-            unit_of_measurement: unitOfMeasurement 
+            unit_of_measurement: unitOfMeasurement,
+            precision: precision ?? undefined
         };
         if (!isEdit) {
             payload.id = id;
@@ -133,6 +136,25 @@ const TagForm: React.FC<{
                     style={inputStyle}
                 />
             </div>
+
+            {unitOfMeasurement !== 'bool' && (
+                <div className="field mt-3">
+                    <label htmlFor="precision" className="font-semibold mb-2 block" style={labelStyle}>Точность (знаков после запятой)</label>
+                    <InputNumber 
+                        id="precision" 
+                        value={precision} 
+                        onValueChange={(e) => setPrecision(e.value ?? null)} 
+                        min={0}
+                        max={10}
+                        mode="decimal"
+                        useGrouping={false}
+                        placeholder="По умолчанию: 2"
+                        disabled={mutation.isPending} 
+                        style={inputStyle}
+                    />
+                    <small style={{ color: 'var(--text-secondary)' }}>0–10. Только для числовых тегов. Оставьте пустым для 2 знаков.</small>
+                </div>
+            )}
 
             <div className="field mt-3">
                 <label htmlFor="edge-ids" className="font-semibold mb-2 block" style={labelStyle}>Привязка к оборудованию</label>
@@ -323,6 +345,7 @@ export default function TagsTable({ title }: Props) {
                 comment: tag.comment || '',
                 min: tag.min ?? 0,
                 max: tag.max ?? 0,
+                precision: tag.precision != null ? tag.precision : undefined,
                 edge_ids: bulkEdgeIds
             }));
 
@@ -562,7 +585,7 @@ export default function TagsTable({ title }: Props) {
                     tableStyle={{ minWidth: '100%' }}
                     emptyMessage="Теги не найдены."
                     filters={filters}
-                    globalFilterFields={['id', 'name', 'unit_of_measurement', 'min', 'max', 'comment']}
+                    globalFilterFields={['id', 'name', 'unit_of_measurement', 'precision', 'min', 'max', 'comment']}
                     onFilter={(e) => setFilters(e.filters)}
                 >
                 <Column 
@@ -594,6 +617,13 @@ export default function TagsTable({ title }: Props) {
                     style={{ width: '10%' }}
                     filter
                     filterPlaceholder="Поиск по ед. изм."
+                />
+                <Column
+                    field="precision"
+                    header="Точность"
+                    sortable
+                    style={{ width: '8%' }}
+                    body={(row) => row.unit_of_measurement === 'bool' ? '—' : (row.precision ?? 2)}
                 />
                 <Column
                     field="min"
@@ -777,7 +807,8 @@ export default function TagsTable({ title }: Props) {
     "unit_of_measurement": "стрелка",
     "comment": "",
     "min": 32.5,
-    "max": 87.2
+    "max": 87.2,
+    "precision": 2
   }
 ]`}
                             </pre>

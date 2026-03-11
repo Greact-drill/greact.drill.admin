@@ -57,6 +57,7 @@ export interface TagPayload {
     max: number;
     comment: string;
     unit_of_measurement: string;
+    precision?: number; // Количество цифр после запятой (0-10, для числовых тегов кроме boolean)
     edge_ids?: string[];
 }
 export interface Tag extends Omit<TagPayload, 'edge_ids'> {
