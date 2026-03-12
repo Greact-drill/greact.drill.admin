@@ -583,7 +583,7 @@ export default function TagsTable({ title }: Props) {
                     tableStyle={{ minWidth: '100%' }}
                     emptyMessage="Теги не найдены."
                     filters={filters}
-                    globalFilterFields={['id', 'name', 'unit_of_measurement', 'precision', 'min', 'max', 'comment']}
+                    globalFilterFields={['id', 'edge_ids', 'name', 'unit_of_measurement', 'precision', 'min', 'max', 'comment']}
                     onFilter={(e) => setFilters(e.filters)}
                 >
                 <Column 
