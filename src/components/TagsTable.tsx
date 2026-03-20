@@ -32,6 +32,7 @@ const TagForm: React.FC<{
     const queryClient = useQueryClient();
     const isEdit = !!tag;
     const [name, setName] = useState(tag?.name || '');
+    const [tagGroup, setTagGroup] = useState(tag?.tag_group || '');
     const [id, setId] = useState(tag?.id || '');
     const [min, setMin] = useState<number | null>(tag?.min ?? null);
     const [max, setMax] = useState<number | null>(tag?.max ?? null);
@@ -53,6 +54,7 @@ const TagForm: React.FC<{
                 precision: precision ?? undefined,
                 id: tagId,
                 name: data.name as string,
+                tag_group: tagGroup || undefined,
                 edge_ids: edgeIds
             };
             return isEdit ? updateTag(tagId, payload) : createTag(payload);
@@ -76,6 +78,7 @@ const TagForm: React.FC<{
         
         const payload: Partial<Tag> = { 
             name, 
+            tag_group: tagGroup || undefined,
             min: min as number, 
             max: max as number, 
             comment, 
@@ -133,6 +136,18 @@ const TagForm: React.FC<{
                     onChange={(e) => setUnitOfMeasurement(e.target.value)} 
                     required 
                     disabled={mutation.isPending} 
+                    style={inputStyle}
+                />
+            </div>
+
+            <div className="field mt-3">
+                <label htmlFor="tag-group" className="font-semibold mb-2 block" style={labelStyle}>Группа тегов</label>
+                <InputText
+                    id="tag-group"
+                    value={tagGroup}
+                    onChange={(e) => setTagGroup(e.target.value)}
+                    disabled={mutation.isPending}
+                    placeholder="Например: Давление / Температура / Электрика"
                     style={inputStyle}
                 />
             </div>
@@ -341,6 +356,7 @@ export default function TagsTable({ title }: Props) {
             const tags: TagPayload[] = tagsData.map((tag: any) => ({
                 id: tag.id,
                 name: tag.name,
+                tag_group: tag.tag_group || undefined,
                 unit_of_measurement: tag.unit_of_measurement || '',
                 comment: tag.comment || '',
                 min: tag.min ?? 0,
@@ -583,7 +599,7 @@ export default function TagsTable({ title }: Props) {
                     tableStyle={{ minWidth: '100%' }}
                     emptyMessage="Теги не найдены."
                     filters={filters}
-                    globalFilterFields={['id', 'edge_ids', 'name', 'unit_of_measurement', 'precision', 'min', 'max', 'comment']}
+                    globalFilterFields={['id', 'edge_ids', 'name', 'tag_group', 'unit_of_measurement', 'precision', 'min', 'max', 'comment']}
                     onFilter={(e) => setFilters(e.filters)}
                 >
                 <Column 
@@ -607,6 +623,15 @@ export default function TagsTable({ title }: Props) {
                     style={{ width: '15%' }}
                     filter
                     filterPlaceholder="Поиск по названию"
+                />
+                <Column
+                    field="tag_group"
+                    header="Группа"
+                    sortable
+                    style={{ width: '12%' }}
+                    body={(row) => row.tag_group || '—'}
+                    filter
+                    filterPlaceholder="Поиск по группе"
                 />
                 <Column
                     field="unit_of_measurement"
