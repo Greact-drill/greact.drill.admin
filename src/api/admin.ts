@@ -53,6 +53,7 @@ export async function deleteEdge(id: string): Promise<void> {
 export interface TagPayload {
     id: string;
     name: string;
+    tag_group?: string;
     min: number;
     max: number;
     comment: string;
