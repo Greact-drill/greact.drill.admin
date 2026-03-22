@@ -566,6 +566,7 @@ export default function TagLayoutConstructor({ title }: Props) {
 
         const tagIds = new Set(filteredTags.map((t) => t.id));
         const COL = 260;
+        const ROW = 260;
         const baseLayouts = layoutsRef.current.filter(
             (item) => !(item.edge_id === selectedEdge && tagIds.has(item.tag_id))
         );
