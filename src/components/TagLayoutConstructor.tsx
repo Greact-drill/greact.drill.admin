@@ -24,7 +24,7 @@ import { sortTagsByName, getFilteredAndSortedTags } from '../utils/tagUtils';
 // Интерфейс для конфигурации виджета из JSON
 interface WidgetConfig {
     page: string; // ID edge или 'MAIN_PAGE' для главной
-    widgetType: 'gauge' | 'bar' | 'number' | 'status' | 'compact' | 'card';
+    widgetType: 'gauge' | 'bar' | 'number' | 'status' | 'alarm' | 'compact' | 'card';
     position: { x: number; y: number };
     customLabel?: string;
     displayType?: 'widget' | 'compact' | 'card'; // Как отображать на разных страницах
@@ -45,7 +45,8 @@ const WIDGET_TYPES = [
     { label: 'Манометр', value: 'gauge', icon: 'pi pi-chart-line' },
     { label: 'Вертикальная шкала', value: 'bar', icon: 'pi pi-chart-bar' },
     { label: 'Числовое значение', value: 'number', icon: 'pi pi-hashtag' },
-    { label: 'Статус', value: 'status', icon: 'pi pi-info-circle' }
+    { label: 'Статус', value: 'status', icon: 'pi pi-info-circle' },
+    { label: 'Авария', value: 'alarm', icon: 'pi pi-bolt' }
 ];
 
 // Генерация доступных страниц на основе выбранного edge
