@@ -45,7 +45,8 @@ const BulkWidgetCreator: React.FC<BulkWidgetCreatorProps> = ({
     { label: 'Манометр', value: 'gauge' },
     { label: 'Вертикальная шкала', value: 'bar' },
     { label: 'Числовое значение', value: 'number' },
-    { label: 'Статус', value: 'status' }
+    { label: 'Статус', value: 'status' },
+    { label: 'Авария', value: 'alarm' }
   ];
 
   // Автоматически выбираем всех детей при изменении родителя
