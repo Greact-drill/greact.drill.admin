@@ -14,6 +14,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
 import { Message } from 'primereact/message';
 import { InputText } from 'primereact/inputtext';
 import EdgeTreeSelector from './EdgeTreeSelector';
@@ -39,13 +40,6 @@ interface LayoutItem extends WidgetConfig {
 
 interface Props {
     title: string;
-}
-
-/** Тип виджета по умолчанию при массовом размещении (как в типичных сценариях SCADA) */
-function inferDefaultWidgetType(tag: Tag): WidgetConfig['widgetType'] {
-    const u = tag.unit_of_measurement?.toLowerCase() ?? '';
-    if (u === 'bool') return 'status';
-    return 'gauge';
 }
 
 const WIDGET_TYPES = [
@@ -387,6 +381,9 @@ export default function TagLayoutConstructor({ title }: Props) {
     const [editingItem, setEditingItem] = useState<LayoutItem | null>(null);
     const [childEdges, setChildEdges] = useState<Edge[]>([]);
     const [globalSearch, setGlobalSearch] = useState('');
+    const [showBulkPlaceDialog, setShowBulkPlaceDialog] = useState(false);
+    const [bulkPlaceWidgetType, setBulkPlaceWidgetType] = useState<'gauge' | 'bar' | 'number' | 'status' | 'alarm'>('gauge');
+    const [bulkPlacing, setBulkPlacing] = useState(false);
     
     const layoutsRef = useRef<LayoutItem[]>([]);
     
@@ -561,43 +558,46 @@ export default function TagLayoutConstructor({ title }: Props) {
             alert('Для выбранного элемента нет доступных тегов (список пуст).');
             return;
         }
+        setShowBulkPlaceDialog(true);
+    };
 
-        confirmDialog({
-            header: 'Разместить все теги на странице',
-            message: `Будет создано или обновлено ${filteredTags.length} виджетов на «${selectedPageName}». У каждого тега для этого элемента может быть только одна конфигурация виджета: при необходимости она будет перезаписана.`,
-            icon: 'pi pi-objects-column',
-            acceptLabel: 'Разместить',
-            rejectLabel: 'Отмена',
-            accept: async () => {
-                const tagIds = new Set(filteredTags.map((t) => t.id));
-                const COL = 260;
-                const ROW = 260;
-                const baseLayouts = layoutsRef.current.filter(
-                    (item) => !(item.edge_id === selectedEdge && tagIds.has(item.tag_id))
-                );
-                const newItems: LayoutItem[] = filteredTags.map((tag, index) => {
-                    const col = index % 4;
-                    const row = Math.floor(index / 4);
-                    return {
-                        id: `${selectedEdge}-${tag.id}-${selectedPage}`,
-                        edge_id: selectedEdge,
-                        tag_id: tag.id,
-                        page: selectedPage,
-                        widgetType: inferDefaultWidgetType(tag),
-                        position: { x: 20 + col * COL, y: 20 + row * ROW },
-                        displayType: selectedPage.startsWith('MAIN_') ? 'compact' : 'widget',
-                    };
-                });
-                setLayouts([...baseLayouts, ...newItems]);
-                for (const item of newItems) {
-                    try {
-                        await saveSingleMutation.mutateAsync(item);
-                    } catch (e) {
-                        console.error('Ошибка сохранения виджета', item.tag_id, e);
-                    }
-                }
-            },
+    const executeBulkPlaceAllTags = async () => {
+        if (!selectedEdge || !selectedPage || filteredTags.length === 0) return;
+
+        const tagIds = new Set(filteredTags.map((t) => t.id));
+        const COL = 260;
+        const ROW = 260;
+        const baseLayouts = layoutsRef.current.filter(
+            (item) => !(item.edge_id === selectedEdge && tagIds.has(item.tag_id))
+        );
+        const newItems: LayoutItem[] = filteredTags.map((tag, index) => {
+            const col = index % 4;
+            const row = Math.floor(index / 4);
+            return {
+                id: `${selectedEdge}-${tag.id}-${selectedPage}`,
+                edge_id: selectedEdge,
+                tag_id: tag.id,
+                page: selectedPage,
+                widgetType: bulkPlaceWidgetType,
+                position: { x: 20 + col * COL, y: 20 + row * ROW },
+                displayType: selectedPage.startsWith('MAIN_') ? 'compact' : 'widget',
+            };
         });
+
+        setBulkPlacing(true);
+        setLayouts([...baseLayouts, ...newItems]);
+        try {
+            for (const item of newItems) {
+                try {
+                    await saveSingleMutation.mutateAsync(item);
+                } catch (e) {
+                    console.error('Ошибка сохранения виджета', item.tag_id, e);
+                }
+            }
+            setShowBulkPlaceDialog(false);
+        } finally {
+            setBulkPlacing(false);
+        }
     };
 
     const handleEditWidget = (item: LayoutItem) => {
@@ -722,7 +722,7 @@ export default function TagLayoutConstructor({ title }: Props) {
                                     label="Разместить все теги"
                                     icon="pi pi-objects-column"
                                     onClick={handlePlaceAllTagsOnPage}
-                                    disabled={filteredTags.length === 0 || saveSingleMutation.isPending}
+                                    disabled={filteredTags.length === 0 || saveSingleMutation.isPending || bulkPlacing}
                                     severity="secondary"
                                     className="mr-2"
                                     title="Создать виджеты для всех тегов из списка (доступных для элемента) на текущей странице с сеткой позиций"
@@ -842,6 +842,62 @@ export default function TagLayoutConstructor({ title }: Props) {
                             setEditingItem(null);
                         }}
                     />
+                </Dialog>
+
+                <Dialog
+                    visible={showBulkPlaceDialog}
+                    className="responsive-dialog responsive-dialog-md p-fluid admin-dialog"
+                    header="Массовое размещение виджетов"
+                    modal
+                    draggable={false}
+                    onHide={() => {
+                        if (!bulkPlacing) {
+                            setShowBulkPlaceDialog(false);
+                        }
+                    }}
+                >
+                    <p className="mb-3" style={{ color: 'var(--text-secondary)' }}>
+                        Будет создано или обновлено <strong>{filteredTags.length}</strong> виджетов на странице
+                        «{selectedPageName}». Выбранный тип будет применён ко всем тегам из списка. У каждого тега для
+                        этого элемента допускается одна конфигурация — при необходимости она будет перезаписана.
+                    </p>
+                    <div className="field">
+                        <label className="font-semibold mb-2 block" htmlFor="bulk-place-widget-type" style={{ color: 'var(--text-primary)' }}>
+                            Тип виджета для всех
+                        </label>
+                        <Dropdown
+                            inputId="bulk-place-widget-type"
+                            value={bulkPlaceWidgetType}
+                            options={WIDGET_TYPES}
+                            onChange={(e) =>
+                                setBulkPlaceWidgetType(
+                                    e.value as 'gauge' | 'bar' | 'number' | 'status' | 'alarm'
+                                )
+                            }
+                            optionLabel="label"
+                            optionValue="value"
+                            className="w-full"
+                            disabled={bulkPlacing}
+                        />
+                    </div>
+                    <div className="form-actions mt-4 flex gap-2 justify-content-end">
+                        <Button
+                            type="button"
+                            label="Отмена"
+                            className="p-button-secondary"
+                            onClick={() => setShowBulkPlaceDialog(false)}
+                            disabled={bulkPlacing}
+                        />
+                        <Button
+                            type="button"
+                            label="Разместить"
+                            icon="pi pi-check"
+                            onClick={() => void executeBulkPlaceAllTags()}
+                            loading={bulkPlacing}
+                            disabled={bulkPlacing}
+                            style={{ backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)' }}
+                        />
+                    </div>
                 </Dialog>
 
                 <ConfirmDialog />

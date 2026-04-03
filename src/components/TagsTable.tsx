@@ -380,7 +380,6 @@ export default function TagsTable({ title }: Props) {
         formData.append('file', selectedFile);
 
         try {
-            // const response = await fetch('http://localhost:3000/data/upload', {
             const response = await fetch(import.meta.env.VITE_FILE_UPLOAD, {
                 method: 'POST',
                 body: formData,
@@ -404,7 +403,6 @@ export default function TagsTable({ title }: Props) {
 
     const handleDownloadExample = async () => {
         try {
-            // const response = await fetch('http://localhost:3000/data/example');
             const response = await fetch(import.meta.env.VITE_FILE_EXAMPLE);
             if (response.ok) {
                 const exampleData = await response.json();
