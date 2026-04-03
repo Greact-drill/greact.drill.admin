@@ -1,0 +1,23 @@
+.scheme-widget-preview {
+  width: 72px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d7c2a3;
+}
+
+.scheme-widget-preview__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.22));
+}
+
+.scheme-widget-preview.is-active {
+  color: #67f0a8;
+}
+
+.scheme-widget-preview.is-alarm {
+  color: #ff6b6b;
+}

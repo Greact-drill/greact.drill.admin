@@ -15,19 +15,26 @@ import {
   type Edge,
   type Tag,
 } from '../api/admin';
-import EdgePathDisplay from './EdgePathDisplay';
-import EdgeTreeSelector from './EdgeTreeSelector';
+import {
+  getSchemeWidgetDefinition,
+  isSchemeWidgetType,
+  SCHEME_WIDGET_LIBRARY,
+  type SchemeWidgetType,
+} from '../lib/schemeWidgets';
 import { getErrorMessage } from '../utils/errorUtils';
 import { getFilteredAndSortedTags, sortTagsByName } from '../utils/tagUtils';
-
-type DiagramWidgetType = 'signalLamp' | 'transistor';
+import EdgePathDisplay from './EdgePathDisplay';
+import EdgeTreeSelector from './EdgeTreeSelector';
+import SchemeWidgetPreview from './SchemeWidgetPreview';
+import './DiagramWidgetsPage.css';
 
 interface DiagramWidgetConfig {
   page: string;
-  widgetType: DiagramWidgetType;
+  widgetType: SchemeWidgetType;
   position: { x: number; y: number };
   customLabel?: string;
   displayType?: 'widget' | 'compact' | 'card';
+  connections?: DiagramConnection[];
 }
 
 interface DiagramLayoutItem extends DiagramWidgetConfig {
@@ -36,36 +43,33 @@ interface DiagramLayoutItem extends DiagramWidgetConfig {
   tag_id: string;
 }
 
+type DiagramConnectionKind = 'power' | 'signal' | 'alert';
+
+interface DiagramConnection {
+  targetTagId: string;
+  kind: DiagramConnectionKind;
+}
+
+const CONNECTION_KIND_OPTIONS: Array<{ value: DiagramConnectionKind; label: string }> = [
+  { value: 'power', label: 'Силовая' },
+  { value: 'signal', label: 'Сигнальная' },
+  { value: 'alert', label: 'Аварийная' },
+];
+
 interface Props {
   title: string;
 }
 
-interface WidgetTypeOption {
-  value: DiagramWidgetType;
-  label: string;
-  description: string;
-  icon: string;
-}
-
-const DIAGRAM_WIDGET_TYPES: WidgetTypeOption[] = [
-  {
-    value: 'signalLamp',
-    label: 'Сигнальная лампа',
-    description: 'Круглый индикатор для состояния вкл/выкл.',
-    icon: 'pi pi-circle-fill',
-  },
-  {
-    value: 'transistor',
-    label: 'Транзистор',
-    description: 'Схемный элемент с акцентом на состояние цепи.',
-    icon: 'pi pi-bolt',
-  },
-];
-
 const CANVAS_LIMITS = {
-  width: 1800,
-  height: 920,
+  width: 2200,
+  height: 1200,
 };
+
+const ZOOM_OPTIONS = [
+  { label: '70%', value: 0.7 },
+  { label: '85%', value: 0.85 },
+  { label: '100%', value: 1 },
+];
 
 const getAvailablePages = (selectedEdge: string, edgePath: Edge[]): Array<{ label: string; value: string }> => {
   if (!selectedEdge) {
@@ -107,34 +111,100 @@ const getAvailablePages = (selectedEdge: string, edgePath: Edge[]): Array<{ labe
   return pages;
 };
 
-const getWidgetOption = (type: DiagramWidgetType) =>
-  DIAGRAM_WIDGET_TYPES.find((item) => item.value === type) ?? DIAGRAM_WIDGET_TYPES[0];
+function getWidgetCenter(item: DiagramLayoutItem) {
+  const definition = getSchemeWidgetDefinition(item.widgetType);
+  return {
+    x: item.position.x + (definition.width / 2),
+    y: item.position.y + (definition.height / 2),
+  };
+}
 
-const WidgetGlyph: React.FC<{ type: DiagramWidgetType; active?: boolean }> = ({ type, active = true }) => {
-  if (type === 'signalLamp') {
-    return (
-      <div className={`diagram-widget-glyph diagram-widget-glyph--lamp ${active ? 'is-active' : 'is-idle'}`}>
-        <span className="diagram-widget-glyph__lamp-core" />
-      </div>
-    );
+type AnchorSide = 'left' | 'right' | 'top' | 'bottom';
+
+function getWidgetAnchor(item: DiagramLayoutItem, target: DiagramLayoutItem) {
+  const definition = getSchemeWidgetDefinition(item.widgetType);
+  const sourceCenter = getWidgetCenter(item);
+  const targetCenter = getWidgetCenter(target);
+  const dx = targetCenter.x - sourceCenter.x;
+  const dy = targetCenter.y - sourceCenter.y;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return {
+      x: dx >= 0 ? item.position.x + definition.width : item.position.x,
+      y: sourceCenter.y,
+      side: (dx >= 0 ? 'right' : 'left') as AnchorSide,
+    };
   }
 
-  return (
-    <div className={`diagram-widget-glyph diagram-widget-glyph--transistor ${active ? 'is-active' : 'is-idle'}`}>
-      <span className="diagram-widget-glyph__line diagram-widget-glyph__line--left" />
-      <span className="diagram-widget-glyph__line diagram-widget-glyph__line--center" />
-      <span className="diagram-widget-glyph__line diagram-widget-glyph__line--right" />
-      <span className="diagram-widget-glyph__arrow" />
-    </div>
-  );
-};
+  return {
+    x: sourceCenter.x,
+    y: dy >= 0 ? item.position.y + definition.height : item.position.y,
+    side: (dy >= 0 ? 'bottom' : 'top') as AnchorSide,
+  };
+}
+
+function getAnchorLead(anchor: { x: number; y: number; side: AnchorSide }, offset = 24) {
+  switch (anchor.side) {
+    case 'left':
+      return { x: anchor.x - offset, y: anchor.y };
+    case 'right':
+      return { x: anchor.x + offset, y: anchor.y };
+    case 'top':
+      return { x: anchor.x, y: anchor.y - offset };
+    case 'bottom':
+      return { x: anchor.x, y: anchor.y + offset };
+    default:
+      return { x: anchor.x, y: anchor.y };
+  }
+}
+
+function getOrthogonalLinkPath(
+  source: { x: number; y: number; side: AnchorSide },
+  target: { x: number; y: number; side: AnchorSide }
+) {
+  const sourceLead = getAnchorLead(source);
+  const targetLead = getAnchorLead(target);
+
+  if ((source.side === 'left' || source.side === 'right') && (target.side === 'left' || target.side === 'right')) {
+    const midX = sourceLead.x + ((targetLead.x - sourceLead.x) / 2);
+    return [
+      `M ${source.x} ${source.y}`,
+      `L ${sourceLead.x} ${sourceLead.y}`,
+      `L ${midX} ${sourceLead.y}`,
+      `L ${midX} ${targetLead.y}`,
+      `L ${targetLead.x} ${targetLead.y}`,
+      `L ${target.x} ${target.y}`,
+    ].join(' ');
+  }
+
+  if ((source.side === 'top' || source.side === 'bottom') && (target.side === 'top' || target.side === 'bottom')) {
+    const midY = sourceLead.y + ((targetLead.y - sourceLead.y) / 2);
+    return [
+      `M ${source.x} ${source.y}`,
+      `L ${sourceLead.x} ${sourceLead.y}`,
+      `L ${sourceLead.x} ${midY}`,
+      `L ${targetLead.x} ${midY}`,
+      `L ${targetLead.x} ${targetLead.y}`,
+      `L ${target.x} ${target.y}`,
+    ].join(' ');
+  }
+
+  return [
+    `M ${source.x} ${source.y}`,
+    `L ${sourceLead.x} ${sourceLead.y}`,
+    `L ${sourceLead.x} ${targetLead.y}`,
+    `L ${targetLead.x} ${targetLead.y}`,
+    `L ${target.x} ${target.y}`,
+  ].join(' ');
+}
 
 const DiagramDraggableWidget: React.FC<{
   item: DiagramLayoutItem;
   tagName: string;
+  hasAlarm?: boolean;
   onEdit: (item: DiagramLayoutItem) => void;
   onDelete: (id: string) => void;
-}> = ({ item, tagName, onEdit, onDelete }) => {
+}> = ({ item, tagName, hasAlarm = false, onEdit, onDelete }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'diagram-widget',
     item: { id: item.id },
@@ -143,20 +213,23 @@ const DiagramDraggableWidget: React.FC<{
     }),
   }));
 
-  const option = getWidgetOption(item.widgetType);
+  const definition = getSchemeWidgetDefinition(item.widgetType);
+  const label = item.customLabel || tagName;
 
   return (
     <div
       ref={drag as never}
-      className={`diagram-admin-canvas-widget ${isDragging ? 'is-dragging' : ''}`}
-      style={{ left: `${item.position.x}px`, top: `${item.position.y}px` }}
+      className={`diagram-admin-canvas-widget ${isDragging ? 'is-dragging' : ''} ${hasAlarm ? 'is-alarm' : ''}`}
+      style={{ left: `${item.position.x}px`, top: `${item.position.y}px`, width: `${definition.width}px`, height: `${definition.height}px` }}
       onDoubleClick={() => onEdit(item)}
+      title={label}
     >
-      <div className="diagram-admin-canvas-widget__chrome" />
-      <WidgetGlyph type={item.widgetType} />
+      <div className="diagram-admin-canvas-widget__symbol">
+        <SchemeWidgetPreview type={item.widgetType} active alarm={hasAlarm} />
+      </div>
       <div className="diagram-admin-canvas-widget__meta">
-        <strong>{item.customLabel || tagName}</strong>
-        <span>{option.label}</span>
+        <strong>{label}</strong>
+        <span>{definition.label}</span>
       </div>
       <div className="diagram-admin-canvas-widget__actions">
         <Button icon="pi pi-pencil" text rounded size="small" onClick={() => onEdit(item)} />
@@ -169,23 +242,26 @@ const DiagramDraggableWidget: React.FC<{
 const DiagramDropZone: React.FC<{
   selectedPage: string;
   selectedPageName: string;
+  widgets: DiagramLayoutItem[];
+  zoom: number;
   children: React.ReactNode;
   onDrop: (item: { id: string }, position: { x: number; y: number }) => void;
-}> = ({ selectedPage, selectedPageName, children, onDrop }) => {
-  const dropRef = useRef<HTMLDivElement>(null);
+}> = ({ selectedPage, selectedPageName, widgets, zoom, children, onDrop }) => {
+  const surfaceRef = useRef<HTMLDivElement>(null);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'diagram-widget',
     drop: (item: { id: string }, monitor) => {
-      const offset = monitor.getSourceClientOffset();
-      const bounds = dropRef.current?.getBoundingClientRect();
-      if (!offset || !bounds) {
+      const pointer = monitor.getClientOffset();
+      const surface = surfaceRef.current;
+      const bounds = surface?.getBoundingClientRect();
+      if (!pointer || !surface || !bounds) {
         return;
       }
 
       onDrop(item, {
-        x: offset.x - bounds.left,
-        y: offset.y - bounds.top,
+        x: (pointer.x - bounds.left + surface.scrollLeft) / zoom,
+        y: (pointer.y - bounds.top + surface.scrollTop) / zoom,
       });
     },
     collect: (monitor) => ({
@@ -193,20 +269,74 @@ const DiagramDropZone: React.FC<{
     }),
   }));
 
-  drop(dropRef);
+  drop(surfaceRef);
+
+  const widgetMap = new Map(widgets.map((widget) => [widget.tag_id, widget]));
+  const links = widgets.flatMap((widget) =>
+    (widget.connections ?? [])
+      .map((connection) => {
+        const targetTagId = connection.targetTagId;
+        const target = widgetMap.get(targetTagId);
+        if (!target) {
+          return null;
+        }
+
+        const sourceAnchor = getWidgetAnchor(widget, target);
+        const targetAnchor = getWidgetAnchor(target, widget);
+
+        return {
+          id: `${widget.id}-${targetTagId}`,
+          x1: sourceAnchor.x,
+          y1: sourceAnchor.y,
+          x2: targetAnchor.x,
+          y2: targetAnchor.y,
+          path: getOrthogonalLinkPath(sourceAnchor, targetAnchor),
+          kind: connection.kind,
+        };
+      })
+      .filter((item): item is { id: string; x1: number; y1: number; x2: number; y2: number; path: string; kind: DiagramConnectionKind } => item !== null)
+  );
 
   return (
-    <div ref={dropRef} className={`diagram-admin-canvas ${isOver ? 'is-over' : ''}`} data-page={selectedPage}>
+    <div className={`diagram-admin-canvas ${isOver ? 'is-over' : ''}`} data-page={selectedPage}>
       <div className="diagram-admin-canvas__header">
         <div>
           <h3>{selectedPageName}</h3>
-          <p>Перетаскивайте элементы по полотну и дважды кликайте для редактирования.</p>
+          <p>Размещайте элементы drag & drop, открывайте свойства двойным кликом и отмечайте связи между узлами схемы.</p>
         </div>
         <div className="diagram-admin-canvas__badge">{selectedPage}</div>
       </div>
-      <div className="diagram-admin-canvas__surface">
-        <div className="diagram-admin-canvas__grid" aria-hidden="true" />
-        {children}
+      <div ref={surfaceRef} className="diagram-admin-canvas__surface">
+        <div
+          className="diagram-admin-canvas__workspace-shell"
+          style={{ width: `${CANVAS_LIMITS.width * zoom}px`, height: `${CANVAS_LIMITS.height * zoom}px` }}
+        >
+          <div
+            className="diagram-admin-canvas__workspace"
+            style={{
+              width: `${CANVAS_LIMITS.width}px`,
+              height: `${CANVAS_LIMITS.height}px`,
+              transform: `scale(${zoom})`,
+            }}
+          >
+            <div className="diagram-admin-canvas__grid" aria-hidden="true" />
+            <svg
+              className="diagram-admin-canvas__links"
+              width={CANVAS_LIMITS.width}
+              height={CANVAS_LIMITS.height}
+              viewBox={`0 0 ${CANVAS_LIMITS.width} ${CANVAS_LIMITS.height}`}
+              aria-hidden="true"
+            >
+              {links.map((link) => (
+                <g key={link.id} className={`diagram-admin-canvas__link-group diagram-admin-canvas__link-group--${link.kind}`}>
+                  <path d={link.path} className="diagram-admin-canvas__link" />
+                  <circle cx={link.x2} cy={link.y2} r="4" className="diagram-admin-canvas__link-end" />
+                </g>
+              ))}
+            </svg>
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -216,9 +346,11 @@ const DiagramWidgetForm: React.FC<{
   item: DiagramLayoutItem | null;
   tags: Tag[];
   pages: Array<{ label: string; value: string }>;
+  pageWidgets: DiagramLayoutItem[];
+  tagNames: Map<string, string>;
   onSave: (item: DiagramLayoutItem) => void;
   onCancel: () => void;
-}> = ({ item, tags, pages, onSave, onCancel }) => {
+}> = ({ item, tags, pages, pageWidgets, tagNames, onSave, onCancel }) => {
   const [formData, setFormData] = useState<DiagramLayoutItem | null>(item);
   const [error, setError] = useState('');
 
@@ -231,17 +363,41 @@ const DiagramWidgetForm: React.FC<{
     return null;
   }
 
-  const option = getWidgetOption(formData.widgetType);
+  const definition = getSchemeWidgetDefinition(formData.widgetType);
+  const connectionCandidates = pageWidgets.filter((widget) => widget.id !== formData.id && widget.page === formData.page);
+
+  const toggleConnection = (tagId: string) => {
+    const current = [...(formData.connections ?? [])];
+    const existingIndex = current.findIndex((item) => item.targetTagId === tagId);
+
+    if (existingIndex >= 0) {
+      current.splice(existingIndex, 1);
+    } else {
+      current.push({ targetTagId: tagId, kind: 'signal' });
+    }
+
+    setFormData({ ...formData, connections: current });
+  };
+
+  const updateConnectionKind = (tagId: string, kind: DiagramConnectionKind) => {
+    setFormData({
+      ...formData,
+      connections: (formData.connections ?? []).map((item) =>
+        item.targetTagId === tagId ? { ...item, kind } : item
+      ),
+    });
+  };
 
   const handleSave = () => {
     if (!formData.tag_id || !formData.page || !formData.widgetType) {
-      setError('Заполните обязательные поля: тег, страница и тип виджета.');
+      setError('Заполните обязательные поля: тег, страница и тип элемента.');
       return;
     }
 
     onSave({
       ...formData,
-      displayType: formData.page.startsWith('MAIN_') ? 'compact' : 'widget',
+      displayType: 'widget',
+      connections: (formData.connections ?? []).filter((item) => Boolean(item.targetTagId)),
     });
   };
 
@@ -250,10 +406,10 @@ const DiagramWidgetForm: React.FC<{
       {error ? <Message severity="error" text={error} className="mb-3" /> : null}
 
       <div className="diagram-widget-form__preview">
-        <WidgetGlyph type={formData.widgetType} />
+        <SchemeWidgetPreview type={formData.widgetType} active />
         <div>
-          <strong>{option.label}</strong>
-          <p>{option.description}</p>
+          <strong>{definition.label}</strong>
+          <p>{definition.description}</p>
         </div>
       </div>
 
@@ -279,7 +435,7 @@ const DiagramWidgetForm: React.FC<{
         <select
           id="diagram-widget-page"
           value={formData.page}
-          onChange={(event) => setFormData({ ...formData, page: event.target.value })}
+          onChange={(event) => setFormData({ ...formData, page: event.target.value, connections: [] })}
           className="p-dropdown w-full"
         >
           {pages.map((page) => (
@@ -291,17 +447,15 @@ const DiagramWidgetForm: React.FC<{
       </div>
 
       <div className="field mt-3">
-        <label htmlFor="diagram-widget-type" className="font-semibold mb-2 block">Тип виджета</label>
+        <label htmlFor="diagram-widget-type" className="font-semibold mb-2 block">Тип элемента</label>
         <select
           id="diagram-widget-type"
           value={formData.widgetType}
-          onChange={(event) =>
-            setFormData({ ...formData, widgetType: event.target.value as DiagramWidgetType })
-          }
+          onChange={(event) => setFormData({ ...formData, widgetType: event.target.value as SchemeWidgetType })}
           className="p-dropdown w-full"
         >
-          {DIAGRAM_WIDGET_TYPES.map((type) => (
-            <option key={type.value} value={type.value}>
+          {SCHEME_WIDGET_LIBRARY.map((type) => (
+            <option key={type.type} value={type.type}>
               {type.label}
             </option>
           ))}
@@ -314,8 +468,44 @@ const DiagramWidgetForm: React.FC<{
           id="diagram-widget-label"
           value={formData.customLabel || ''}
           onChange={(event) => setFormData({ ...formData, customLabel: event.target.value })}
-          placeholder="Например: Питание насоса"
+          placeholder="Например: Пускатель насоса"
         />
+      </div>
+
+      <div className="field mt-3">
+        <label className="font-semibold mb-2 block">Связи с другими элементами страницы</label>
+        {connectionCandidates.length ? (
+          <div className="diagram-widget-form__connections">
+            {connectionCandidates.map((widget) => (
+              <label key={widget.id} className="diagram-widget-form__connection-item">
+                <input
+                  type="checkbox"
+                  checked={(formData.connections ?? []).some((item) => item.targetTagId === widget.tag_id)}
+                  onChange={() => toggleConnection(widget.tag_id)}
+                />
+                <SchemeWidgetPreview type={widget.widgetType} active={false} />
+                <div>
+                  <strong>{widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id}</strong>
+                  <span>{getSchemeWidgetDefinition(widget.widgetType).label}</span>
+                </div>
+                <select
+                  className="diagram-widget-form__connection-kind"
+                  value={(formData.connections ?? []).find((item) => item.targetTagId === widget.tag_id)?.kind ?? 'signal'}
+                  onChange={(event) => updateConnectionKind(widget.tag_id, event.target.value as DiagramConnectionKind)}
+                  disabled={!(formData.connections ?? []).some((item) => item.targetTagId === widget.tag_id)}
+                >
+                  {CONNECTION_KIND_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="diagram-admin-muted">На этой странице пока нет других элементов для связи.</p>
+        )}
       </div>
 
       <div className="field mt-3">
@@ -323,6 +513,7 @@ const DiagramWidgetForm: React.FC<{
         <div className="diagram-widget-form__position">
           <span>X: {Math.round(formData.position.x)}</span>
           <span>Y: {Math.round(formData.position.y)}</span>
+          <span>{definition.width}×{definition.height}</span>
         </div>
       </div>
 
@@ -343,6 +534,8 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [editingItem, setEditingItem] = useState<DiagramLayoutItem | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [zoom, setZoom] = useState(0.85);
 
   const layoutsRef = useRef<DiagramLayoutItem[]>([]);
 
@@ -378,7 +571,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
           ? JSON.parse(customization.config)
           : customization.config;
 
-        if (config.widgetType !== 'signalLamp' && config.widgetType !== 'transistor') {
+        if (!isSchemeWidgetType(config.widgetType)) {
           return;
         }
 
@@ -388,12 +581,23 @@ export default function DiagramWidgetsPage({ title }: Props) {
           tag_id: customization.tag_id,
           page: config.page,
           widgetType: config.widgetType,
-          position: config.position ?? { x: 40, y: 40 },
+          position: config.position ?? { x: 60, y: 60 },
           customLabel: config.customLabel,
           displayType: config.displayType,
+          connections: Array.isArray(config.connections)
+            ? config.connections
+                .map((item: string | DiagramConnection) =>
+                  typeof item === 'string'
+                    ? { targetTagId: item, kind: 'signal' as DiagramConnectionKind }
+                    : item?.targetTagId
+                      ? { targetTagId: item.targetTagId, kind: item.kind ?? 'signal' }
+                      : null
+                )
+                .filter((item): item is DiagramConnection => item !== null)
+            : [],
         });
       } catch (error) {
-        console.error('Не удалось прочитать diagram widget config', error);
+        console.error('Не удалось прочитать конфигурацию схемного элемента', error);
       }
     });
 
@@ -403,7 +607,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
   const sortedTags = useMemo(() => sortTagsByName(tags || []), [tags]);
   const filteredTags = useMemo(() => getFilteredAndSortedTags(sortedTags, selectedEdge), [sortedTags, selectedEdge]);
-  const tagsMap = useMemo(() => new Map(sortedTags.map((tag) => [tag.id, tag.name])), [sortedTags]);
+  const tagNames = useMemo(() => new Map(sortedTags.map((tag) => [tag.id, tag.name])), [sortedTags]);
   const availablePages = useMemo(() => getAvailablePages(selectedEdge, selectedEdgePath), [selectedEdge, selectedEdgePath]);
 
   useEffect(() => {
@@ -425,7 +629,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
       try {
         await deleteTagCustomization(item.edge_id, item.tag_id, 'widgetConfig');
       } catch {
-        // no-op
+        // ignore missing record
       }
 
       const { id, edge_id, tag_id, ...config } = item;
@@ -441,21 +645,25 @@ export default function DiagramWidgetsPage({ title }: Props) {
     },
   });
 
+  const allPageLayouts = useMemo(() => {
+    return layouts.filter((item) => item.edge_id === selectedEdge && item.page === selectedPage);
+  }, [layouts, selectedEdge, selectedPage]);
+
   const pageLayouts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return layouts
-      .filter((item) => item.edge_id === selectedEdge && item.page === selectedPage)
+    return allPageLayouts
       .filter((item) => {
         if (!normalizedSearch) {
           return true;
         }
 
-        const tagName = tagsMap.get(item.tag_id)?.toLowerCase() || '';
+        const tagName = tagNames.get(item.tag_id)?.toLowerCase() || '';
         const label = item.customLabel?.toLowerCase() || '';
-        return tagName.includes(normalizedSearch) || label.includes(normalizedSearch);
+        const widgetName = getSchemeWidgetDefinition(item.widgetType).label.toLowerCase();
+        return tagName.includes(normalizedSearch) || label.includes(normalizedSearch) || widgetName.includes(normalizedSearch);
       });
-  }, [layouts, search, selectedEdge, selectedPage, tagsMap]);
+  }, [allPageLayouts, search, tagNames]);
 
   const selectedPageName = useMemo(() => {
     return availablePages.find((item) => item.value === selectedPage)?.label || selectedPage;
@@ -466,7 +674,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
     setSelectedEdgePath(edgePath);
   };
 
-  const openCreateDialog = (widgetType: DiagramWidgetType) => {
+  const openCreateDialog = (widgetType: SchemeWidgetType) => {
     if (!selectedEdge || !selectedPage) {
       return;
     }
@@ -477,17 +685,24 @@ export default function DiagramWidgetsPage({ title }: Props) {
       tag_id: filteredTags[0]?.id || '',
       page: selectedPage,
       widgetType,
-      position: { x: 60, y: 80 },
+      position: { x: 100, y: 120 },
       customLabel: '',
-      displayType: selectedPage.startsWith('MAIN_') ? 'compact' : 'widget',
+      displayType: 'widget',
+      connections: [],
     });
     setShowForm(true);
   };
 
   const handleDrop = useCallback((draggedItem: { id: string }, position: { x: number; y: number }) => {
+    const moved = layoutsRef.current.find((item) => item.id === draggedItem.id);
+    if (!moved) {
+      return;
+    }
+
+    const definition = getSchemeWidgetDefinition(moved.widgetType);
     const constrained = {
-      x: Math.max(16, Math.min(position.x, CANVAS_LIMITS.width)),
-      y: Math.max(24, Math.min(position.y, CANVAS_LIMITS.height)),
+      x: Math.max(16, Math.min(position.x, CANVAS_LIMITS.width - definition.width - 16)),
+      y: Math.max(16, Math.min(position.y, CANVAS_LIMITS.height - definition.height - 16)),
     };
 
     const updated = layoutsRef.current.map((item) =>
@@ -526,7 +741,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
     }
 
     confirmDialog({
-      message: `Удалить схемный виджет для тега ${tagsMap.get(widget.tag_id) || widget.tag_id}?`,
+      message: `Удалить элемент для тега ${tagNames.get(widget.tag_id) || widget.tag_id}?`,
       header: 'Подтверждение удаления',
       icon: 'pi pi-exclamation-triangle',
       acceptClassName: 'p-button-danger',
@@ -537,10 +752,34 @@ export default function DiagramWidgetsPage({ title }: Props) {
     });
   };
 
+  const libraryGroups = useMemo(() => {
+    const normalized = librarySearch.trim().toLowerCase();
+    const filtered = SCHEME_WIDGET_LIBRARY.filter((widget) => {
+      if (!normalized) {
+        return true;
+      }
+
+      return (
+        widget.label.toLowerCase().includes(normalized) ||
+        widget.description.toLowerCase().includes(normalized) ||
+        widget.category.toLowerCase().includes(normalized)
+      );
+    });
+
+    const groups = new Map<string, typeof filtered>();
+    filtered.forEach((widget) => {
+      const current = groups.get(widget.category) ?? [];
+      current.push(widget);
+      groups.set(widget.category, current);
+    });
+
+    return Array.from(groups.entries()).map(([category, items]) => ({ category, items }));
+  }, [librarySearch]);
+
   const stats = {
     total: pageLayouts.length,
-    lamps: pageLayouts.filter((item) => item.widgetType === 'signalLamp').length,
-    transistors: pageLayouts.filter((item) => item.widgetType === 'transistor').length,
+    linked: pageLayouts.filter((item) => (item.connections ?? []).length > 0).length,
+    categories: new Set(pageLayouts.map((item) => getSchemeWidgetDefinition(item.widgetType).category)).size,
   };
 
   return (
@@ -550,22 +789,22 @@ export default function DiagramWidgetsPage({ title }: Props) {
           <div>
             <h2>{title}</h2>
             <p>
-              Размещайте схемные индикаторы на страницах оборудования. Каждый виджет привязан к одному тегу
-              и переключается между состояниями «вкл/выкл» во `view`.
+              Настраивайте библиотеку схемных элементов цифрового двойника буровой, размещайте их на полотне,
+              связывайте между собой и сохраняйте все в текущий `widgetConfig`.
             </p>
           </div>
           <div className="diagram-admin-page__hero-stats">
             <div>
               <strong>{stats.total}</strong>
-              <span>на странице</span>
+              <span>элементов</span>
             </div>
             <div>
-              <strong>{stats.lamps}</strong>
-              <span>ламп</span>
+              <strong>{stats.linked}</strong>
+              <span>со связями</span>
             </div>
             <div>
-              <strong>{stats.transistors}</strong>
-              <span>транзисторов</span>
+              <strong>{stats.categories}</strong>
+              <span>категорий</span>
             </div>
           </div>
         </div>
@@ -573,7 +812,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
         {saveMutation.error ? (
           <Message
             severity="error"
-            text={`Ошибка сохранения: ${getErrorMessage(saveMutation.error, 'Не удалось сохранить виджет.')}`}
+            text={`Ошибка сохранения: ${getErrorMessage(saveMutation.error, 'Не удалось сохранить элемент.')}`}
           />
         ) : null}
 
@@ -589,27 +828,49 @@ export default function DiagramWidgetsPage({ title }: Props) {
               {selectedEdge ? (
                 <EdgePathDisplay edgePath={selectedEdgePath} />
               ) : (
-                <p className="diagram-admin-muted">Выберите элемент дерева слева.</p>
+                <p className="diagram-admin-muted">Выберите оборудование, чтобы открыть страницы схемы.</p>
               )}
             </div>
 
-            <div className="diagram-admin-card">
-              <h3>Библиотека виджетов</h3>
+            <div className="diagram-admin-card diagram-admin-card--library">
+              <div className="diagram-admin-card__title-row">
+                <h3>Библиотека элементов</h3>
+                <span>{SCHEME_WIDGET_LIBRARY.length}</span>
+              </div>
+
+              <input
+                type="text"
+                className="p-inputtext diagram-admin-library__search"
+                placeholder="Поиск по библиотеке"
+                value={librarySearch}
+                onChange={(event) => setLibrarySearch(event.target.value)}
+              />
+
               <div className="diagram-admin-library">
-                {DIAGRAM_WIDGET_TYPES.map((widgetType) => (
-                  <button
-                    key={widgetType.value}
-                    type="button"
-                    className="diagram-admin-library__item"
-                    onClick={() => openCreateDialog(widgetType.value)}
-                    disabled={!selectedEdge || !selectedPage}
-                  >
-                    <WidgetGlyph type={widgetType.value} />
-                    <div>
-                      <strong>{widgetType.label}</strong>
-                      <span>{widgetType.description}</span>
+                {libraryGroups.map((group) => (
+                  <section key={group.category} className="diagram-admin-library__group">
+                    <header>
+                      <h4>{group.category}</h4>
+                      <span>{group.items.length}</span>
+                    </header>
+                    <div className="diagram-admin-library__grid">
+                      {group.items.map((widgetType) => (
+                        <button
+                          key={widgetType.type}
+                          type="button"
+                          className="diagram-admin-library__item"
+                          onClick={() => openCreateDialog(widgetType.type)}
+                          disabled={!selectedEdge || !selectedPage}
+                        >
+                          <SchemeWidgetPreview type={widgetType.type} active />
+                          <div>
+                            <strong>{widgetType.label}</strong>
+                            <span>{widgetType.description}</span>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </button>
+                  </section>
                 ))}
               </div>
             </div>
@@ -621,7 +882,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 <input
                   type="text"
                   className="p-inputtext"
-                  placeholder="Поиск по тегу или подписи"
+                  placeholder="Поиск по тегу, подписи или типу"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
@@ -638,6 +899,17 @@ export default function DiagramWidgetsPage({ title }: Props) {
                     </option>
                   ))}
                 </select>
+                <select
+                  value={String(zoom)}
+                  onChange={(event) => setZoom(Number(event.target.value))}
+                  className="p-dropdown diagram-admin-toolbar__zoom"
+                >
+                  {ZOOM_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      Масштаб {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="diagram-admin-toolbar__actions">
@@ -648,10 +920,10 @@ export default function DiagramWidgetsPage({ title }: Props) {
                   disabled={!selectedEdge || !selectedPage}
                 />
                 <Button
-                  label="Транзистор"
-                  icon="pi pi-bolt"
+                  label="PLC"
+                  icon="pi pi-box"
                   severity="secondary"
-                  onClick={() => openCreateDialog('transistor')}
+                  onClick={() => openCreateDialog('plc')}
                   disabled={!selectedEdge || !selectedPage}
                 />
                 <Button
@@ -667,13 +939,16 @@ export default function DiagramWidgetsPage({ title }: Props) {
               <DiagramDropZone
                 selectedPage={selectedPage}
                 selectedPageName={selectedPageName}
+                widgets={pageLayouts}
+                zoom={zoom}
                 onDrop={handleDrop}
               >
                 {pageLayouts.map((item) => (
                   <DiagramDraggableWidget
                     key={item.id}
                     item={item}
-                    tagName={tagsMap.get(item.tag_id) || item.tag_id}
+                    tagName={tagNames.get(item.tag_id) || item.tag_id}
+                    hasAlarm={Boolean(item.connections?.some((connection) => connection.kind === 'alert'))}
                     onEdit={(widget) => {
                       setEditingItem(widget);
                       setShowForm(true);
@@ -684,8 +959,8 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 {pageLayouts.length === 0 ? (
                   <div className="diagram-admin-empty">
                     <i className="pi pi-sitemap" />
-                    <strong>Пока пусто</strong>
-                    <span>Добавьте сигнальную лампу или транзистор и разместите их на полотне.</span>
+                    <strong>Полотно пока пустое</strong>
+                    <span>Выберите элемент из библиотеки слева и разместите его на странице оборудования.</span>
                   </div>
                 ) : null}
               </DiagramDropZone>
@@ -693,12 +968,15 @@ export default function DiagramWidgetsPage({ title }: Props) {
               <div className="diagram-admin-empty diagram-admin-empty--idle">
                 <i className="pi pi-compass" />
                 <strong>Выберите оборудование</strong>
-                <span>После выбора буровой станет доступно полотно для размещения новых схемных виджетов.</span>
+                <span>После выбора станет доступно полотно для настройки схемных элементов и связей.</span>
               </div>
             )}
 
             <div className="diagram-admin-card">
-              <h3>Текущие виджеты страницы</h3>
+              <div className="diagram-admin-card__title-row">
+                <h3>Элементы текущей страницы</h3>
+                <span>{pageLayouts.length}</span>
+              </div>
               {pageLayouts.length ? (
                 <div className="diagram-admin-list">
                   {pageLayouts.map((item) => (
@@ -711,18 +989,18 @@ export default function DiagramWidgetsPage({ title }: Props) {
                         setShowForm(true);
                       }}
                     >
-                      <WidgetGlyph type={item.widgetType} active={false} />
+                      <SchemeWidgetPreview type={item.widgetType} active={false} />
                       <div>
-                        <strong>{item.customLabel || tagsMap.get(item.tag_id) || item.tag_id}</strong>
+                        <strong>{item.customLabel || tagNames.get(item.tag_id) || item.tag_id}</strong>
                         <span>
-                          {getWidgetOption(item.widgetType).label} · X {Math.round(item.position.x)} · Y {Math.round(item.position.y)}
+                          {getSchemeWidgetDefinition(item.widgetType).label} · X {Math.round(item.position.x)} · Y {Math.round(item.position.y)} · Связей {(item.connections ?? []).length}
                         </span>
                       </div>
                     </button>
                   ))}
                 </div>
               ) : (
-                <p className="diagram-admin-muted">На выбранной странице еще нет схемных виджетов.</p>
+                <p className="diagram-admin-muted">На выбранной странице еще нет схемных элементов.</p>
               )}
             </div>
           </section>
@@ -730,7 +1008,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
         <Dialog
           visible={showForm}
-          header={editingItem?.id.startsWith('new-') ? 'Новый схемный виджет' : 'Редактирование схемного виджета'}
+          header={editingItem?.id.startsWith('new-') ? 'Новый схемный элемент' : 'Редактирование схемного элемента'}
           className="responsive-dialog responsive-dialog-md p-fluid admin-dialog"
           modal
           onHide={() => {
@@ -742,6 +1020,8 @@ export default function DiagramWidgetsPage({ title }: Props) {
             item={editingItem}
             tags={filteredTags}
             pages={availablePages}
+            pageWidgets={allPageLayouts}
+            tagNames={tagNames}
             onSave={handleSaveWidget}
             onCancel={() => {
               setShowForm(false);

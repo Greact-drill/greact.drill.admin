@@ -21,7 +21,7 @@ const EdgeTreeSelector: React.FC<EdgeTreeSelectorProps> = ({
   const [treeNodes, setTreeNodes] = useState<TreeDataNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
-  const [selectedKeys, setSelectedKeys] = useState<Record<string, boolean>>({});
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   // Загружаем дерево edge
   useEffect(() => {
@@ -61,9 +61,7 @@ const EdgeTreeSelector: React.FC<EdgeTreeSelectorProps> = ({
 
   // Обновляем выбранный ключ при изменении selectedEdgeId
   useEffect(() => {
-    if (selectedEdgeId) {
-      setSelectedKeys({ [selectedEdgeId]: true });
-    }
+    setSelectedKey(selectedEdgeId || null);
   }, [selectedEdgeId]);
 
   // Функция для преобразования TreeNode в формат PrimeReact
@@ -91,12 +89,50 @@ const EdgeTreeSelector: React.FC<EdgeTreeSelectorProps> = ({
     });
   };
 
+  const findNodeByKey = (nodes: TreeDataNode[], targetKey: string): TreeDataNode | null => {
+    for (const currentNode of nodes) {
+      const currentKey = currentNode.key as string;
+      if (currentKey === targetKey) {
+        return currentNode;
+      }
+
+      if (currentNode.children) {
+        const result = findNodeByKey(currentNode.children, targetKey);
+        if (result) {
+          return result;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const findPath = (nodes: TreeDataNode[], targetKey: string, path: Edge[] = []): Edge[] | null => {
+    for (const currentNode of nodes) {
+      const currentKey = currentNode.key as string;
+      const newPath = [...path, currentNode.edgeData];
+
+      if (currentKey === targetKey) {
+        return newPath;
+      }
+
+      if (currentNode.children) {
+        const result = findPath(currentNode.children, targetKey, newPath);
+        if (result) {
+          return result;
+        }
+      }
+    }
+
+    return null;
+  };
+
   // Кастомный шаблон для отображения узлов
   const nodeTemplate = (node: PrimeTreeNode) => {
     // Приводим тип к TreeDataNode для доступа к edgeData
     const treeDataNode = node as TreeDataNode;
     const nodeKey = treeDataNode.key as string;
-    const isSelected = selectedKeys[nodeKey];
+    const isSelected = selectedKey === nodeKey;
     
     // Получаем иконку из data или определяем по наличию детей
     const icon = treeDataNode.data?.icon || (treeDataNode.children && treeDataNode.children.length > 0 ? 'pi pi-folder' : 'pi pi-tag');
@@ -126,24 +162,7 @@ const EdgeTreeSelector: React.FC<EdgeTreeSelectorProps> = ({
   const handleNodeClick = (node: TreeDataNode) => {
     // Гарантируем, что key это строка
     const nodeKey = node.key as string;
-    const newSelectedKeys = { [nodeKey]: true };
-    setSelectedKeys(newSelectedKeys);
-    
-    // Находим путь до выбранного edge
-    const findPath = (nodes: TreeDataNode[], targetKey: string, path: Edge[] = []): Edge[] | null => {
-      for (const currentNode of nodes) {
-        const currentKey = currentNode.key as string;
-        const newPath = [...path, currentNode.edgeData];
-        if (currentKey === targetKey) {
-          return newPath;
-        }
-        if (currentNode.children) {
-          const result = findPath(currentNode.children, targetKey, newPath);
-          if (result) return result;
-        }
-      }
-      return null;
-    };
+    setSelectedKey(nodeKey);
 
     const edgePath = findPath(treeNodes, nodeKey) || [node.edgeData];
     onSelectEdge(nodeKey, edgePath);
@@ -156,7 +175,12 @@ const EdgeTreeSelector: React.FC<EdgeTreeSelectorProps> = ({
 
   // Обработчик выбора узла через дерево (если используется стандартный выбор)
   const handleNodeSelect = (event: any) => {
-    const node = treeNodes.find(n => n.key === event.value);
+    const nodeKey = typeof event.value === 'string' ? event.value : String(event.value ?? '');
+    if (!nodeKey) {
+      return;
+    }
+
+    const node = findNodeByKey(treeNodes, nodeKey);
     if (node) {
       handleNodeClick(node);
     }
@@ -187,7 +211,7 @@ const EdgeTreeSelector: React.FC<EdgeTreeSelectorProps> = ({
           <Tree
             value={treeNodes}
             selectionMode="single"
-            selectionKeys={selectedKeys}
+            selectionKeys={selectedKey}
             expandedKeys={expandedKeys}
             onSelectionChange={handleNodeSelect}
             onToggle={handleToggle}
