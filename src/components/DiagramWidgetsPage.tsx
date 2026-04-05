@@ -474,6 +474,20 @@ const DiagramWidgetForm: React.FC<{
 
       <div className="field mt-3">
         <label className="font-semibold mb-2 block">Связи с другими элементами страницы</label>
+        <div className="diagram-widget-form__connection-help">
+          <div className="diagram-widget-form__connection-help-item diagram-widget-form__connection-help-item--power">
+            <strong>Силовая</strong>
+            <span>Показывает линию питания или передачу мощности между узлами: двигатель, насос, привод, шкаф питания.</span>
+          </div>
+          <div className="diagram-widget-form__connection-help-item diagram-widget-form__connection-help-item--signal">
+            <strong>Сигнальная</strong>
+            <span>Показывает управляющий или информационный обмен: датчик, кнопка, контроллер, дискретный или аналоговый сигнал.</span>
+          </div>
+          <div className="diagram-widget-form__connection-help-item diagram-widget-form__connection-help-item--alert">
+            <strong>Аварийная</strong>
+            <span>Используется для аварийных связей и защит: блокировка, тревога, отказ, цепь аварийного останова.</span>
+          </div>
+        </div>
         {connectionCandidates.length ? (
           <div className="diagram-widget-form__connections">
             {connectionCandidates.map((widget) => (
@@ -484,7 +498,7 @@ const DiagramWidgetForm: React.FC<{
                   onChange={() => toggleConnection(widget.tag_id)}
                 />
                 <SchemeWidgetPreview type={widget.widgetType} active={false} />
-                <div>
+                <div className="diagram-widget-form__connection-meta">
                   <strong>{widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id}</strong>
                   <span>{getSchemeWidgetDefinition(widget.widgetType).label}</span>
                 </div>
@@ -912,27 +926,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 </select>
               </div>
 
-              <div className="diagram-admin-toolbar__actions">
-                <Button
-                  label="Лампа"
-                  icon="pi pi-plus-circle"
-                  onClick={() => openCreateDialog('signalLamp')}
-                  disabled={!selectedEdge || !selectedPage}
-                />
-                <Button
-                  label="PLC"
-                  icon="pi pi-box"
-                  severity="secondary"
-                  onClick={() => openCreateDialog('plc')}
-                  disabled={!selectedEdge || !selectedPage}
-                />
-                <Button
-                  label="Обновить"
-                  icon="pi pi-refresh"
-                  severity="info"
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['diagram-widget-customizations'] })}
-                />
-              </div>
+              <div className="diagram-admin-toolbar__actions" />
             </div>
 
             {selectedEdge && selectedPage ? (
