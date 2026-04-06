@@ -50,6 +50,8 @@ interface DiagramConnection {
   kind: DiagramConnectionKind;
 }
 
+type AlignDirection = 'horizontal' | 'vertical';
+
 const CONNECTION_KIND_OPTIONS: Array<{ value: DiagramConnectionKind; label: string }> = [
   { value: 'power', label: 'Силовая' },
   { value: 'signal', label: 'Сигнальная' },
@@ -214,7 +216,7 @@ const DiagramDraggableWidget: React.FC<{
   }));
 
   const definition = getSchemeWidgetDefinition(item.widgetType);
-  const label = item.customLabel || tagName;
+  const label = tagName;
 
   return (
     <div
@@ -225,7 +227,7 @@ const DiagramDraggableWidget: React.FC<{
       title={label}
     >
       <div className="diagram-admin-canvas-widget__symbol">
-        <SchemeWidgetPreview type={item.widgetType} active alarm={hasAlarm} />
+        <SchemeWidgetPreview type={item.widgetType} active={!hasAlarm} alarm={hasAlarm} />
       </div>
       <div className="diagram-admin-canvas-widget__meta">
         <strong>{label}</strong>
@@ -748,6 +750,48 @@ export default function DiagramWidgetsPage({ title }: Props) {
     setEditingItem(null);
   };
 
+  const alignWidgets = (direction: AlignDirection) => {
+    if (pageLayouts.length < 2) {
+      return;
+    }
+
+    const visibleIds = new Set(pageLayouts.map((item) => item.id));
+    const targetCenter = pageLayouts.reduce((sum, item) => {
+      const definition = getSchemeWidgetDefinition(item.widgetType);
+      const center = direction === 'horizontal'
+        ? item.position.y + definition.height / 2
+        : item.position.x + definition.width / 2;
+      return sum + center;
+    }, 0) / pageLayouts.length;
+
+    const updatedLayouts = layoutsRef.current.map((item) => {
+      if (!visibleIds.has(item.id)) {
+        return item;
+      }
+
+      const definition = getSchemeWidgetDefinition(item.widgetType);
+      const nextPosition = direction === 'horizontal'
+        ? {
+            ...item.position,
+            y: Math.max(16, Math.min(targetCenter - (definition.height / 2), CANVAS_LIMITS.height - definition.height - 16)),
+          }
+        : {
+            ...item.position,
+            x: Math.max(16, Math.min(targetCenter - (definition.width / 2), CANVAS_LIMITS.width - definition.width - 16)),
+          };
+
+      return {
+        ...item,
+        position: nextPosition,
+      };
+    });
+
+    setLayouts(updatedLayouts);
+    updatedLayouts
+      .filter((item) => visibleIds.has(item.id))
+      .forEach((item) => saveMutation.mutate(item));
+  };
+
   const handleDeleteWidget = (id: string) => {
     const widget = layoutsRef.current.find((item) => item.id === id);
     if (!widget) {
@@ -926,7 +970,24 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 </select>
               </div>
 
-              <div className="diagram-admin-toolbar__actions" />
+              <div className="diagram-admin-toolbar__actions">
+                <Button
+                  label="По горизонтали"
+                  icon="pi pi-minus"
+                  severity="secondary"
+                  outlined
+                  disabled={pageLayouts.length < 2 || saveMutation.isPending}
+                  onClick={() => alignWidgets('horizontal')}
+                />
+                <Button
+                  label="По вертикали"
+                  icon="pi pi-bars"
+                  severity="secondary"
+                  outlined
+                  disabled={pageLayouts.length < 2 || saveMutation.isPending}
+                  onClick={() => alignWidgets('vertical')}
+                />
+              </div>
             </div>
 
             {selectedEdge && selectedPage ? (

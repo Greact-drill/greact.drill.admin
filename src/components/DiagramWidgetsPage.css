@@ -365,9 +365,16 @@
   padding: 6px;
   border-radius: 14px;
   border: 1px dashed rgba(232, 201, 160, 0.18);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
   cursor: grab;
   z-index: 1;
+  transition: border-color 0.24s ease, background-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.diagram-admin-canvas-widget:hover {
+  border-color: rgba(245, 207, 87, 0.34);
+  background: rgba(245, 207, 87, 0.05);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
 }
 
 .diagram-admin-canvas-widget.is-dragging {
@@ -376,6 +383,7 @@
 
 .diagram-admin-canvas-widget.is-alarm {
   border-color: rgba(255, 107, 107, 0.4);
+  background: rgba(255, 107, 107, 0.06);
 }
 
 .diagram-admin-canvas-widget__symbol {
@@ -404,6 +412,11 @@
 .diagram-admin-canvas-widget__meta span {
   font-size: 0.72rem;
   line-height: 1.15;
+}
+
+.diagram-admin-toolbar__actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .diagram-admin-canvas-widget__actions {

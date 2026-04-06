@@ -10,11 +10,11 @@ interface Props {
 
 const strokeForState = (active: boolean, alarm: boolean) => {
   if (alarm) return '#ff6b6b';
-  if (active) return '#67f0a8';
-  return '#d7c2a3';
+  if (active) return '#45e08a';
+  return '#f5cf57';
 };
 
-function renderSymbol(type: SchemeWidgetType, color: string): ReactElement {
+function renderSymbol(type: SchemeWidgetType, color: string, active: boolean): ReactElement {
   const stroke = { stroke: color, strokeWidth: 3, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   const fill = alarmOrActiveFill(color);
 
@@ -51,9 +51,25 @@ function renderSymbol(type: SchemeWidgetType, color: string): ReactElement {
         <>
           <line x1="12" y1="48" x2="32" y2="48" {...stroke} />
           <circle cx="32" cy="48" r="3.5" fill={color} />
-          <line x1="32" y1="48" x2="64" y2="24" {...stroke} />
-          <circle cx="68" cy="24" r="3.5" fill={color} />
-          <line x1="68" y1="24" x2="88" y2="24" {...stroke} />
+          <line x1="68" y1={active ? '48' : '24'} x2="88" y2={active ? '48' : '24'} {...stroke} />
+          <circle cx="68" cy={active ? '48' : '24'} r="3.5" fill={color} />
+          <g className={`scheme-widget-preview__switch-arm ${active ? 'is-closed' : 'is-open'}`}>
+            <line x1="32" y1="48" x2="64" y2="24" {...stroke} />
+          </g>
+        </>
+      );
+    case 'powerSwitch':
+      return (
+        <>
+          <line x1="10" y1="36" x2="24" y2="36" {...stroke} />
+          <circle cx="28" cy="36" r="4" fill={color} />
+          <line x1="72" y1="36" x2="90" y2="36" {...stroke} />
+          <circle cx="68" cy="36" r="4" fill={color} />
+          <rect x="30" y="18" width="36" height="36" rx="8" stroke={color} strokeWidth="2" fill={fill} />
+          <g className={`scheme-widget-preview__switch-arm scheme-widget-preview__switch-arm--power ${active ? 'is-closed' : 'is-open'}`}>
+            <line x1="30" y1="36" x2="66" y2="36" {...stroke} />
+          </g>
+          <path d="M42 24 L50 36 L58 24" {...stroke} opacity={active ? 0.75 : 0.45} />
         </>
       );
     case 'fuse':
@@ -136,7 +152,7 @@ function renderSymbol(type: SchemeWidgetType, color: string): ReactElement {
     case 'variableResistor':
       return (
         <>
-          {renderSymbol('resistor', color)}
+          {renderSymbol('resistor', color, active)}
           <line x1="60" y1="16" x2="38" y2="56" {...stroke} />
           <path d="M38 56 L36 46 L46 48" {...stroke} />
         </>
@@ -179,7 +195,7 @@ function renderSymbol(type: SchemeWidgetType, color: string): ReactElement {
     case 'led':
       return (
         <>
-          {renderSymbol('diode', color)}
+          {renderSymbol('diode', color, active)}
           <line x1="54" y1="20" x2="70" y2="8" {...stroke} />
           <line x1="60" y1="26" x2="76" y2="14" {...stroke} />
           <path d="M70 8 L66 8 L68 12" {...stroke} />
@@ -319,6 +335,21 @@ function renderSymbol(type: SchemeWidgetType, color: string): ReactElement {
           <line x1="72" y1="34" x2="88" y2="34" {...stroke} />
         </>
       );
+    case 'frequencyConverter':
+      return (
+        <>
+          <rect x="16" y="10" width="68" height="52" rx="8" stroke={color} strokeWidth="3" fill={fill} />
+          <line x1="10" y1="24" x2="16" y2="24" {...stroke} />
+          <line x1="10" y1="36" x2="16" y2="36" {...stroke} />
+          <line x1="10" y1="48" x2="16" y2="48" {...stroke} />
+          <line x1="84" y1="24" x2="90" y2="24" {...stroke} />
+          <line x1="84" y1="36" x2="90" y2="36" {...stroke} />
+          <line x1="84" y1="48" x2="90" y2="48" {...stroke} />
+          <rect x="28" y="18" width="44" height="14" rx="3" stroke={color} strokeWidth="2" fill="rgba(255,255,255,0.06)" />
+          <path d="M30 46 C34 38, 38 54, 42 46 S50 38, 54 46 S62 54, 66 46" {...stroke} />
+          <path d="M50 34 L58 40 L50 46" {...stroke} />
+        </>
+      );
     case 'mcc':
       return (
         <>
@@ -353,7 +384,7 @@ export default function SchemeWidgetPreview({ type, active = true, alarm = false
   return (
     <div className={`scheme-widget-preview ${active ? 'is-active' : 'is-idle'} ${alarm ? 'is-alarm' : ''}`}>
       <svg viewBox="0 0 100 72" className="scheme-widget-preview__svg" aria-hidden="true">
-        {renderSymbol(type, color)}
+        {renderSymbol(type, color, active)}
       </svg>
     </div>
   );

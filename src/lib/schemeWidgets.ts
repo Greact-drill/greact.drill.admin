@@ -3,6 +3,7 @@ export type SchemeWidgetType =
   | 'ground'
   | 'load'
   | 'switch'
+  | 'powerSwitch'
   | 'fuse'
   | 'circuitBreaker'
   | 'disconnector'
@@ -33,6 +34,7 @@ export type SchemeWidgetType =
   | 'plc'
   | 'motor'
   | 'generator'
+  | 'frequencyConverter'
   | 'mcc'
   | 'busbar';
 
@@ -49,11 +51,12 @@ export const SCHEME_WIDGET_LIBRARY: SchemeWidgetDefinition[] = [
   { type: 'powerSource', label: 'Источник питания', description: 'Питание шкафа, панели или секции.', category: 'Питание и шины', width: 132, height: 94 },
   { type: 'ground', label: 'Земля', description: 'Точка заземления или PE-проводник.', category: 'Питание и шины', width: 92, height: 86 },
   { type: 'load', label: 'Нагрузка', description: 'Обобщенная нагрузка цепи.', category: 'Питание и шины', width: 120, height: 90 },
-  { type: 'busbar', label: 'Busbar', description: 'Шина питания или распределения.', category: 'Питание и шины', width: 220, height: 42 },
+  { type: 'busbar', label: 'Шина', description: 'Шина питания или распределения.', category: 'Питание и шины', width: 220, height: 42 },
   { type: 'fuse', label: 'Предохранитель', description: 'Быстродействующая токовая защита.', category: 'Защита', width: 112, height: 84 },
   { type: 'circuitBreaker', label: 'Автомат', description: 'Автоматический выключатель с защитой.', category: 'Защита', width: 116, height: 88 },
   { type: 'thermalRelay', label: 'Тепловое реле', description: 'Защита двигателя от перегрузки.', category: 'Защита', width: 122, height: 90 },
   { type: 'switch', label: 'Выключатель', description: 'Простой однополюсный выключатель.', category: 'Коммутация и управление', width: 120, height: 84 },
+  { type: 'powerSwitch', label: 'Силовой выключатель', description: 'Силовой коммутационный аппарат с заметным состоянием контактов.', category: 'Коммутация и управление', width: 134, height: 90 },
   { type: 'disconnector', label: 'Разъединитель', description: 'Разрыв цепи для обслуживания.', category: 'Коммутация и управление', width: 126, height: 84 },
   { type: 'relay', label: 'Реле', description: 'Промежуточное реле управления.', category: 'Коммутация и управление', width: 116, height: 92 },
   { type: 'contactor', label: 'Контактор', description: 'Силовой контактор.', category: 'Коммутация и управление', width: 126, height: 96 },
@@ -81,6 +84,7 @@ export const SCHEME_WIDGET_LIBRARY: SchemeWidgetDefinition[] = [
   { type: 'plc', label: 'PLC', description: 'Программируемый логический контроллер.', category: 'Датчики и автоматика', width: 150, height: 108 },
   { type: 'motor', label: 'Электродвигатель', description: 'Привод механизма.', category: 'Механизмы и шкафы', width: 122, height: 110 },
   { type: 'generator', label: 'Генератор', description: 'Источник генерации энергии.', category: 'Механизмы и шкафы', width: 122, height: 110 },
+  { type: 'frequencyConverter', label: 'Частотный преобразователь', description: 'Преобразователь частоты для управления скоростью привода.', category: 'Механизмы и шкафы', width: 152, height: 114 },
   { type: 'mcc', label: 'MCC', description: 'Motor Control Center.', category: 'Механизмы и шкафы', width: 160, height: 116 },
 ];
 
