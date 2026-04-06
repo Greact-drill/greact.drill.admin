@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useAuth } from './auth/AuthProvider';
 import CustomizationTable from './components/CustomizationTable';
 import DiagramWidgetsPage from './components/DiagramWidgetsPage';
 import EdgesTable from './components/EdgesTable';
@@ -23,6 +24,7 @@ const MOBILE_BREAKPOINT = 768;
 
 export default function AdminApp() {
   const location = useLocation();
+  const { fullName, username, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -48,7 +50,7 @@ export default function AdminApp() {
         className={`admin-sidebar ${sidebarCollapsed && !isMobile ? 'collapsed' : ''} ${isMobile ? 'mobile-drawer' : ''}`}
       >
         <div className="sidebar-header">
-          {(!sidebarCollapsed || isMobile) ? <h1 className="logo-text">Drill</h1> : null}
+          {!sidebarCollapsed || isMobile ? <h1 className="logo-text">Drill</h1> : null}
           <div className="sidebar-header-actions">
             {isMobile ? (
               <button
@@ -107,6 +109,21 @@ export default function AdminApp() {
             </button>
           ) : null}
           <h2 className="content-header-title">Администрирование</h2>
+          <div className="content-header-actions">
+            <div className="auth-user-chip">
+              <i className="pi pi-user" />
+              <span>{fullName || username || 'Пользователь'}</span>
+            </div>
+            <button
+              type="button"
+              className="auth-logout-button"
+              onClick={() => void logout()}
+              aria-label="Выйти"
+              title="Выйти"
+            >
+              <i className="pi pi-sign-out" />
+            </button>
+          </div>
         </div>
 
         <div className="content-card">

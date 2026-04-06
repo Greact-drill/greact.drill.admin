@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAccessToken } from '../auth/keycloak';
 
 const mediaBaseUrl =
   import.meta.env.VITE_MEDIA_API_URL ||
@@ -8,6 +9,17 @@ const mediaBaseUrl =
 const mediaClient = axios.create({
   baseURL: mediaBaseUrl,
   timeout: 15000
+});
+
+mediaClient.interceptors.request.use(async (config) => {
+  const token = await getAccessToken();
+
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
 export interface MediaConfigResponse<T = Record<string, unknown>> {
