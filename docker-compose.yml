@@ -3,15 +3,28 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL
+        - VITE_FILE_EXAMPLE
+        - VITE_FILE_UPLOAD
+        - VITE_MEDIA_API_URL
+        - VITE_KEYCLOAK_URL
+        - VITE_KEYCLOAK_REALM
+        - VITE_KEYCLOAK_CLIENT_ID
     expose:
       - "80"
     environment:
       - NODE_ENV=production
       - VITE_API_URL=${VITE_API_URL}
+      - VITE_FILE_EXAMPLE=${VITE_FILE_EXAMPLE}
+      - VITE_FILE_UPLOAD=${VITE_FILE_UPLOAD}
       - VITE_MEDIA_API_URL=${VITE_MEDIA_API_URL}
+      - VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
+      - VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
+      - VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
     networks:
       - proxy
 
 networks:
   proxy:
-    external: true  
+    external: true

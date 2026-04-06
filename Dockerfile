@@ -1,38 +1,38 @@
-# Multi-stage build для React приложения с nginx
+# Multi-stage build for React app with nginx
 
-# Stage 1: Build stage
 FROM node:22-alpine AS build
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем package.json и package-lock.json для кэширования зависимостей
 COPY package*.json ./
 
-# Устанавливаем зависимости
 RUN npm install --legacy-peer-deps
 
-COPY  . .
+COPY . .
 
 ARG VITE_API_URL
 ARG VITE_FILE_EXAMPLE
 ARG VITE_FILE_UPLOAD
 ARG VITE_MEDIA_API_URL
+ARG VITE_KEYCLOAK_URL
+ARG VITE_KEYCLOAK_REALM
+ARG VITE_KEYCLOAK_CLIENT_ID
 
-# Собираем приложение для продакшена
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_FILE_EXAMPLE=$VITE_FILE_EXAMPLE
+ENV VITE_FILE_UPLOAD=$VITE_FILE_UPLOAD
+ENV VITE_MEDIA_API_URL=$VITE_MEDIA_API_URL
+ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL
+ENV VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM
+ENV VITE_KEYCLOAK_CLIENT_ID=$VITE_KEYCLOAK_CLIENT_ID
+
 RUN npm run build
 
-# Stage 2: Production stage с nginx
 FROM nginx:alpine
 
-# Копируем собранное приложение из build stage
 COPY --from=build /app/dist /usr/share/nginx/html
-
-# Копируем конфигурацию nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Открываем порт 80
 EXPOSE 80
 
-# Запускаем nginx
 CMD ["nginx", "-g", "daemon off;"]

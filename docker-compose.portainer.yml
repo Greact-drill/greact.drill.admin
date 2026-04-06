@@ -8,6 +8,9 @@ services:
         - VITE_FILE_EXAMPLE
         - VITE_FILE_UPLOAD
         - VITE_MEDIA_API_URL
+        - VITE_KEYCLOAK_URL
+        - VITE_KEYCLOAK_REALM
+        - VITE_KEYCLOAK_CLIENT_ID
     expose:
       - "80"
     container_name: greact-drill-admin-${BRANCH}
@@ -17,6 +20,9 @@ services:
       - VITE_FILE_EXAMPLE=${VITE_FILE_EXAMPLE}
       - VITE_FILE_UPLOAD=${VITE_FILE_UPLOAD}
       - VITE_MEDIA_API_URL=${VITE_MEDIA_API_URL}
+      - VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
+      - VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
+      - VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
     networks:
       - proxy
 
