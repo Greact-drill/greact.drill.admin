@@ -61,15 +61,17 @@ function renderSymbol(type: SchemeWidgetType, color: string, active: boolean): R
     case 'powerSwitch':
       return (
         <>
-          <line x1="10" y1="36" x2="24" y2="36" {...stroke} />
-          <circle cx="28" cy="36" r="4" fill={color} />
-          <line x1="72" y1="36" x2="90" y2="36" {...stroke} />
-          <circle cx="68" cy="36" r="4" fill={color} />
-          <rect x="30" y="18" width="36" height="36" rx="8" stroke={color} strokeWidth="2" fill={fill} />
+          <line x1="50" y1="4" x2="50" y2="12" {...stroke} opacity={0.7} />
+          <line x1="50" y1="60" x2="50" y2="68" {...stroke} opacity={0.7} />
+          <circle cx="50" cy="36" r="22" stroke={color} strokeWidth="3" fill={fill} />
+          <circle cx="50" cy="21" r="3.4" fill={color} />
+          <circle cx="50" cy="51" r="3.4" fill={color} />
+          <line x1="50" y1="12" x2="50" y2="18" {...stroke} opacity={0.65} />
+          <line x1="50" y1="54" x2="50" y2="60" {...stroke} opacity={0.65} />
+          <line x1="50" y1="48" x2="50" y2="51" {...stroke} opacity={active ? 1 : 0.35} />
           <g className={`scheme-widget-preview__switch-arm scheme-widget-preview__switch-arm--power ${active ? 'is-closed' : 'is-open'}`}>
-            <line x1="30" y1="36" x2="66" y2="36" {...stroke} />
+            <line x1="50" y1="21" x2="50" y2="45" {...stroke} />
           </g>
-          <path d="M42 24 L50 36 L58 24" {...stroke} opacity={active ? 0.75 : 0.45} />
         </>
       );
     case 'fuse':
@@ -338,16 +340,13 @@ function renderSymbol(type: SchemeWidgetType, color: string, active: boolean): R
     case 'frequencyConverter':
       return (
         <>
-          <rect x="16" y="10" width="68" height="52" rx="8" stroke={color} strokeWidth="3" fill={fill} />
-          <line x1="10" y1="24" x2="16" y2="24" {...stroke} />
-          <line x1="10" y1="36" x2="16" y2="36" {...stroke} />
-          <line x1="10" y1="48" x2="16" y2="48" {...stroke} />
-          <line x1="84" y1="24" x2="90" y2="24" {...stroke} />
-          <line x1="84" y1="36" x2="90" y2="36" {...stroke} />
-          <line x1="84" y1="48" x2="90" y2="48" {...stroke} />
-          <rect x="28" y="18" width="44" height="14" rx="3" stroke={color} strokeWidth="2" fill="rgba(255,255,255,0.06)" />
-          <path d="M30 46 C34 38, 38 54, 42 46 S50 38, 54 46 S62 54, 66 46" {...stroke} />
-          <path d="M50 34 L58 40 L50 46" {...stroke} />
+          <rect x="18" y="10" width="64" height="52" stroke={color} strokeWidth="3" fill={fill} />
+          <line x1="18" y1="62" x2="82" y2="10" {...stroke} />
+          <line x1="28" y1="22" x2="40" y2="22" {...stroke} />
+          <line x1="28" y1="26" x2="40" y2="26" {...stroke} />
+          <text x="57" y="50" fill={color} fontSize="20" fontWeight="500" textAnchor="middle" fontFamily="Georgia, serif">
+            f
+          </text>
         </>
       );
     case 'mcc':
