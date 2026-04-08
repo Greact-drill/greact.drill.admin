@@ -490,7 +490,43 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  align-items: flex-end;
   color: rgba(248, 241, 231, 0.68);
+}
+
+.diagram-widget-form__position-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diagram-widget-form__position-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 120px;
+  color: #f8f1e7;
+}
+
+.diagram-widget-form__position-field span {
+  font-size: 0.8rem;
+  color: rgba(248, 241, 231, 0.74);
+}
+
+.diagram-widget-form__position-field input {
+  width: 100%;
+}
+
+.diagram-widget-form__position-size {
+  padding-bottom: 10px;
+  font-size: 0.82rem;
+  color: rgba(248, 241, 231, 0.62);
+}
+
+.diagram-widget-form__position-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .diagram-widget-form__connection-help {

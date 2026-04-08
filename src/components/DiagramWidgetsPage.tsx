@@ -67,6 +67,15 @@ const CANVAS_LIMITS = {
   height: 1200,
 };
 
+function clampWidgetPosition(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
+  const definition = getSchemeWidgetDefinition(widgetType);
+
+  return {
+    x: Math.max(16, Math.min(Math.round(position.x), CANVAS_LIMITS.width - definition.width - 16)),
+    y: Math.max(16, Math.min(Math.round(position.y), CANVAS_LIMITS.height - definition.height - 16)),
+  };
+}
+
 const ZOOM_OPTIONS = [
   { label: '70%', value: 0.7 },
   { label: '85%', value: 0.85 },
@@ -368,6 +377,32 @@ const DiagramWidgetForm: React.FC<{
   const definition = getSchemeWidgetDefinition(formData.widgetType);
   const connectionCandidates = pageWidgets.filter((widget) => widget.id !== formData.id && widget.page === formData.page);
 
+  const updatePosition = (axis: 'x' | 'y', value: string) => {
+    const parsed = Number(value);
+    const safeValue = Number.isFinite(parsed) ? parsed : 16;
+    const nextPosition = clampWidgetPosition(
+      {
+        ...formData.position,
+        [axis]: safeValue,
+      },
+      formData.widgetType
+    );
+
+    setFormData({ ...formData, position: nextPosition });
+  };
+
+  const nudgePosition = (dx: number, dy: number) => {
+    const nextPosition = clampWidgetPosition(
+      {
+        x: formData.position.x + dx,
+        y: formData.position.y + dy,
+      },
+      formData.widgetType
+    );
+
+    setFormData({ ...formData, position: nextPosition });
+  };
+
   const toggleConnection = (tagId: string) => {
     const current = [...(formData.connections ?? [])];
     const existingIndex = current.findIndex((item) => item.targetTagId === tagId);
@@ -398,6 +433,7 @@ const DiagramWidgetForm: React.FC<{
 
     onSave({
       ...formData,
+      position: clampWidgetPosition(formData.position, formData.widgetType),
       displayType: 'widget',
       connections: (formData.connections ?? []).filter((item) => Boolean(item.targetTagId)),
     });
@@ -453,7 +489,14 @@ const DiagramWidgetForm: React.FC<{
         <select
           id="diagram-widget-type"
           value={formData.widgetType}
-          onChange={(event) => setFormData({ ...formData, widgetType: event.target.value as SchemeWidgetType })}
+          onChange={(event) => {
+            const widgetType = event.target.value as SchemeWidgetType;
+            setFormData({
+              ...formData,
+              widgetType,
+              position: clampWidgetPosition(formData.position, widgetType),
+            });
+          }}
           className="p-dropdown w-full"
         >
           {SCHEME_WIDGET_LIBRARY.map((type) => (
@@ -530,6 +573,49 @@ const DiagramWidgetForm: React.FC<{
           <span>X: {Math.round(formData.position.x)}</span>
           <span>Y: {Math.round(formData.position.y)}</span>
           <span>{definition.width}×{definition.height}</span>
+        </div>
+      </div>
+
+      <div className="field mt-3">
+        <label className="font-semibold mb-2 block">Точное позиционирование</label>
+        <div className="diagram-widget-form__position-controls">
+          <div className="diagram-widget-form__position">
+            <label className="diagram-widget-form__position-field">
+              <span>X</span>
+              <input
+                type="number"
+                step="1"
+                min="16"
+                max={CANVAS_LIMITS.width - definition.width - 16}
+                value={Math.round(formData.position.x)}
+                onChange={(event) => updatePosition('x', event.target.value)}
+                className="p-inputtext"
+              />
+            </label>
+            <label className="diagram-widget-form__position-field">
+              <span>Y</span>
+              <input
+                type="number"
+                step="1"
+                min="16"
+                max={CANVAS_LIMITS.height - definition.height - 16}
+                value={Math.round(formData.position.y)}
+                onChange={(event) => updatePosition('y', event.target.value)}
+                className="p-inputtext"
+              />
+            </label>
+            <span className="diagram-widget-form__position-size">{definition.width}x{definition.height}</span>
+          </div>
+          <div className="diagram-widget-form__position-actions">
+            <Button type="button" label="X -1" text size="small" onClick={() => nudgePosition(-1, 0)} />
+            <Button type="button" label="X +1" text size="small" onClick={() => nudgePosition(1, 0)} />
+            <Button type="button" label="Y -1" text size="small" onClick={() => nudgePosition(0, -1)} />
+            <Button type="button" label="Y +1" text size="small" onClick={() => nudgePosition(0, 1)} />
+            <Button type="button" label="X -10" text size="small" onClick={() => nudgePosition(-10, 0)} />
+            <Button type="button" label="X +10" text size="small" onClick={() => nudgePosition(10, 0)} />
+            <Button type="button" label="Y -10" text size="small" onClick={() => nudgePosition(0, -10)} />
+            <Button type="button" label="Y +10" text size="small" onClick={() => nudgePosition(0, 10)} />
+          </div>
         </div>
       </div>
 
@@ -715,11 +801,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
       return;
     }
 
-    const definition = getSchemeWidgetDefinition(moved.widgetType);
-    const constrained = {
-      x: Math.max(16, Math.min(position.x, CANVAS_LIMITS.width - definition.width - 16)),
-      y: Math.max(16, Math.min(position.y, CANVAS_LIMITS.height - definition.height - 16)),
-    };
+    const constrained = clampWidgetPosition(position, moved.widgetType);
 
     const updated = layoutsRef.current.map((item) =>
       item.id === draggedItem.id ? { ...item, position: constrained } : item
