@@ -25,7 +25,7 @@ import { sortTagsByName, getFilteredAndSortedTags } from '../utils/tagUtils';
 // Интерфейс для конфигурации виджета из JSON
 interface WidgetConfig {
     page: string; // ID edge или 'MAIN_PAGE' для главной
-    widgetType: 'gauge' | 'bar' | 'number' | 'status' | 'alarm' | 'compact' | 'card';
+    widgetType: 'gauge' | 'bar' | 'number' | 'value' | 'status' | 'alarm' | 'compact' | 'card';
     position: { x: number; y: number };
     customLabel?: string;
     displayType?: 'widget' | 'compact' | 'card'; // Как отображать на разных страницах
@@ -46,6 +46,7 @@ const WIDGET_TYPES = [
     { label: 'Манометр', value: 'gauge', icon: 'pi pi-chart-line' },
     { label: 'Вертикальная шкала', value: 'bar', icon: 'pi pi-chart-bar' },
     { label: 'Числовое значение', value: 'number', icon: 'pi pi-hashtag' },
+    { label: 'Значение тега', value: 'value', icon: 'pi pi-tag' },
     { label: 'Статус', value: 'status', icon: 'pi pi-info-circle' },
     { label: 'Авария', value: 'alarm', icon: 'pi pi-bolt' }
 ];
@@ -382,7 +383,7 @@ export default function TagLayoutConstructor({ title }: Props) {
     const [childEdges, setChildEdges] = useState<Edge[]>([]);
     const [globalSearch, setGlobalSearch] = useState('');
     const [showBulkPlaceDialog, setShowBulkPlaceDialog] = useState(false);
-    const [bulkPlaceWidgetType, setBulkPlaceWidgetType] = useState<'gauge' | 'bar' | 'number' | 'status' | 'alarm'>('gauge');
+    const [bulkPlaceWidgetType, setBulkPlaceWidgetType] = useState<'gauge' | 'bar' | 'number' | 'value' | 'status' | 'alarm'>('gauge');
     const [bulkPlacing, setBulkPlacing] = useState(false);
     
     const layoutsRef = useRef<LayoutItem[]>([]);
@@ -871,7 +872,7 @@ export default function TagLayoutConstructor({ title }: Props) {
                             options={WIDGET_TYPES}
                             onChange={(e) =>
                                 setBulkPlaceWidgetType(
-                                    e.value as 'gauge' | 'bar' | 'number' | 'status' | 'alarm'
+                                    e.value as 'gauge' | 'bar' | 'number' | 'value' | 'status' | 'alarm'
                                 )
                             }
                             optionLabel="label"

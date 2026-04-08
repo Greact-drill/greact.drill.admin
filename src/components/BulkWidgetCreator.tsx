@@ -45,6 +45,7 @@ const BulkWidgetCreator: React.FC<BulkWidgetCreatorProps> = ({
     { label: 'Манометр', value: 'gauge' },
     { label: 'Вертикальная шкала', value: 'bar' },
     { label: 'Числовое значение', value: 'number' },
+    { label: 'Значение тега', value: 'value' },
     { label: 'Статус', value: 'status' },
     { label: 'Авария', value: 'alarm' }
   ];
