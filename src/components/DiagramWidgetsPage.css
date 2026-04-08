@@ -236,27 +236,8 @@
   flex: 0 0 150px;
 }
 
-.diagram-admin-toolbar__grid {
-  flex: 0 0 130px;
-}
 
-.diagram-admin-toolbar__toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(232, 201, 160, 0.14);
-  background: rgba(255, 255, 255, 0.03);
-  color: #f8f1e7;
-  font-size: 0.84rem;
-  white-space: nowrap;
-  cursor: pointer;
-}
 
-.diagram-admin-toolbar__toggle input {
-  accent-color: #7bd3ff;
-}
 
 .diagram-admin-toolbar__selection {
   padding: 9px 12px;
@@ -268,78 +249,14 @@
   white-space: nowrap;
 }
 
-.diagram-admin-minimap {
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 16px 18px;
-  border-radius: 20px;
-  background: rgba(11, 16, 24, 0.78);
-  border: 1px solid rgba(232, 201, 160, 0.12);
-}
 
-.diagram-admin-minimap__header {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  min-width: 220px;
-}
 
-.diagram-admin-minimap__header strong {
-  font-size: 0.98rem;
-  color: #f8f1e7;
-}
 
-.diagram-admin-minimap__header span {
-  color: rgba(248, 241, 231, 0.62);
-  font-size: 0.82rem;
-}
 
-.diagram-admin-minimap__surface {
-  position: relative;
-  width: 240px;
-  height: 140px;
-  flex: 0 0 auto;
-  padding: 0;
-  border: 1px solid rgba(123, 211, 255, 0.18);
-  border-radius: 16px;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    rgba(16, 22, 31, 0.94);
-  background-size: 16px 16px, 16px 16px, auto;
-  cursor: pointer;
-  overflow: hidden;
-}
 
-.diagram-admin-minimap__surface:hover {
-  border-color: rgba(123, 211, 255, 0.28);
-  box-shadow: 0 0 0 1px rgba(123, 211, 255, 0.08);
-}
 
-.diagram-admin-minimap__widget {
-  position: absolute;
-  border-radius: 5px;
-  background: rgba(103, 240, 168, 0.42);
-  border: 1px solid rgba(103, 240, 168, 0.72);
-  box-shadow: 0 0 0 1px rgba(16, 22, 31, 0.44);
-}
 
-.diagram-admin-minimap__widget.is-selected {
-  background: rgba(123, 211, 255, 0.42);
-  border-color: rgba(123, 211, 255, 0.92);
-}
 
-.diagram-admin-minimap__viewport {
-  position: absolute;
-  border: 2px solid rgba(255, 226, 173, 0.92);
-  border-radius: 8px;
-  background: rgba(255, 226, 173, 0.12);
-  box-shadow: 0 0 0 1px rgba(17, 21, 29, 0.52);
-  pointer-events: none;
-}
 
 .diagram-admin-canvas {
   border-radius: 24px;
@@ -680,11 +597,6 @@
   color: rgba(248, 241, 231, 0.62);
 }
 
-.diagram-widget-form__position-hint {
-  display: inline-flex;
-  color: rgba(123, 211, 255, 0.84);
-  font-size: 0.8rem;
-}
 
 
 .diagram-widget-form__connection-help {
@@ -796,20 +708,6 @@
     align-items: stretch;
   }
 
-  .diagram-admin-minimap {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .diagram-admin-minimap__header {
-    min-width: 0;
-  }
-
-  .diagram-admin-minimap__surface {
-    width: 100%;
-    max-width: 320px;
-  }
-
   .diagram-admin-page__hero-stats {
     min-width: 0;
   }
@@ -817,5 +715,10 @@
   .diagram-admin-toolbar__controls,
   .diagram-admin-toolbar__actions {
     flex-wrap: wrap;
+  }
+
+  .diagram-admin-toolbar__zoom {
+    width: 100%;
+    max-width: 320px;
   }
 }

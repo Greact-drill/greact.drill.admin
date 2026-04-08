@@ -50,20 +50,6 @@ interface DiagramConnection {
   kind: DiagramConnectionKind;
 }
 
-interface CanvasViewport {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  scrollWidth: number;
-  scrollHeight: number;
-}
-
-interface CanvasFocusRequest {
-  x: number;
-  y: number;
-}
-
 interface CanvasSelectionBox {
   startX: number;
   startY: number;
@@ -76,10 +62,6 @@ interface SmartSnapGuides {
   x?: number;
   y?: number;
 }
-
-type AlignDirection = 'horizontal' | 'vertical';
-type AlignPreset = 'left' | 'centerX' | 'right' | 'top' | 'centerY' | 'bottom';
-type DistributeDirection = 'horizontal' | 'vertical';
 
 const CONNECTION_KIND_OPTIONS: Array<{ value: DiagramConnectionKind; label: string }> = [
   { value: 'power', label: 'Силовая' },
@@ -99,10 +81,7 @@ const CANVAS_LIMITS = {
 const ADMIN_PREVIEW_SCALE = 0.82;
 const ADMIN_WIDGET_PREVIEW_SIZE = 72;
 const SNAP_THRESHOLD = 14;
-const MINIMAP_WIDTH = 240;
-const MINIMAP_HEIGHT = 140;
 const GRID_OFFSET = 16;
-const GRID_SIZE_OPTIONS = [8, 16, 24, 32];
 const MIN_ZOOM = 0.45;
 const MAX_ZOOM = 1.4;
 
@@ -115,46 +94,12 @@ function clampWidgetPosition(position: { x: number; y: number }, widgetType: Sch
   };
 }
 
-function snapAxisToGrid(value: number, gridSize: number) {
-  return GRID_OFFSET + Math.round((value - GRID_OFFSET) / gridSize) * gridSize;
-}
-
-function normalizeWidgetPosition(
-  position: { x: number; y: number },
-  widgetType: SchemeWidgetType,
-  snapToGrid: boolean,
-  gridSize: number
-) {
-  void snapToGrid;
-  void gridSize;
+function normalizeWidgetPosition(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
   return clampWidgetPosition(position, widgetType);
 }
 
 function clampZoomValue(value: number) {
   return Math.max(MIN_ZOOM, Math.min(Number(value.toFixed(2)), MAX_ZOOM));
-}
-
-function getWidgetsBounds(widgets: DiagramLayoutItem[]) {
-  if (!widgets.length) {
-    return null;
-  }
-
-  const bounds = widgets.map((item) => {
-    const definition = getSchemeWidgetDefinition(item.widgetType);
-    return {
-      left: item.position.x,
-      top: item.position.y,
-      right: item.position.x + definition.width,
-      bottom: item.position.y + definition.height,
-    };
-  });
-
-  return {
-    left: Math.min(...bounds.map((item) => item.left)),
-    top: Math.min(...bounds.map((item) => item.top)),
-    right: Math.max(...bounds.map((item) => item.right)),
-    bottom: Math.max(...bounds.map((item) => item.bottom)),
-  };
 }
 
 function getAdminPreviewDimensions(widgetType: SchemeWidgetType) {
@@ -267,15 +212,6 @@ function getSmartSnapGuides(position: { x: number; y: number }, moved: DiagramLa
     y: yReference,
   };
 }
-
-const EMPTY_VIEWPORT: CanvasViewport = {
-  left: 0,
-  top: 0,
-  width: 0,
-  height: 0,
-  scrollWidth: CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE,
-  scrollHeight: CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE,
-};
 
 const ZOOM_OPTIONS = [
   { label: '55%', value: 0.55 },
@@ -441,7 +377,10 @@ const DiagramDraggableWidget: React.FC<{
       className={`diagram-admin-canvas-widget ${isDragging ? 'is-dragging' : ''} ${hasAlarm ? 'is-alarm' : ''} ${isSelected ? 'is-selected' : ''}`}
       style={{ left: `${position.x}px`, top: `${position.y}px`, width: `${definition.width}px`, height: `${definition.height}px` }}
       onDoubleClick={() => onEdit(item)}
-      onClick={(event) => onSelect(item, event.ctrlKey || event.metaKey)}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(item, event.ctrlKey || event.metaKey);
+      }}
       title={label}
     >
       <div className="diagram-admin-canvas-widget__symbol">
@@ -452,8 +391,8 @@ const DiagramDraggableWidget: React.FC<{
         <span>{definition.label}</span>
       </div>
       <div className="diagram-admin-canvas-widget__actions">
-        <Button icon="pi pi-pencil" text rounded size="small" onClick={() => onEdit(item)} />
-        <Button icon="pi pi-trash" text rounded severity="danger" size="small" onClick={() => onDelete(item.id)} />
+        <Button icon="pi pi-pencil" text rounded size="small" onClick={(event) => { event.stopPropagation(); onEdit(item); }} />
+        <Button icon="pi pi-trash" text rounded severity="danger" size="small" onClick={(event) => { event.stopPropagation(); onDelete(item.id); }} />
       </div>
     </div>
   );
@@ -464,16 +403,11 @@ const DiagramDropZone: React.FC<{
   selectedPageName: string;
   widgets: DiagramLayoutItem[];
   zoom: number;
-  snapToGrid: boolean;
-  gridSize: number;
-  selectedWidgetIds: string[];
   children: React.ReactNode;
   onDrop: (item: { id: string; origin?: { x: number; y: number } }, position: { x: number; y: number }) => void;
   onZoomChange?: (zoom: number) => void;
-  onViewportChange?: (viewport: CanvasViewport) => void;
-  onNavigateReady?: (navigate: ((point: { x: number; y: number }) => void) | null) => void;
   onSelectionChange: (ids: string[], append: boolean) => void;
-}> = ({ selectedPage, selectedPageName, widgets, zoom, snapToGrid, gridSize, selectedWidgetIds, children, onDrop, onZoomChange, onViewportChange, onNavigateReady, onSelectionChange }) => {
+}> = ({ selectedPage, selectedPageName, widgets, zoom, children, onDrop, onZoomChange, onSelectionChange }) => {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [spacePressed, setSpacePressed] = useState(false);
@@ -484,39 +418,36 @@ const DiagramDropZone: React.FC<{
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'diagram-widget',
     hover: (item: { id: string; origin?: { x: number; y: number } }, monitor) => {
-      const pointer = monitor.getClientOffset();
-      const surface = surfaceRef.current;
-      const bounds = surface?.getBoundingClientRect();
       const moved = widgets.find((widget) => widget.id === item.id);
+      const movement = monitor.getDifferenceFromInitialOffset();
 
-      if (!pointer || !surface || !bounds || !moved) {
+      if (!movement || !moved) {
         setSnapGuides(null);
         return;
       }
 
-      const definition = getSchemeWidgetDefinition(moved.widgetType);
-      const centeredPosition = {
-        x: (((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE) - (definition.width / 2),
-        y: (((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE) - (definition.height / 2),
+      const origin = item.origin ?? moved.position;
+      const nextPosition = {
+        x: origin.x + (movement.x / zoom / ADMIN_PREVIEW_SCALE),
+        y: origin.y + (movement.y / zoom / ADMIN_PREVIEW_SCALE),
       };
 
-      const guides = getSmartSnapGuides(centeredPosition, moved, widgets);
+      const guides = getSmartSnapGuides(nextPosition, moved, widgets);
       setSnapGuides(guides.x !== undefined || guides.y !== undefined ? guides : null);
     },
     drop: (item: { id: string; origin?: { x: number; y: number } }, monitor) => {
-      const pointer = monitor.getClientOffset();
-      const surface = surfaceRef.current;
-      const bounds = surface?.getBoundingClientRect();
       const moved = widgets.find((widget) => widget.id === item.id);
-      if (!pointer || !surface || !bounds || !moved) {
+      const movement = monitor.getDifferenceFromInitialOffset();
+
+      if (!movement || !moved) {
         setSnapGuides(null);
         return;
       }
 
-      const definition = getSchemeWidgetDefinition(moved.widgetType);
+      const origin = item.origin ?? moved.position;
       onDrop(item, {
-        x: (((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE) - (definition.width / 2),
-        y: (((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE) - (definition.height / 2),
+        x: origin.x + (movement.x / zoom / ADMIN_PREVIEW_SCALE),
+        y: origin.y + (movement.y / zoom / ADMIN_PREVIEW_SCALE),
       });
       setSnapGuides(null);
     },
@@ -556,55 +487,6 @@ const DiagramDropZone: React.FC<{
       setSnapGuides(null);
     }
   }, [isOver]);
-
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface) {
-      onNavigateReady?.(null);
-      return;
-    }
-
-    const updateViewport = () => {
-      onViewportChange?.({
-        left: surface.scrollLeft,
-        top: surface.scrollTop,
-        width: surface.clientWidth,
-        height: surface.clientHeight,
-        scrollWidth: surface.scrollWidth,
-        scrollHeight: surface.scrollHeight,
-      });
-    };
-
-    const scrollToCanvasPoint = (point: { x: number; y: number }) => {
-      const maxLeft = Math.max(0, surface.scrollWidth - surface.clientWidth);
-      const maxTop = Math.max(0, surface.scrollHeight - surface.clientHeight);
-
-      surface.scrollTo({
-        left: Math.min(maxLeft, Math.max(0, point.x * zoom - surface.clientWidth / 2)),
-        top: Math.min(maxTop, Math.max(0, point.y * zoom - surface.clientHeight / 2)),
-        behavior: 'smooth',
-      });
-    };
-
-    onNavigateReady?.(scrollToCanvasPoint);
-    updateViewport();
-
-    surface.addEventListener('scroll', updateViewport, { passive: true });
-    window.addEventListener('resize', updateViewport);
-
-    const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(() => updateViewport())
-      : null;
-
-    resizeObserver?.observe(surface);
-
-    return () => {
-      surface.removeEventListener('scroll', updateViewport);
-      window.removeEventListener('resize', updateViewport);
-      resizeObserver?.disconnect();
-      onNavigateReady?.(null);
-    };
-  }, [zoom, onNavigateReady, onViewportChange]);
 
   const widgetMap = new Map(widgets.map((widget) => [widget.tag_id, widget]));
   const selectionBounds = selectionBox
@@ -845,86 +727,15 @@ const DiagramDropZone: React.FC<{
   );
 };
 
-const DiagramMiniMap: React.FC<{
-  widgets: DiagramLayoutItem[];
-  selectedWidgetIds: string[];
-  viewport: CanvasViewport;
-  zoom: number;
-  onNavigate?: (point: { x: number; y: number }) => void;
-}> = ({ widgets, selectedWidgetIds, viewport, zoom, onNavigate }) => {
-  const worldWidth = CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE;
-  const worldHeight = CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE;
-  const minimapScale = Math.min(MINIMAP_WIDTH / worldWidth, MINIMAP_HEIGHT / worldHeight);
-  const safeZoom = Math.max(zoom, 0.01);
-  const viewportWidth = Math.min(worldWidth, viewport.width > 0 ? viewport.width / safeZoom : worldWidth);
-  const viewportHeight = Math.min(worldHeight, viewport.height > 0 ? viewport.height / safeZoom : worldHeight);
-  const viewportLeft = Math.min(Math.max(0, viewport.left / safeZoom), Math.max(0, worldWidth - viewportWidth));
-  const viewportTop = Math.min(Math.max(0, viewport.top / safeZoom), Math.max(0, worldHeight - viewportHeight));
-
-  return (
-    <div className="diagram-admin-minimap">
-      <div className="diagram-admin-minimap__header">
-        <strong>Миниатюра схемы</strong>
-        <span>Клик по области переносит к нужному участку</span>
-      </div>
-      <button
-        type="button"
-        className="diagram-admin-minimap__surface"
-        onClick={(event) => {
-          if (!onNavigate) {
-            return;
-          }
-
-          const bounds = event.currentTarget.getBoundingClientRect();
-          onNavigate({
-            x: (event.clientX - bounds.left) / minimapScale,
-            y: (event.clientY - bounds.top) / minimapScale,
-          });
-        }}
-      >
-        {widgets.map((widget) => {
-          const position = getScaledCanvasPosition(widget.position);
-          const dimensions = getAdminPreviewDimensions(widget.widgetType);
-
-          return (
-            <span
-              key={widget.id}
-              className={`diagram-admin-minimap__widget ${selectedWidgetIds.includes(widget.id) ? 'is-selected' : ''}`}
-              style={{
-                left: `${position.x * minimapScale}px`,
-                top: `${position.y * minimapScale}px`,
-                width: `${Math.max(6, dimensions.width * minimapScale)}px`,
-                height: `${Math.max(6, dimensions.height * minimapScale)}px`,
-              }}
-              title={widget.customLabel || widget.tag_id}
-            />
-          );
-        })}
-        <span
-          className="diagram-admin-minimap__viewport"
-          style={{
-            left: `${viewportLeft * minimapScale}px`,
-            top: `${viewportTop * minimapScale}px`,
-            width: `${Math.max(18, viewportWidth * minimapScale)}px`,
-            height: `${Math.max(18, viewportHeight * minimapScale)}px`,
-          }}
-        />
-      </button>
-    </div>
-  );
-};
-
 const DiagramWidgetForm: React.FC<{
   item: DiagramLayoutItem | null;
   tags: Tag[];
   pages: Array<{ label: string; value: string }>;
   pageWidgets: DiagramLayoutItem[];
   tagNames: Map<string, string>;
-  snapToGrid: boolean;
-  gridSize: number;
   onSave: (item: DiagramLayoutItem) => void;
   onCancel: () => void;
-}> = ({ item, tags, pages, pageWidgets, tagNames, snapToGrid, gridSize, onSave, onCancel }) => {
+}> = ({ item, tags, pages, pageWidgets, tagNames, onSave, onCancel }) => {
   const [formData, setFormData] = useState<DiagramLayoutItem | null>(item);
   const [error, setError] = useState('');
 
@@ -948,9 +759,7 @@ const DiagramWidgetForm: React.FC<{
         ...formData.position,
         [axis]: safeValue,
       },
-      formData.widgetType,
-      snapToGrid,
-      gridSize
+      formData.widgetType
     );
 
     setFormData({ ...formData, position: nextPosition });
@@ -986,7 +795,7 @@ const DiagramWidgetForm: React.FC<{
 
     onSave({
       ...formData,
-      position: normalizeWidgetPosition(formData.position, formData.widgetType, snapToGrid, gridSize),
+      position: normalizeWidgetPosition(formData.position, formData.widgetType),
       displayType: 'widget',
       connections: (formData.connections ?? []).filter((item) => Boolean(item.targetTagId)),
     });
@@ -1047,7 +856,7 @@ const DiagramWidgetForm: React.FC<{
             setFormData({
               ...formData,
               widgetType,
-              position: normalizeWidgetPosition(formData.position, widgetType, snapToGrid, gridSize),
+              position: normalizeWidgetPosition(formData.position, widgetType),
             });
           }}
           className="p-dropdown w-full"
@@ -1159,9 +968,6 @@ const DiagramWidgetForm: React.FC<{
             </label>
             <span className="diagram-widget-form__position-size">{definition.width}x{definition.height}</span>
           </div>
-          {snapToGrid ? (
-            <span className="diagram-widget-form__position-hint">Привязка включена: шаг сетки {gridSize}px</span>
-          ) : null}
         </div>
       </div>
 
@@ -1185,13 +991,8 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [librarySearch, setLibrarySearch] = useState('');
   const [zoom, setZoom] = useState(0.7);
   const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
-  const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(EMPTY_VIEWPORT);
-  const [snapToGrid] = useState(false);
-  const [gridSize, setGridSize] = useState(16);
-  const [pendingCanvasFocus, setPendingCanvasFocus] = useState<CanvasFocusRequest | null>(null);
 
   const layoutsRef = useRef<DiagramLayoutItem[]>([]);
-  const canvasNavigatorRef = useRef<((point: { x: number; y: number }) => void) | null>(null);
   const selectedWidgetIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
@@ -1343,41 +1144,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
     return pageLayouts.filter((item) => activeIds.has(item.id));
   }, [pageLayouts, activeWidgetIds]);
 
-  const focusWidgetsInViewport = useCallback((widgetsToFocus: DiagramLayoutItem[]) => {
-    if (!widgetsToFocus.length || canvasViewport.width <= 0 || canvasViewport.height <= 0) {
-      return;
-    }
-
-    const bounds = getWidgetsBounds(widgetsToFocus);
-    if (!bounds) {
-      return;
-    }
-
-    const padding = 80;
-    const worldWidth = (bounds.right - bounds.left) * ADMIN_PREVIEW_SCALE + padding * 2;
-    const worldHeight = (bounds.bottom - bounds.top) * ADMIN_PREVIEW_SCALE + padding * 2;
-    const nextZoom = clampZoomValue(Math.min(canvasViewport.width / worldWidth, canvasViewport.height / worldHeight, 1));
-
-    setZoom(nextZoom);
-    setPendingCanvasFocus({
-      x: ((bounds.left + bounds.right) / 2) * ADMIN_PREVIEW_SCALE,
-      y: ((bounds.top + bounds.bottom) / 2) * ADMIN_PREVIEW_SCALE,
-    });
-  }, [canvasViewport.height, canvasViewport.width]);
-
-  useEffect(() => {
-    if (!pendingCanvasFocus || !canvasNavigatorRef.current) {
-      return;
-    }
-
-    const frame = window.requestAnimationFrame(() => {
-      canvasNavigatorRef.current?.(pendingCanvasFocus);
-      setPendingCanvasFocus(null);
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [pendingCanvasFocus, zoom]);
-
   const handleEdgeSelect = (edgeId: string, edgePath: Edge[]) => {
     setSelectedEdge(edgeId);
     setSelectedEdgePath(edgePath);
@@ -1417,7 +1183,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
       tag_id: filteredTags[0]?.id || '',
       page: selectedPage,
       widgetType,
-      position: normalizeWidgetPosition({ x: 100, y: 120 }, widgetType, snapToGrid, gridSize),
+      position: normalizeWidgetPosition({ x: 100, y: 120 }, widgetType),
       customLabel: '',
       displayType: 'widget',
       connections: [],
@@ -1431,7 +1197,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
       return;
     }
 
-    const constrained = normalizeWidgetPosition(position, moved.widgetType, snapToGrid, gridSize);
+    const constrained = normalizeWidgetPosition(position, moved.widgetType);
     const selectedIds = selectedWidgetIdsRef.current.includes(draggedItem.id)
       ? new Set(selectedWidgetIdsRef.current)
       : new Set([draggedItem.id]);
@@ -1451,9 +1217,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
             x: item.position.x + deltaX,
             y: item.position.y + deltaY,
           },
-          item.widgetType,
-          snapToGrid,
-          gridSize
+          item.widgetType
         ),
       };
     });
@@ -1462,14 +1226,14 @@ export default function DiagramWidgetsPage({ title }: Props) {
     setLayouts(updated);
     setSelectedWidgetIds(Array.from(selectedIds));
     changed.forEach((item) => saveMutation.mutate(item));
-  }, [gridSize, saveMutation, snapToGrid]);
+  }, [saveMutation]);
 
   const handleSaveWidget = (item: DiagramLayoutItem) => {
     const normalizedId = `${item.edge_id}-${item.tag_id}`;
     const nextItem = {
       ...item,
       id: normalizedId,
-      position: normalizeWidgetPosition(item.position, item.widgetType, snapToGrid, gridSize),
+      position: normalizeWidgetPosition(item.position, item.widgetType),
     };
     const existsIndex = layoutsRef.current.findIndex((layout) => layout.id === normalizedId);
     const nextLayouts = [...layoutsRef.current];
@@ -1485,133 +1249,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
     setShowForm(false);
     setEditingItem(null);
     setSelectedWidgetIds([nextItem.id]);
-  };
-
-  const alignWidgets = (direction: AlignDirection) => {
-    if (activeWidgets.length < 2) {
-      return;
-    }
-
-    const visibleIds = new Set(activeWidgets.map((item) => item.id));
-    const targetCenter = activeWidgets.reduce((sum, item) => {
-      const definition = getSchemeWidgetDefinition(item.widgetType);
-      const center = direction === 'horizontal'
-        ? item.position.y + definition.height / 2
-        : item.position.x + definition.width / 2;
-      return sum + center;
-    }, 0) / activeWidgets.length;
-
-    const updatedLayouts = layoutsRef.current.map((item) => {
-      if (!visibleIds.has(item.id)) {
-        return item;
-      }
-
-      const definition = getSchemeWidgetDefinition(item.widgetType);
-      const nextPosition = direction === 'horizontal'
-        ? {
-            ...item.position,
-            y: Math.max(16, Math.min(targetCenter - (definition.height / 2), CANVAS_LIMITS.height - definition.height - 16)),
-          }
-        : {
-            ...item.position,
-            x: Math.max(16, Math.min(targetCenter - (definition.width / 2), CANVAS_LIMITS.width - definition.width - 16)),
-          };
-
-      return {
-        ...item,
-        position: normalizeWidgetPosition(nextPosition, item.widgetType, snapToGrid, gridSize),
-      };
-    });
-
-    setLayouts(updatedLayouts);
-    updatedLayouts
-      .filter((item) => visibleIds.has(item.id))
-      .forEach((item) => saveMutation.mutate(item));
-  };
-
-  const alignWidgetsByPreset = (preset: AlignPreset) => {
-    if (activeWidgets.length < 2) {
-      return;
-    }
-
-    const activeIds = new Set(activeWidgets.map((item) => item.id));
-    const anchors = activeWidgets.map((item) => {
-      const definition = getSchemeWidgetDefinition(item.widgetType);
-      return {
-        left: item.position.x,
-        centerX: item.position.x + definition.width / 2,
-        right: item.position.x + definition.width,
-        top: item.position.y,
-        centerY: item.position.y + definition.height / 2,
-        bottom: item.position.y + definition.height,
-      };
-    });
-
-    const target = anchors.reduce((sum, item) => sum + item[preset], 0) / anchors.length;
-
-    const updatedLayouts = layoutsRef.current.map((item) => {
-      if (!activeIds.has(item.id)) {
-        return item;
-      }
-
-      const definition = getSchemeWidgetDefinition(item.widgetType);
-      const nextPosition = (() => {
-        switch (preset) {
-          case 'left':
-            return { ...item.position, x: target };
-          case 'centerX':
-            return { ...item.position, x: target - definition.width / 2 };
-          case 'right':
-            return { ...item.position, x: target - definition.width };
-          case 'top':
-            return { ...item.position, y: target };
-          case 'centerY':
-            return { ...item.position, y: target - definition.height / 2 };
-          case 'bottom':
-            return { ...item.position, y: target - definition.height };
-          default:
-            return item.position;
-        }
-      })();
-
-      return { ...item, position: normalizeWidgetPosition(nextPosition, item.widgetType, snapToGrid, gridSize) };
-    });
-
-    setLayouts(updatedLayouts);
-    updatedLayouts.filter((item) => activeIds.has(item.id)).forEach((item) => saveMutation.mutate(item));
-  };
-
-  const distributeWidgets = (direction: DistributeDirection) => {
-    if (activeWidgets.length < 3) {
-      return;
-    }
-
-    const sorted = [...activeWidgets].sort((a, b) =>
-      direction === 'horizontal' ? a.position.x - b.position.x : a.position.y - b.position.y
-    );
-    const activeIds = new Set(sorted.map((item) => item.id));
-    const first = sorted[0];
-    const last = sorted[sorted.length - 1];
-    const start = direction === 'horizontal' ? first.position.x : first.position.y;
-    const end = direction === 'horizontal' ? last.position.x : last.position.y;
-    const gap = (end - start) / (sorted.length - 1);
-    const targets = new Map(sorted.map((item, index) => [item.id, start + gap * index]));
-
-    const updatedLayouts = layoutsRef.current.map((item) => {
-      if (!activeIds.has(item.id)) {
-        return item;
-      }
-
-      const target = targets.get(item.id) ?? (direction === 'horizontal' ? item.position.x : item.position.y);
-      const nextPosition = direction === 'horizontal'
-        ? { ...item.position, x: target }
-        : { ...item.position, y: target };
-
-      return { ...item, position: normalizeWidgetPosition(nextPosition, item.widgetType, snapToGrid, gridSize) };
-    });
-
-    setLayouts(updatedLayouts);
-    updatedLayouts.filter((item) => activeIds.has(item.id)).forEach((item) => saveMutation.mutate(item));
   };
 
   useEffect(() => {
@@ -1651,9 +1288,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
               x: item.position.x + dx,
               y: item.position.y + dy,
             },
-            item.widgetType,
-            snapToGrid,
-            gridSize
+            item.widgetType
           ),
         };
       });
@@ -1664,7 +1299,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gridSize, saveMutation, selectedWidgetIds, showForm, snapToGrid]);
+  }, [saveMutation, selectedWidgetIds, showForm]);
 
   const handleDeleteWidget = (id: string) => {
     const widget = layoutsRef.current.find((item) => item.id === id);
@@ -1851,28 +1486,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
               </div>
 
               <div className="diagram-admin-toolbar__actions">
-                <Button
-                  label="По горизонтали"
-                  icon="pi pi-minus"
-                  severity="secondary"
-                  outlined
-                  disabled={pageLayouts.length < 2 || saveMutation.isPending}
-                  onClick={() => alignWidgets('horizontal')}
-                />
-                <Button
-                  label="По вертикали"
-                  icon="pi pi-bars"
-                  severity="secondary"
-                  outlined
-                  disabled={pageLayouts.length < 2 || saveMutation.isPending}
-                  onClick={() => alignWidgets('vertical')}
-                />
-                <Button label="Левый край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('left')} />
-                <Button label="Правый край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('right')} />
-                <Button label="Верхний край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('top')} />
-                <Button label="Нижний край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('bottom')} />
-                <Button label="Распределить X" severity="secondary" outlined disabled={activeWidgets.length < 3 || saveMutation.isPending} onClick={() => distributeWidgets('horizontal')} />
-                <Button label="Распределить Y" severity="secondary" outlined disabled={activeWidgets.length < 3 || saveMutation.isPending} onClick={() => distributeWidgets('vertical')} />
               </div>
             </div>
 
@@ -1882,9 +1495,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 selectedPageName={selectedPageName}
                 widgets={pageLayouts}
                 zoom={zoom}
-                snapToGrid={snapToGrid}
-                gridSize={gridSize}
-                selectedWidgetIds={selectedWidgetIds}
                 onDrop={handleDrop}
                 onZoomChange={setZoom}
                 onSelectionChange={handleCanvasSelection}
@@ -1973,8 +1583,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
             pages={availablePages}
             pageWidgets={allPageLayouts}
             tagNames={tagNames}
-            snapToGrid={snapToGrid}
-            gridSize={gridSize}
             onSave={handleSaveWidget}
             onCancel={() => {
               setShowForm(false);
