@@ -67,6 +67,9 @@ const CANVAS_LIMITS = {
   height: 1200,
 };
 
+const ADMIN_PREVIEW_SCALE = 0.82;
+const SNAP_THRESHOLD = 14;
+
 function clampWidgetPosition(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
   const definition = getSchemeWidgetDefinition(widgetType);
 
@@ -76,7 +79,71 @@ function clampWidgetPosition(position: { x: number; y: number }, widgetType: Sch
   };
 }
 
+function getAdminPreviewDimensions(widgetType: SchemeWidgetType) {
+  const definition = getSchemeWidgetDefinition(widgetType);
+
+  return {
+    width: Math.round(definition.width * ADMIN_PREVIEW_SCALE),
+    height: Math.round(definition.height * ADMIN_PREVIEW_SCALE),
+  };
+}
+
+function getScaledCanvasPosition(position: { x: number; y: number }) {
+  return {
+    x: Math.round(position.x * ADMIN_PREVIEW_SCALE),
+    y: Math.round(position.y * ADMIN_PREVIEW_SCALE),
+  };
+}
+
+function snapToReference(value: number, candidates: number[]) {
+  let best = value;
+  let bestDistance = SNAP_THRESHOLD + 1;
+
+  candidates.forEach((candidate) => {
+    const distance = Math.abs(candidate - value);
+    if (distance < bestDistance) {
+      best = candidate;
+      bestDistance = distance;
+    }
+  });
+
+  return bestDistance <= SNAP_THRESHOLD ? best : value;
+}
+
+function applySmartSnap(position: { x: number; y: number }, moved: DiagramLayoutItem, layouts: DiagramLayoutItem[]) {
+  const movedDefinition = getSchemeWidgetDefinition(moved.widgetType);
+  const otherWidgets = layouts.filter((item) => item.id !== moved.id && item.page === moved.page && item.edge_id === moved.edge_id);
+
+  const snappedX = snapToReference(
+    position.x,
+    otherWidgets.flatMap((item) => {
+      const definition = getSchemeWidgetDefinition(item.widgetType);
+      return [
+        item.position.x,
+        item.position.x + (definition.width / 2) - (movedDefinition.width / 2),
+        item.position.x + definition.width - movedDefinition.width,
+      ];
+    })
+  );
+
+  const snappedY = snapToReference(
+    position.y,
+    otherWidgets.flatMap((item) => {
+      const definition = getSchemeWidgetDefinition(item.widgetType);
+      return [
+        item.position.y,
+        item.position.y + (definition.height / 2) - (movedDefinition.height / 2),
+        item.position.y + definition.height - movedDefinition.height,
+      ];
+    })
+  );
+
+  return { x: snappedX, y: snappedY };
+}
+
 const ZOOM_OPTIONS = [
+  { label: '55%', value: 0.55 },
+  { label: '65%', value: 0.65 },
   { label: '70%', value: 0.7 },
   { label: '85%', value: 0.85 },
   { label: '100%', value: 1 },
@@ -123,17 +190,19 @@ const getAvailablePages = (selectedEdge: string, edgePath: Edge[]): Array<{ labe
 };
 
 function getWidgetCenter(item: DiagramLayoutItem) {
-  const definition = getSchemeWidgetDefinition(item.widgetType);
+  const definition = getAdminPreviewDimensions(item.widgetType);
+  const position = getScaledCanvasPosition(item.position);
   return {
-    x: item.position.x + (definition.width / 2),
-    y: item.position.y + (definition.height / 2),
+    x: position.x + (definition.width / 2),
+    y: position.y + (definition.height / 2),
   };
 }
 
 type AnchorSide = 'left' | 'right' | 'top' | 'bottom';
 
 function getWidgetAnchor(item: DiagramLayoutItem, target: DiagramLayoutItem) {
-  const definition = getSchemeWidgetDefinition(item.widgetType);
+  const definition = getAdminPreviewDimensions(item.widgetType);
+  const position = getScaledCanvasPosition(item.position);
   const sourceCenter = getWidgetCenter(item);
   const targetCenter = getWidgetCenter(target);
   const dx = targetCenter.x - sourceCenter.x;
@@ -141,7 +210,7 @@ function getWidgetAnchor(item: DiagramLayoutItem, target: DiagramLayoutItem) {
 
   if (Math.abs(dx) >= Math.abs(dy)) {
     return {
-      x: dx >= 0 ? item.position.x + definition.width : item.position.x,
+      x: dx >= 0 ? position.x + definition.width : position.x,
       y: sourceCenter.y,
       side: (dx >= 0 ? 'right' : 'left') as AnchorSide,
     };
@@ -149,7 +218,7 @@ function getWidgetAnchor(item: DiagramLayoutItem, target: DiagramLayoutItem) {
 
   return {
     x: sourceCenter.x,
-    y: dy >= 0 ? item.position.y + definition.height : item.position.y,
+    y: dy >= 0 ? position.y + definition.height : position.y,
     side: (dy >= 0 ? 'bottom' : 'top') as AnchorSide,
   };
 }
@@ -224,14 +293,15 @@ const DiagramDraggableWidget: React.FC<{
     }),
   }));
 
-  const definition = getSchemeWidgetDefinition(item.widgetType);
+  const definition = getAdminPreviewDimensions(item.widgetType);
+  const position = getScaledCanvasPosition(item.position);
   const label = tagName;
 
   return (
     <div
       ref={drag as never}
       className={`diagram-admin-canvas-widget ${isDragging ? 'is-dragging' : ''} ${hasAlarm ? 'is-alarm' : ''}`}
-      style={{ left: `${item.position.x}px`, top: `${item.position.y}px`, width: `${definition.width}px`, height: `${definition.height}px` }}
+      style={{ left: `${position.x}px`, top: `${position.y}px`, width: `${definition.width}px`, height: `${definition.height}px` }}
       onDoubleClick={() => onEdit(item)}
       title={label}
     >
@@ -271,8 +341,8 @@ const DiagramDropZone: React.FC<{
       }
 
       onDrop(item, {
-        x: (pointer.x - bounds.left + surface.scrollLeft) / zoom,
-        y: (pointer.y - bounds.top + surface.scrollTop) / zoom,
+        x: ((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE,
+        y: ((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE,
       });
     },
     collect: (monitor) => ({
@@ -320,22 +390,22 @@ const DiagramDropZone: React.FC<{
       <div ref={surfaceRef} className="diagram-admin-canvas__surface">
         <div
           className="diagram-admin-canvas__workspace-shell"
-          style={{ width: `${CANVAS_LIMITS.width * zoom}px`, height: `${CANVAS_LIMITS.height * zoom}px` }}
+          style={{ width: `${CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE * zoom}px`, height: `${CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE * zoom}px` }}
         >
           <div
             className="diagram-admin-canvas__workspace"
             style={{
-              width: `${CANVAS_LIMITS.width}px`,
-              height: `${CANVAS_LIMITS.height}px`,
+              width: `${CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE}px`,
+              height: `${CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}px`,
               transform: `scale(${zoom})`,
             }}
           >
             <div className="diagram-admin-canvas__grid" aria-hidden="true" />
             <svg
               className="diagram-admin-canvas__links"
-              width={CANVAS_LIMITS.width}
-              height={CANVAS_LIMITS.height}
-              viewBox={`0 0 ${CANVAS_LIMITS.width} ${CANVAS_LIMITS.height}`}
+              width={CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE}
+              height={CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}
+              viewBox={`0 0 ${CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE} ${CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}`}
               aria-hidden="true"
             >
               {links.map((link) => (
@@ -384,18 +454,6 @@ const DiagramWidgetForm: React.FC<{
       {
         ...formData.position,
         [axis]: safeValue,
-      },
-      formData.widgetType
-    );
-
-    setFormData({ ...formData, position: nextPosition });
-  };
-
-  const nudgePosition = (dx: number, dy: number) => {
-    const nextPosition = clampWidgetPosition(
-      {
-        x: formData.position.x + dx,
-        y: formData.position.y + dy,
       },
       formData.widgetType
     );
@@ -606,16 +664,6 @@ const DiagramWidgetForm: React.FC<{
             </label>
             <span className="diagram-widget-form__position-size">{definition.width}x{definition.height}</span>
           </div>
-          <div className="diagram-widget-form__position-actions">
-            <Button type="button" label="X -1" text size="small" onClick={() => nudgePosition(-1, 0)} />
-            <Button type="button" label="X +1" text size="small" onClick={() => nudgePosition(1, 0)} />
-            <Button type="button" label="Y -1" text size="small" onClick={() => nudgePosition(0, -1)} />
-            <Button type="button" label="Y +1" text size="small" onClick={() => nudgePosition(0, 1)} />
-            <Button type="button" label="X -10" text size="small" onClick={() => nudgePosition(-10, 0)} />
-            <Button type="button" label="X +10" text size="small" onClick={() => nudgePosition(10, 0)} />
-            <Button type="button" label="Y -10" text size="small" onClick={() => nudgePosition(0, -10)} />
-            <Button type="button" label="Y +10" text size="small" onClick={() => nudgePosition(0, 10)} />
-          </div>
         </div>
       </div>
 
@@ -637,7 +685,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [librarySearch, setLibrarySearch] = useState('');
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState(0.7);
 
   const layoutsRef = useRef<DiagramLayoutItem[]>([]);
 
@@ -801,7 +849,10 @@ export default function DiagramWidgetsPage({ title }: Props) {
       return;
     }
 
-    const constrained = clampWidgetPosition(position, moved.widgetType);
+    const constrained = clampWidgetPosition(
+      applySmartSnap(position, moved, layoutsRef.current),
+      moved.widgetType
+    );
 
     const updated = layoutsRef.current.map((item) =>
       item.id === draggedItem.id ? { ...item, position: constrained } : item

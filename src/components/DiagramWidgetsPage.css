@@ -361,9 +361,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  gap: 5px;
-  padding: 6px;
-  border-radius: 14px;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
   border: 1px dashed rgba(232, 201, 160, 0.18);
   background: rgba(255, 255, 255, 0.03);
   cursor: grab;
@@ -393,8 +393,8 @@
 }
 
 .diagram-admin-canvas-widget .scheme-widget-preview {
-  width: 48px;
-  height: 38px;
+  width: 40px;
+  height: 32px;
 }
 
 .diagram-admin-canvas-widget__meta {
@@ -403,14 +403,14 @@
 }
 
 .diagram-admin-canvas-widget__meta strong {
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   line-height: 1.15;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
 .diagram-admin-canvas-widget__meta span {
-  font-size: 0.72rem;
+  font-size: 0.64rem;
   line-height: 1.15;
 }
 
@@ -425,8 +425,8 @@
 }
 
 .diagram-admin-canvas-widget__actions .p-button {
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .diagram-admin-empty {
@@ -523,11 +523,6 @@
   color: rgba(248, 241, 231, 0.62);
 }
 
-.diagram-widget-form__position-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
 
 .diagram-widget-form__connection-help {
   display: grid;
