@@ -50,6 +50,15 @@ interface DiagramConnection {
   kind: DiagramConnectionKind;
 }
 
+interface CanvasViewport {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  scrollWidth: number;
+  scrollHeight: number;
+}
+
 type AlignDirection = 'horizontal' | 'vertical';
 type AlignPreset = 'left' | 'centerX' | 'right' | 'top' | 'centerY' | 'bottom';
 type DistributeDirection = 'horizontal' | 'vertical';
@@ -71,14 +80,38 @@ const CANVAS_LIMITS = {
 
 const ADMIN_PREVIEW_SCALE = 0.82;
 const SNAP_THRESHOLD = 14;
+const MINIMAP_WIDTH = 240;
+const MINIMAP_HEIGHT = 140;
+const GRID_OFFSET = 16;
+const GRID_SIZE_OPTIONS = [8, 16, 24, 32];
 
 function clampWidgetPosition(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
   const definition = getSchemeWidgetDefinition(widgetType);
 
   return {
-    x: Math.max(16, Math.min(Math.round(position.x), CANVAS_LIMITS.width - definition.width - 16)),
-    y: Math.max(16, Math.min(Math.round(position.y), CANVAS_LIMITS.height - definition.height - 16)),
+    x: Math.max(GRID_OFFSET, Math.min(Math.round(position.x), CANVAS_LIMITS.width - definition.width - GRID_OFFSET)),
+    y: Math.max(GRID_OFFSET, Math.min(Math.round(position.y), CANVAS_LIMITS.height - definition.height - GRID_OFFSET)),
   };
+}
+
+function snapAxisToGrid(value: number, gridSize: number) {
+  return GRID_OFFSET + Math.round((value - GRID_OFFSET) / gridSize) * gridSize;
+}
+
+function normalizeWidgetPosition(
+  position: { x: number; y: number },
+  widgetType: SchemeWidgetType,
+  snapToGrid: boolean,
+  gridSize: number
+) {
+  const nextPosition = snapToGrid
+    ? {
+        x: snapAxisToGrid(position.x, gridSize),
+        y: snapAxisToGrid(position.y, gridSize),
+      }
+    : position;
+
+  return clampWidgetPosition(nextPosition, widgetType);
 }
 
 function getAdminPreviewDimensions(widgetType: SchemeWidgetType) {
@@ -142,6 +175,15 @@ function applySmartSnap(position: { x: number; y: number }, moved: DiagramLayout
 
   return { x: snappedX, y: snappedY };
 }
+
+const EMPTY_VIEWPORT: CanvasViewport = {
+  left: 0,
+  top: 0,
+  width: 0,
+  height: 0,
+  scrollWidth: CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE,
+  scrollHeight: CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE,
+};
 
 const ZOOM_OPTIONS = [
   { label: '55%', value: 0.55 },
@@ -330,9 +372,13 @@ const DiagramDropZone: React.FC<{
   selectedPageName: string;
   widgets: DiagramLayoutItem[];
   zoom: number;
+  snapToGrid: boolean;
+  gridSize: number;
   children: React.ReactNode;
   onDrop: (item: { id: string }, position: { x: number; y: number }) => void;
-}> = ({ selectedPage, selectedPageName, widgets, zoom, children, onDrop }) => {
+  onViewportChange?: (viewport: CanvasViewport) => void;
+  onNavigateReady?: (navigate: ((point: { x: number; y: number }) => void) | null) => void;
+}> = ({ selectedPage, selectedPageName, widgets, zoom, snapToGrid, gridSize, children, onDrop, onViewportChange, onNavigateReady }) => {
   const surfaceRef = useRef<HTMLDivElement>(null);
 
   const [{ isOver }, drop] = useDrop(() => ({
@@ -356,6 +402,55 @@ const DiagramDropZone: React.FC<{
   }));
 
   drop(surfaceRef);
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) {
+      onNavigateReady?.(null);
+      return;
+    }
+
+    const updateViewport = () => {
+      onViewportChange?.({
+        left: surface.scrollLeft,
+        top: surface.scrollTop,
+        width: surface.clientWidth,
+        height: surface.clientHeight,
+        scrollWidth: surface.scrollWidth,
+        scrollHeight: surface.scrollHeight,
+      });
+    };
+
+    const scrollToCanvasPoint = (point: { x: number; y: number }) => {
+      const maxLeft = Math.max(0, surface.scrollWidth - surface.clientWidth);
+      const maxTop = Math.max(0, surface.scrollHeight - surface.clientHeight);
+
+      surface.scrollTo({
+        left: Math.min(maxLeft, Math.max(0, point.x * zoom - surface.clientWidth / 2)),
+        top: Math.min(maxTop, Math.max(0, point.y * zoom - surface.clientHeight / 2)),
+        behavior: 'smooth',
+      });
+    };
+
+    onNavigateReady?.(scrollToCanvasPoint);
+    updateViewport();
+
+    surface.addEventListener('scroll', updateViewport, { passive: true });
+    window.addEventListener('resize', updateViewport);
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => updateViewport())
+      : null;
+
+    resizeObserver?.observe(surface);
+
+    return () => {
+      surface.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+      resizeObserver?.disconnect();
+      onNavigateReady?.(null);
+    };
+  }, [zoom, onNavigateReady, onViewportChange]);
 
   const widgetMap = new Map(widgets.map((widget) => [widget.tag_id, widget]));
   const links = widgets.flatMap((widget) =>
@@ -405,7 +500,11 @@ const DiagramDropZone: React.FC<{
               transform: `scale(${zoom})`,
             }}
           >
-            <div className="diagram-admin-canvas__grid" aria-hidden="true" />
+            <div
+              className={`diagram-admin-canvas__grid ${snapToGrid ? 'is-snap-active' : ''}`}
+              style={{ backgroundSize: `${gridSize}px ${gridSize}px` }}
+              aria-hidden="true"
+            />
             <svg
               className="diagram-admin-canvas__links"
               width={CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE}
@@ -428,15 +527,86 @@ const DiagramDropZone: React.FC<{
   );
 };
 
+const DiagramMiniMap: React.FC<{
+  widgets: DiagramLayoutItem[];
+  selectedWidgetIds: string[];
+  viewport: CanvasViewport;
+  zoom: number;
+  onNavigate?: (point: { x: number; y: number }) => void;
+}> = ({ widgets, selectedWidgetIds, viewport, zoom, onNavigate }) => {
+  const worldWidth = CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE;
+  const worldHeight = CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE;
+  const minimapScale = Math.min(MINIMAP_WIDTH / worldWidth, MINIMAP_HEIGHT / worldHeight);
+  const safeZoom = Math.max(zoom, 0.01);
+  const viewportWidth = Math.min(worldWidth, viewport.width > 0 ? viewport.width / safeZoom : worldWidth);
+  const viewportHeight = Math.min(worldHeight, viewport.height > 0 ? viewport.height / safeZoom : worldHeight);
+  const viewportLeft = Math.min(Math.max(0, viewport.left / safeZoom), Math.max(0, worldWidth - viewportWidth));
+  const viewportTop = Math.min(Math.max(0, viewport.top / safeZoom), Math.max(0, worldHeight - viewportHeight));
+
+  return (
+    <div className="diagram-admin-minimap">
+      <div className="diagram-admin-minimap__header">
+        <strong>Миниатюра схемы</strong>
+        <span>Клик по области переносит к нужному участку</span>
+      </div>
+      <button
+        type="button"
+        className="diagram-admin-minimap__surface"
+        onClick={(event) => {
+          if (!onNavigate) {
+            return;
+          }
+
+          const bounds = event.currentTarget.getBoundingClientRect();
+          onNavigate({
+            x: (event.clientX - bounds.left) / minimapScale,
+            y: (event.clientY - bounds.top) / minimapScale,
+          });
+        }}
+      >
+        {widgets.map((widget) => {
+          const position = getScaledCanvasPosition(widget.position);
+          const dimensions = getAdminPreviewDimensions(widget.widgetType);
+
+          return (
+            <span
+              key={widget.id}
+              className={`diagram-admin-minimap__widget ${selectedWidgetIds.includes(widget.id) ? 'is-selected' : ''}`}
+              style={{
+                left: `${position.x * minimapScale}px`,
+                top: `${position.y * minimapScale}px`,
+                width: `${Math.max(6, dimensions.width * minimapScale)}px`,
+                height: `${Math.max(6, dimensions.height * minimapScale)}px`,
+              }}
+              title={widget.customLabel || widget.tag_id}
+            />
+          );
+        })}
+        <span
+          className="diagram-admin-minimap__viewport"
+          style={{
+            left: `${viewportLeft * minimapScale}px`,
+            top: `${viewportTop * minimapScale}px`,
+            width: `${Math.max(18, viewportWidth * minimapScale)}px`,
+            height: `${Math.max(18, viewportHeight * minimapScale)}px`,
+          }}
+        />
+      </button>
+    </div>
+  );
+};
+
 const DiagramWidgetForm: React.FC<{
   item: DiagramLayoutItem | null;
   tags: Tag[];
   pages: Array<{ label: string; value: string }>;
   pageWidgets: DiagramLayoutItem[];
   tagNames: Map<string, string>;
+  snapToGrid: boolean;
+  gridSize: number;
   onSave: (item: DiagramLayoutItem) => void;
   onCancel: () => void;
-}> = ({ item, tags, pages, pageWidgets, tagNames, onSave, onCancel }) => {
+}> = ({ item, tags, pages, pageWidgets, tagNames, snapToGrid, gridSize, onSave, onCancel }) => {
   const [formData, setFormData] = useState<DiagramLayoutItem | null>(item);
   const [error, setError] = useState('');
 
@@ -454,13 +624,15 @@ const DiagramWidgetForm: React.FC<{
 
   const updatePosition = (axis: 'x' | 'y', value: string) => {
     const parsed = Number(value);
-    const safeValue = Number.isFinite(parsed) ? parsed : 16;
-    const nextPosition = clampWidgetPosition(
+    const safeValue = Number.isFinite(parsed) ? parsed : GRID_OFFSET;
+    const nextPosition = normalizeWidgetPosition(
       {
         ...formData.position,
         [axis]: safeValue,
       },
-      formData.widgetType
+      formData.widgetType,
+      snapToGrid,
+      gridSize
     );
 
     setFormData({ ...formData, position: nextPosition });
@@ -496,7 +668,7 @@ const DiagramWidgetForm: React.FC<{
 
     onSave({
       ...formData,
-      position: clampWidgetPosition(formData.position, formData.widgetType),
+      position: normalizeWidgetPosition(formData.position, formData.widgetType, snapToGrid, gridSize),
       displayType: 'widget',
       connections: (formData.connections ?? []).filter((item) => Boolean(item.targetTagId)),
     });
@@ -557,7 +729,7 @@ const DiagramWidgetForm: React.FC<{
             setFormData({
               ...formData,
               widgetType,
-              position: clampWidgetPosition(formData.position, widgetType),
+              position: normalizeWidgetPosition(formData.position, widgetType, snapToGrid, gridSize),
             });
           }}
           className="p-dropdown w-full"
@@ -648,8 +820,8 @@ const DiagramWidgetForm: React.FC<{
               <input
                 type="number"
                 step="1"
-                min="16"
-                max={CANVAS_LIMITS.width - definition.width - 16}
+                min={String(GRID_OFFSET)}
+                max={String(CANVAS_LIMITS.width - definition.width - GRID_OFFSET)}
                 value={Math.round(formData.position.x)}
                 onChange={(event) => updatePosition('x', event.target.value)}
                 className="p-inputtext"
@@ -660,8 +832,8 @@ const DiagramWidgetForm: React.FC<{
               <input
                 type="number"
                 step="1"
-                min="16"
-                max={CANVAS_LIMITS.height - definition.height - 16}
+                min={String(GRID_OFFSET)}
+                max={String(CANVAS_LIMITS.height - definition.height - GRID_OFFSET)}
                 value={Math.round(formData.position.y)}
                 onChange={(event) => updatePosition('y', event.target.value)}
                 className="p-inputtext"
@@ -669,6 +841,9 @@ const DiagramWidgetForm: React.FC<{
             </label>
             <span className="diagram-widget-form__position-size">{definition.width}x{definition.height}</span>
           </div>
+          {snapToGrid ? (
+            <span className="diagram-widget-form__position-hint">Привязка включена: шаг сетки {gridSize}px</span>
+          ) : null}
         </div>
       </div>
 
@@ -692,8 +867,12 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [librarySearch, setLibrarySearch] = useState('');
   const [zoom, setZoom] = useState(0.7);
   const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
+  const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(EMPTY_VIEWPORT);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [gridSize, setGridSize] = useState(16);
 
   const layoutsRef = useRef<DiagramLayoutItem[]>([]);
+  const canvasNavigatorRef = useRef<((point: { x: number; y: number }) => void) | null>(null);
 
   useEffect(() => {
     layoutsRef.current = layouts;
@@ -869,7 +1048,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
       tag_id: filteredTags[0]?.id || '',
       page: selectedPage,
       widgetType,
-      position: { x: 100, y: 120 },
+      position: normalizeWidgetPosition({ x: 100, y: 120 }, widgetType, snapToGrid, gridSize),
       customLabel: '',
       displayType: 'widget',
       connections: [],
@@ -883,9 +1062,11 @@ export default function DiagramWidgetsPage({ title }: Props) {
       return;
     }
 
-    const constrained = clampWidgetPosition(
+    const constrained = normalizeWidgetPosition(
       applySmartSnap(position, moved, layoutsRef.current),
-      moved.widgetType
+      moved.widgetType,
+      snapToGrid,
+      gridSize
     );
 
     const updated = layoutsRef.current.map((item) =>
@@ -898,11 +1079,15 @@ export default function DiagramWidgetsPage({ title }: Props) {
     if (changed) {
       saveMutation.mutate(changed);
     }
-  }, [saveMutation]);
+  }, [gridSize, saveMutation, snapToGrid]);
 
   const handleSaveWidget = (item: DiagramLayoutItem) => {
     const normalizedId = `${item.edge_id}-${item.tag_id}`;
-    const nextItem = { ...item, id: normalizedId };
+    const nextItem = {
+      ...item,
+      id: normalizedId,
+      position: normalizeWidgetPosition(item.position, item.widgetType, snapToGrid, gridSize),
+    };
     const existsIndex = layoutsRef.current.findIndex((layout) => layout.id === normalizedId);
     const nextLayouts = [...layoutsRef.current];
 
@@ -951,7 +1136,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
       return {
         ...item,
-        position: clampWidgetPosition(nextPosition, item.widgetType),
+        position: normalizeWidgetPosition(nextPosition, item.widgetType, snapToGrid, gridSize),
       };
     });
 
@@ -1006,7 +1191,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
         }
       })();
 
-      return { ...item, position: clampWidgetPosition(nextPosition, item.widgetType) };
+      return { ...item, position: normalizeWidgetPosition(nextPosition, item.widgetType, snapToGrid, gridSize) };
     });
 
     setLayouts(updatedLayouts);
@@ -1039,7 +1224,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
         ? { ...item.position, x: target }
         : { ...item.position, y: target };
 
-      return { ...item, position: clampWidgetPosition(nextPosition, item.widgetType) };
+      return { ...item, position: normalizeWidgetPosition(nextPosition, item.widgetType, snapToGrid, gridSize) };
     });
 
     setLayouts(updatedLayouts);
@@ -1078,12 +1263,14 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
         return {
           ...item,
-          position: clampWidgetPosition(
+          position: normalizeWidgetPosition(
             {
               x: item.position.x + dx,
               y: item.position.y + dy,
             },
-            item.widgetType
+            item.widgetType,
+            snapToGrid,
+            gridSize
           ),
         };
       });
@@ -1094,7 +1281,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedWidgetIds, saveMutation, showForm]);
+  }, [gridSize, saveMutation, selectedWidgetIds, showForm, snapToGrid]);
 
   const handleDeleteWidget = (id: string) => {
     const widget = layoutsRef.current.find((item) => item.id === id);
@@ -1277,6 +1464,26 @@ export default function DiagramWidgetsPage({ title }: Props) {
                     </option>
                   ))}
                 </select>
+                <label className="diagram-admin-toolbar__toggle">
+                  <input
+                    type="checkbox"
+                    checked={snapToGrid}
+                    onChange={(event) => setSnapToGrid(event.target.checked)}
+                  />
+                  <span>Привязка к сетке</span>
+                </label>
+                <select
+                  value={String(gridSize)}
+                  onChange={(event) => setGridSize(Number(event.target.value))}
+                  className="p-dropdown diagram-admin-toolbar__grid"
+                  disabled={!snapToGrid}
+                >
+                  {GRID_SIZE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      Сетка {option}px
+                    </option>
+                  ))}
+                </select>
                 <div className="diagram-admin-toolbar__selection">{selectedSummary}</div>
               </div>
 
@@ -1309,12 +1516,28 @@ export default function DiagramWidgetsPage({ title }: Props) {
             </div>
 
             {selectedEdge && selectedPage ? (
+              <DiagramMiniMap
+                widgets={pageLayouts}
+                selectedWidgetIds={selectedWidgetIds}
+                viewport={canvasViewport}
+                zoom={zoom}
+                onNavigate={(point) => canvasNavigatorRef.current?.(point)}
+              />
+            ) : null}
+
+            {selectedEdge && selectedPage ? (
               <DiagramDropZone
                 selectedPage={selectedPage}
                 selectedPageName={selectedPageName}
                 widgets={pageLayouts}
                 zoom={zoom}
+                snapToGrid={snapToGrid}
+                gridSize={gridSize}
                 onDrop={handleDrop}
+                onViewportChange={setCanvasViewport}
+                onNavigateReady={(navigate) => {
+                  canvasNavigatorRef.current = navigate;
+                }}
               >
                 {pageLayouts.map((item) => (
                   <DiagramDraggableWidget
@@ -1400,6 +1623,8 @@ export default function DiagramWidgetsPage({ title }: Props) {
             pages={availablePages}
             pageWidgets={allPageLayouts}
             tagNames={tagNames}
+            snapToGrid={snapToGrid}
+            gridSize={gridSize}
             onSave={handleSaveWidget}
             onCancel={() => {
               setShowForm(false);
