@@ -59,6 +59,24 @@ interface CanvasViewport {
   scrollHeight: number;
 }
 
+interface CanvasFocusRequest {
+  x: number;
+  y: number;
+}
+
+interface CanvasSelectionBox {
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+  append: boolean;
+}
+
+interface SmartSnapGuides {
+  x?: number;
+  y?: number;
+}
+
 type AlignDirection = 'horizontal' | 'vertical';
 type AlignPreset = 'left' | 'centerX' | 'right' | 'top' | 'centerY' | 'bottom';
 type DistributeDirection = 'horizontal' | 'vertical';
@@ -84,6 +102,8 @@ const MINIMAP_WIDTH = 240;
 const MINIMAP_HEIGHT = 140;
 const GRID_OFFSET = 16;
 const GRID_SIZE_OPTIONS = [8, 16, 24, 32];
+const MIN_ZOOM = 0.45;
+const MAX_ZOOM = 1.4;
 
 function clampWidgetPosition(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
   const definition = getSchemeWidgetDefinition(widgetType);
@@ -112,6 +132,33 @@ function normalizeWidgetPosition(
     : position;
 
   return clampWidgetPosition(nextPosition, widgetType);
+}
+
+function clampZoomValue(value: number) {
+  return Math.max(MIN_ZOOM, Math.min(Number(value.toFixed(2)), MAX_ZOOM));
+}
+
+function getWidgetsBounds(widgets: DiagramLayoutItem[]) {
+  if (!widgets.length) {
+    return null;
+  }
+
+  const bounds = widgets.map((item) => {
+    const definition = getSchemeWidgetDefinition(item.widgetType);
+    return {
+      left: item.position.x,
+      top: item.position.y,
+      right: item.position.x + definition.width,
+      bottom: item.position.y + definition.height,
+    };
+  });
+
+  return {
+    left: Math.min(...bounds.map((item) => item.left)),
+    top: Math.min(...bounds.map((item) => item.top)),
+    right: Math.max(...bounds.map((item) => item.right)),
+    bottom: Math.max(...bounds.map((item) => item.bottom)),
+  };
 }
 
 function getAdminPreviewDimensions(widgetType: SchemeWidgetType) {
@@ -145,6 +192,21 @@ function snapToReference(value: number, candidates: number[]) {
   return bestDistance <= SNAP_THRESHOLD ? best : value;
 }
 
+function getNearestReference(value: number, candidates: number[]) {
+  let best: number | undefined;
+  let bestDistance = SNAP_THRESHOLD + 1;
+
+  candidates.forEach((candidate) => {
+    const distance = Math.abs(candidate - value);
+    if (distance < bestDistance) {
+      best = candidate;
+      bestDistance = distance;
+    }
+  });
+
+  return bestDistance <= SNAP_THRESHOLD ? best : undefined;
+}
+
 function applySmartSnap(position: { x: number; y: number }, moved: DiagramLayoutItem, layouts: DiagramLayoutItem[]) {
   const movedDefinition = getSchemeWidgetDefinition(moved.widgetType);
   const otherWidgets = layouts.filter((item) => item.id !== moved.id && item.page === moved.page && item.edge_id === moved.edge_id);
@@ -174,6 +236,40 @@ function applySmartSnap(position: { x: number; y: number }, moved: DiagramLayout
   );
 
   return { x: snappedX, y: snappedY };
+}
+
+function getSmartSnapGuides(position: { x: number; y: number }, moved: DiagramLayoutItem, layouts: DiagramLayoutItem[]): SmartSnapGuides {
+  const movedDefinition = getSchemeWidgetDefinition(moved.widgetType);
+  const otherWidgets = layouts.filter((item) => item.id !== moved.id && item.page === moved.page && item.edge_id === moved.edge_id);
+
+  const xReference = getNearestReference(
+    position.x,
+    otherWidgets.flatMap((item) => {
+      const definition = getSchemeWidgetDefinition(item.widgetType);
+      return [
+        item.position.x,
+        item.position.x + (definition.width / 2) - (movedDefinition.width / 2),
+        item.position.x + definition.width - movedDefinition.width,
+      ];
+    })
+  );
+
+  const yReference = getNearestReference(
+    position.y,
+    otherWidgets.flatMap((item) => {
+      const definition = getSchemeWidgetDefinition(item.widgetType);
+      return [
+        item.position.y,
+        item.position.y + (definition.height / 2) - (movedDefinition.height / 2),
+        item.position.y + definition.height - movedDefinition.height,
+      ];
+    })
+  );
+
+  return {
+    x: xReference,
+    y: yReference,
+  };
 }
 
 const EMPTY_VIEWPORT: CanvasViewport = {
@@ -333,7 +429,7 @@ const DiagramDraggableWidget: React.FC<{
 }> = ({ item, tagName, hasAlarm = false, isSelected = false, onEdit, onDelete, onSelect }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'diagram-widget',
-    item: { id: item.id },
+    item: { id: item.id, origin: item.position },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -374,20 +470,48 @@ const DiagramDropZone: React.FC<{
   zoom: number;
   snapToGrid: boolean;
   gridSize: number;
+  selectedWidgetIds: string[];
   children: React.ReactNode;
-  onDrop: (item: { id: string }, position: { x: number; y: number }) => void;
+  onDrop: (item: { id: string; origin?: { x: number; y: number } }, position: { x: number; y: number }) => void;
+  onZoomChange?: (zoom: number) => void;
   onViewportChange?: (viewport: CanvasViewport) => void;
   onNavigateReady?: (navigate: ((point: { x: number; y: number }) => void) | null) => void;
-}> = ({ selectedPage, selectedPageName, widgets, zoom, snapToGrid, gridSize, children, onDrop, onViewportChange, onNavigateReady }) => {
+  onSelectionChange: (ids: string[], append: boolean) => void;
+}> = ({ selectedPage, selectedPageName, widgets, zoom, snapToGrid, gridSize, selectedWidgetIds, children, onDrop, onZoomChange, onViewportChange, onNavigateReady, onSelectionChange }) => {
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const [isPanning, setIsPanning] = useState(false);
+  const [spacePressed, setSpacePressed] = useState(false);
+  const [selectionBox, setSelectionBox] = useState<CanvasSelectionBox | null>(null);
+  const [snapGuides, setSnapGuides] = useState<SmartSnapGuides | null>(null);
+  const panStartRef = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'diagram-widget',
+    hover: (item: { id: string; origin?: { x: number; y: number } }, monitor) => {
+      const pointer = monitor.getClientOffset();
+      const surface = surfaceRef.current;
+      const bounds = surface?.getBoundingClientRect();
+      const moved = widgets.find((widget) => widget.id === item.id);
+
+      if (!pointer || !surface || !bounds || !moved) {
+        setSnapGuides(null);
+        return;
+      }
+
+      const rawPosition = {
+        x: ((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE,
+        y: ((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE,
+      };
+
+      const guides = getSmartSnapGuides(rawPosition, moved, widgets);
+      setSnapGuides(guides.x !== undefined || guides.y !== undefined ? guides : null);
+    },
     drop: (item: { id: string }, monitor) => {
       const pointer = monitor.getClientOffset();
       const surface = surfaceRef.current;
       const bounds = surface?.getBoundingClientRect();
       if (!pointer || !surface || !bounds) {
+        setSnapGuides(null);
         return;
       }
 
@@ -395,6 +519,7 @@ const DiagramDropZone: React.FC<{
         x: ((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE,
         y: ((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE,
       });
+      setSnapGuides(null);
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
@@ -402,6 +527,36 @@ const DiagramDropZone: React.FC<{
   }));
 
   drop(surfaceRef);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+      if (event.code === 'Space' && tagName !== 'input' && tagName !== 'textarea' && tagName !== 'select' && !target?.isContentEditable) {
+        setSpacePressed(true);
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        setSpacePressed(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOver) {
+      setSnapGuides(null);
+    }
+  }, [isOver]);
 
   useEffect(() => {
     const surface = surfaceRef.current;
@@ -453,6 +608,14 @@ const DiagramDropZone: React.FC<{
   }, [zoom, onNavigateReady, onViewportChange]);
 
   const widgetMap = new Map(widgets.map((widget) => [widget.tag_id, widget]));
+  const selectionBounds = selectionBox
+    ? {
+        left: Math.min(selectionBox.startX, selectionBox.currentX),
+        top: Math.min(selectionBox.startY, selectionBox.currentY),
+        width: Math.abs(selectionBox.currentX - selectionBox.startX),
+        height: Math.abs(selectionBox.currentY - selectionBox.startY),
+      }
+    : null;
   const links = widgets.flatMap((widget) =>
     (widget.connections ?? [])
       .map((connection) => {
@@ -487,7 +650,134 @@ const DiagramDropZone: React.FC<{
         </div>
         <div className="diagram-admin-canvas__badge">{selectedPage}</div>
       </div>
-      <div ref={surfaceRef} className="diagram-admin-canvas__surface">
+      <div
+        ref={surfaceRef}
+        className={`diagram-admin-canvas__surface ${isPanning ? 'is-panning' : ''} ${spacePressed ? 'is-space-pan' : ''}`}
+        onMouseDown={(event) => {
+          const surface = surfaceRef.current;
+          if (!surface) {
+            return;
+          }
+
+          const target = event.target as HTMLElement | null;
+          const clickedWidget = target?.closest('.diagram-admin-canvas-widget');
+          const canPan = event.button === 1 || ((spacePressed || event.altKey) && event.button === 0);
+
+          if (event.button === 0 && !clickedWidget && !spacePressed && !event.altKey) {
+            const bounds = surface.getBoundingClientRect();
+            const contentX = event.clientX - bounds.left + surface.scrollLeft;
+            const contentY = event.clientY - bounds.top + surface.scrollTop;
+
+            setSelectionBox({
+              startX: contentX,
+              startY: contentY,
+              currentX: contentX,
+              currentY: contentY,
+              append: event.ctrlKey || event.metaKey,
+            });
+            return;
+          }
+
+          if (!canPan || (!spacePressed && event.button !== 1 && clickedWidget)) {
+            return;
+          }
+
+          event.preventDefault();
+          panStartRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+            left: surface.scrollLeft,
+            top: surface.scrollTop,
+          };
+          setIsPanning(true);
+        }}
+        onMouseMove={(event) => {
+          const surface = surfaceRef.current;
+          const panStart = panStartRef.current;
+          if (!surface) {
+            return;
+          }
+
+          if (selectionBox) {
+            const bounds = surface.getBoundingClientRect();
+            setSelectionBox((current) => current ? {
+              ...current,
+              currentX: event.clientX - bounds.left + surface.scrollLeft,
+              currentY: event.clientY - bounds.top + surface.scrollTop,
+            } : null);
+            return;
+          }
+
+          if (!panStart) {
+            return;
+          }
+
+          event.preventDefault();
+          surface.scrollLeft = panStart.left - (event.clientX - panStart.x);
+          surface.scrollTop = panStart.top - (event.clientY - panStart.y);
+        }}
+        onMouseUp={() => {
+          if (selectionBox) {
+            const nextSelection = widgets
+              .filter((widget) => {
+                const position = getScaledCanvasPosition(widget.position);
+                const dimensions = getAdminPreviewDimensions(widget.widgetType);
+                const left = position.x * zoom;
+                const top = position.y * zoom;
+                const right = left + dimensions.width * zoom;
+                const bottom = top + dimensions.height * zoom;
+
+                return !selectionBounds || !(
+                  right < selectionBounds.left ||
+                  left > selectionBounds.left + selectionBounds.width ||
+                  bottom < selectionBounds.top ||
+                  top > selectionBounds.top + selectionBounds.height
+                );
+              })
+              .map((widget) => widget.id);
+
+            onSelectionChange(nextSelection, selectionBox.append);
+            setSelectionBox(null);
+          }
+
+          panStartRef.current = null;
+          setIsPanning(false);
+        }}
+        onMouseLeave={() => {
+          setSelectionBox(null);
+          setSnapGuides(null);
+          panStartRef.current = null;
+          setIsPanning(false);
+        }}
+        onWheel={(event) => {
+          if (!(event.ctrlKey || event.metaKey) || !onZoomChange) {
+            return;
+          }
+
+          const surface = surfaceRef.current;
+          if (!surface) {
+            return;
+          }
+
+          event.preventDefault();
+
+          const nextZoom = clampZoomValue(zoom + (event.deltaY < 0 ? 0.08 : -0.08));
+          if (nextZoom === zoom) {
+            return;
+          }
+
+          const rect = surface.getBoundingClientRect();
+          const canvasX = (event.clientX - rect.left + surface.scrollLeft) / zoom;
+          const canvasY = (event.clientY - rect.top + surface.scrollTop) / zoom;
+
+          onZoomChange(nextZoom);
+
+          requestAnimationFrame(() => {
+            surface.scrollLeft = canvasX * nextZoom - (event.clientX - rect.left);
+            surface.scrollTop = canvasY * nextZoom - (event.clientY - rect.top);
+          });
+        }}
+      >
         <div
           className="diagram-admin-canvas__workspace-shell"
           style={{ width: `${CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE * zoom}px`, height: `${CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE * zoom}px` }}
@@ -502,7 +792,10 @@ const DiagramDropZone: React.FC<{
           >
             <div
               className={`diagram-admin-canvas__grid ${snapToGrid ? 'is-snap-active' : ''}`}
-              style={{ backgroundSize: `${gridSize}px ${gridSize}px` }}
+              style={{
+                backgroundSize: `${gridSize * ADMIN_PREVIEW_SCALE}px ${gridSize * ADMIN_PREVIEW_SCALE}px`,
+                backgroundPosition: `${GRID_OFFSET * ADMIN_PREVIEW_SCALE}px ${GRID_OFFSET * ADMIN_PREVIEW_SCALE}px`,
+              }}
               aria-hidden="true"
             />
             <svg
@@ -512,6 +805,24 @@ const DiagramDropZone: React.FC<{
               viewBox={`0 0 ${CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE} ${CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}`}
               aria-hidden="true"
             >
+              {snapGuides?.x !== undefined ? (
+                <line
+                  x1={snapGuides.x * ADMIN_PREVIEW_SCALE}
+                  y1={0}
+                  x2={snapGuides.x * ADMIN_PREVIEW_SCALE}
+                  y2={CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}
+                  className="diagram-admin-canvas__guide"
+                />
+              ) : null}
+              {snapGuides?.y !== undefined ? (
+                <line
+                  x1={0}
+                  y1={snapGuides.y * ADMIN_PREVIEW_SCALE}
+                  x2={CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE}
+                  y2={snapGuides.y * ADMIN_PREVIEW_SCALE}
+                  className="diagram-admin-canvas__guide"
+                />
+              ) : null}
               {links.map((link) => (
                 <g key={link.id} className={`diagram-admin-canvas__link-group diagram-admin-canvas__link-group--${link.kind}`}>
                   <path d={link.path} className="diagram-admin-canvas__link" />
@@ -521,6 +832,17 @@ const DiagramDropZone: React.FC<{
             </svg>
             {children}
           </div>
+          {selectionBounds ? (
+            <div
+              className="diagram-admin-canvas__selection-box"
+              style={{
+                left: `${selectionBounds.left}px`,
+                top: `${selectionBounds.top}px`,
+                width: `${selectionBounds.width}px`,
+                height: `${selectionBounds.height}px`,
+              }}
+            />
+          ) : null}
         </div>
       </div>
     </div>
@@ -870,13 +1192,19 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(EMPTY_VIEWPORT);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [gridSize, setGridSize] = useState(16);
+  const [pendingCanvasFocus, setPendingCanvasFocus] = useState<CanvasFocusRequest | null>(null);
 
   const layoutsRef = useRef<DiagramLayoutItem[]>([]);
   const canvasNavigatorRef = useRef<((point: { x: number; y: number }) => void) | null>(null);
+  const selectedWidgetIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
     layoutsRef.current = layouts;
   }, [layouts]);
+
+  useEffect(() => {
+    selectedWidgetIdsRef.current = selectedWidgetIds;
+  }, [selectedWidgetIds]);
 
   const { data: tags } = useQuery({
     queryKey: ['tags'],
@@ -1019,6 +1347,41 @@ export default function DiagramWidgetsPage({ title }: Props) {
     return pageLayouts.filter((item) => activeIds.has(item.id));
   }, [pageLayouts, activeWidgetIds]);
 
+  const focusWidgetsInViewport = useCallback((widgetsToFocus: DiagramLayoutItem[]) => {
+    if (!widgetsToFocus.length || canvasViewport.width <= 0 || canvasViewport.height <= 0) {
+      return;
+    }
+
+    const bounds = getWidgetsBounds(widgetsToFocus);
+    if (!bounds) {
+      return;
+    }
+
+    const padding = 80;
+    const worldWidth = (bounds.right - bounds.left) * ADMIN_PREVIEW_SCALE + padding * 2;
+    const worldHeight = (bounds.bottom - bounds.top) * ADMIN_PREVIEW_SCALE + padding * 2;
+    const nextZoom = clampZoomValue(Math.min(canvasViewport.width / worldWidth, canvasViewport.height / worldHeight, 1));
+
+    setZoom(nextZoom);
+    setPendingCanvasFocus({
+      x: ((bounds.left + bounds.right) / 2) * ADMIN_PREVIEW_SCALE,
+      y: ((bounds.top + bounds.bottom) / 2) * ADMIN_PREVIEW_SCALE,
+    });
+  }, [canvasViewport.height, canvasViewport.width]);
+
+  useEffect(() => {
+    if (!pendingCanvasFocus || !canvasNavigatorRef.current) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      canvasNavigatorRef.current?.(pendingCanvasFocus);
+      setPendingCanvasFocus(null);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [pendingCanvasFocus, zoom]);
+
   const handleEdgeSelect = (edgeId: string, edgePath: Edge[]) => {
     setSelectedEdge(edgeId);
     setSelectedEdgePath(edgePath);
@@ -1034,6 +1397,16 @@ export default function DiagramWidgetsPage({ title }: Props) {
       }
 
       return current.length === 1 && current[0] === item.id ? [] : [item.id];
+    });
+  }, []);
+
+  const handleCanvasSelection = useCallback((ids: string[], append: boolean) => {
+    setSelectedWidgetIds((current) => {
+      if (append) {
+        return Array.from(new Set([...current, ...ids]));
+      }
+
+      return ids;
     });
   }, []);
 
@@ -1056,7 +1429,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
     setShowForm(true);
   };
 
-  const handleDrop = useCallback((draggedItem: { id: string }, position: { x: number; y: number }) => {
+  const handleDrop = useCallback((draggedItem: { id: string; origin?: { x: number; y: number } }, position: { x: number; y: number }) => {
     const moved = layoutsRef.current.find((item) => item.id === draggedItem.id);
     if (!moved) {
       return;
@@ -1068,17 +1441,36 @@ export default function DiagramWidgetsPage({ title }: Props) {
       snapToGrid,
       gridSize
     );
+    const selectedIds = selectedWidgetIdsRef.current.includes(draggedItem.id)
+      ? new Set(selectedWidgetIdsRef.current)
+      : new Set([draggedItem.id]);
+    const origin = draggedItem.origin ?? moved.position;
+    const deltaX = constrained.x - origin.x;
+    const deltaY = constrained.y - origin.y;
 
-    const updated = layoutsRef.current.map((item) =>
-      item.id === draggedItem.id ? { ...item, position: constrained } : item
-    );
+    const updated = layoutsRef.current.map((item) => {
+      if (!selectedIds.has(item.id)) {
+        return item;
+      }
 
-    const changed = updated.find((item) => item.id === draggedItem.id);
+      return {
+        ...item,
+        position: normalizeWidgetPosition(
+          {
+            x: item.position.x + deltaX,
+            y: item.position.y + deltaY,
+          },
+          item.widgetType,
+          snapToGrid,
+          gridSize
+        ),
+      };
+    });
+
+    const changed = updated.filter((item) => selectedIds.has(item.id));
     setLayouts(updated);
-    setSelectedWidgetIds([draggedItem.id]);
-    if (changed) {
-      saveMutation.mutate(changed);
-    }
+    setSelectedWidgetIds(Array.from(selectedIds));
+    changed.forEach((item) => saveMutation.mutate(item));
   }, [gridSize, saveMutation, snapToGrid]);
 
   const handleSaveWidget = (item: DiagramLayoutItem) => {
@@ -1455,7 +1847,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 </select>
                 <select
                   value={String(zoom)}
-                  onChange={(event) => setZoom(Number(event.target.value))}
+                  onChange={(event) => setZoom(clampZoomValue(Number(event.target.value)))}
                   className="p-dropdown diagram-admin-toolbar__zoom"
                 >
                   {ZOOM_OPTIONS.map((option) => (
@@ -1464,6 +1856,20 @@ export default function DiagramWidgetsPage({ title }: Props) {
                     </option>
                   ))}
                 </select>
+                <Button
+                  label="Показать все"
+                  severity="secondary"
+                  outlined
+                  disabled={!pageLayouts.length}
+                  onClick={() => focusWidgetsInViewport(pageLayouts)}
+                />
+                <Button
+                  label="К выбранным"
+                  severity="secondary"
+                  outlined
+                  disabled={!activeWidgets.length}
+                  onClick={() => focusWidgetsInViewport(activeWidgets)}
+                />
                 <label className="diagram-admin-toolbar__toggle">
                   <input
                     type="checkbox"
@@ -1533,11 +1939,14 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 zoom={zoom}
                 snapToGrid={snapToGrid}
                 gridSize={gridSize}
+                selectedWidgetIds={selectedWidgetIds}
                 onDrop={handleDrop}
+                onZoomChange={setZoom}
                 onViewportChange={setCanvasViewport}
                 onNavigateReady={(navigate) => {
                   canvasNavigatorRef.current = navigate;
                 }}
+                onSelectionChange={handleCanvasSelection}
               >
                 {pageLayouts.map((item) => (
                   <DiagramDraggableWidget
