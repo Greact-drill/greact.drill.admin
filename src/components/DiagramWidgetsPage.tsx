@@ -97,6 +97,7 @@ const CANVAS_LIMITS = {
 };
 
 const ADMIN_PREVIEW_SCALE = 0.82;
+const ADMIN_WIDGET_PREVIEW_SIZE = 72;
 const SNAP_THRESHOLD = 14;
 const MINIMAP_WIDTH = 240;
 const MINIMAP_HEIGHT = 140;
@@ -124,14 +125,9 @@ function normalizeWidgetPosition(
   snapToGrid: boolean,
   gridSize: number
 ) {
-  const nextPosition = snapToGrid
-    ? {
-        x: snapAxisToGrid(position.x, gridSize),
-        y: snapAxisToGrid(position.y, gridSize),
-      }
-    : position;
-
-  return clampWidgetPosition(nextPosition, widgetType);
+  void snapToGrid;
+  void gridSize;
+  return clampWidgetPosition(position, widgetType);
 }
 
 function clampZoomValue(value: number) {
@@ -162,11 +158,11 @@ function getWidgetsBounds(widgets: DiagramLayoutItem[]) {
 }
 
 function getAdminPreviewDimensions(widgetType: SchemeWidgetType) {
-  const definition = getSchemeWidgetDefinition(widgetType);
+  void widgetType;
 
   return {
-    width: Math.round(definition.width * ADMIN_PREVIEW_SCALE),
-    height: Math.round(definition.height * ADMIN_PREVIEW_SCALE),
+    width: ADMIN_WIDGET_PREVIEW_SIZE,
+    height: ADMIN_WIDGET_PREVIEW_SIZE,
   };
 }
 
@@ -498,26 +494,29 @@ const DiagramDropZone: React.FC<{
         return;
       }
 
-      const rawPosition = {
-        x: ((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE,
-        y: ((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE,
+      const definition = getSchemeWidgetDefinition(moved.widgetType);
+      const centeredPosition = {
+        x: (((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE) - (definition.width / 2),
+        y: (((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE) - (definition.height / 2),
       };
 
-      const guides = getSmartSnapGuides(rawPosition, moved, widgets);
+      const guides = getSmartSnapGuides(centeredPosition, moved, widgets);
       setSnapGuides(guides.x !== undefined || guides.y !== undefined ? guides : null);
     },
-    drop: (item: { id: string }, monitor) => {
+    drop: (item: { id: string; origin?: { x: number; y: number } }, monitor) => {
       const pointer = monitor.getClientOffset();
       const surface = surfaceRef.current;
       const bounds = surface?.getBoundingClientRect();
-      if (!pointer || !surface || !bounds) {
+      const moved = widgets.find((widget) => widget.id === item.id);
+      if (!pointer || !surface || !bounds || !moved) {
         setSnapGuides(null);
         return;
       }
 
+      const definition = getSchemeWidgetDefinition(moved.widgetType);
       onDrop(item, {
-        x: ((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE,
-        y: ((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE,
+        x: (((pointer.x - bounds.left + surface.scrollLeft) / zoom) / ADMIN_PREVIEW_SCALE) - (definition.width / 2),
+        y: (((pointer.y - bounds.top + surface.scrollTop) / zoom) / ADMIN_PREVIEW_SCALE) - (definition.height / 2),
       });
       setSnapGuides(null);
     },
@@ -791,11 +790,8 @@ const DiagramDropZone: React.FC<{
             }}
           >
             <div
-              className={`diagram-admin-canvas__grid ${snapToGrid ? 'is-snap-active' : ''}`}
-              style={{
-                backgroundSize: `${gridSize * ADMIN_PREVIEW_SCALE}px ${gridSize * ADMIN_PREVIEW_SCALE}px`,
-                backgroundPosition: `${GRID_OFFSET * ADMIN_PREVIEW_SCALE}px ${GRID_OFFSET * ADMIN_PREVIEW_SCALE}px`,
-              }}
+              className="diagram-admin-canvas__grid"
+              style={{ backgroundSize: `${24 * ADMIN_PREVIEW_SCALE}px ${24 * ADMIN_PREVIEW_SCALE}px` }}
               aria-hidden="true"
             />
             <svg
@@ -1190,7 +1186,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [zoom, setZoom] = useState(0.7);
   const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
   const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(EMPTY_VIEWPORT);
-  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [snapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(16);
   const [pendingCanvasFocus, setPendingCanvasFocus] = useState<CanvasFocusRequest | null>(null);
 
@@ -1435,12 +1431,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
       return;
     }
 
-    const constrained = normalizeWidgetPosition(
-      applySmartSnap(position, moved, layoutsRef.current),
-      moved.widgetType,
-      snapToGrid,
-      gridSize
-    );
+    const constrained = normalizeWidgetPosition(position, moved.widgetType, snapToGrid, gridSize);
     const selectedIds = selectedWidgetIdsRef.current.includes(draggedItem.id)
       ? new Set(selectedWidgetIdsRef.current)
       : new Set([draggedItem.id]);
@@ -1856,40 +1847,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
                     </option>
                   ))}
                 </select>
-                <Button
-                  label="Показать все"
-                  severity="secondary"
-                  outlined
-                  disabled={!pageLayouts.length}
-                  onClick={() => focusWidgetsInViewport(pageLayouts)}
-                />
-                <Button
-                  label="К выбранным"
-                  severity="secondary"
-                  outlined
-                  disabled={!activeWidgets.length}
-                  onClick={() => focusWidgetsInViewport(activeWidgets)}
-                />
-                <label className="diagram-admin-toolbar__toggle">
-                  <input
-                    type="checkbox"
-                    checked={snapToGrid}
-                    onChange={(event) => setSnapToGrid(event.target.checked)}
-                  />
-                  <span>Привязка к сетке</span>
-                </label>
-                <select
-                  value={String(gridSize)}
-                  onChange={(event) => setGridSize(Number(event.target.value))}
-                  className="p-dropdown diagram-admin-toolbar__grid"
-                  disabled={!snapToGrid}
-                >
-                  {GRID_SIZE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      Сетка {option}px
-                    </option>
-                  ))}
-                </select>
                 <div className="diagram-admin-toolbar__selection">{selectedSummary}</div>
               </div>
 
@@ -1911,25 +1868,13 @@ export default function DiagramWidgetsPage({ title }: Props) {
                   onClick={() => alignWidgets('vertical')}
                 />
                 <Button label="Левый край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('left')} />
-                <Button label="Центр X" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('centerX')} />
                 <Button label="Правый край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('right')} />
                 <Button label="Верхний край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('top')} />
-                <Button label="Центр Y" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('centerY')} />
                 <Button label="Нижний край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('bottom')} />
                 <Button label="Распределить X" severity="secondary" outlined disabled={activeWidgets.length < 3 || saveMutation.isPending} onClick={() => distributeWidgets('horizontal')} />
                 <Button label="Распределить Y" severity="secondary" outlined disabled={activeWidgets.length < 3 || saveMutation.isPending} onClick={() => distributeWidgets('vertical')} />
               </div>
             </div>
-
-            {selectedEdge && selectedPage ? (
-              <DiagramMiniMap
-                widgets={pageLayouts}
-                selectedWidgetIds={selectedWidgetIds}
-                viewport={canvasViewport}
-                zoom={zoom}
-                onNavigate={(point) => canvasNavigatorRef.current?.(point)}
-              />
-            ) : null}
 
             {selectedEdge && selectedPage ? (
               <DiagramDropZone
@@ -1942,10 +1887,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 selectedWidgetIds={selectedWidgetIds}
                 onDrop={handleDrop}
                 onZoomChange={setZoom}
-                onViewportChange={setCanvasViewport}
-                onNavigateReady={(navigate) => {
-                  canvasNavigatorRef.current = navigate;
-                }}
                 onSelectionChange={handleCanvasSelection}
               >
                 {pageLayouts.map((item) => (
