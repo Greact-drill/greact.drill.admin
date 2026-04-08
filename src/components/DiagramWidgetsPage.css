@@ -220,6 +220,7 @@
 
 .diagram-admin-toolbar__controls {
   flex: 1 1 auto;
+  flex-wrap: wrap;
 }
 
 .diagram-admin-toolbar__controls input,
@@ -233,6 +234,16 @@
 
 .diagram-admin-toolbar__zoom {
   flex: 0 0 150px;
+}
+
+.diagram-admin-toolbar__selection {
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(123, 211, 255, 0.18);
+  background: rgba(123, 211, 255, 0.08);
+  color: #d8f2ff;
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .diagram-admin-canvas {
@@ -386,6 +397,14 @@
   background: rgba(255, 107, 107, 0.06);
 }
 
+.diagram-admin-canvas-widget.is-selected {
+  border-color: rgba(123, 211, 255, 0.72);
+  background: rgba(123, 211, 255, 0.08);
+  box-shadow:
+    0 0 0 2px rgba(123, 211, 255, 0.26),
+    0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
 .diagram-admin-canvas-widget__symbol {
   display: flex;
   align-items: center;
@@ -492,6 +511,12 @@
   flex-wrap: wrap;
   align-items: flex-end;
   color: rgba(248, 241, 231, 0.68);
+}
+
+.diagram-admin-list__item.is-selected {
+  border-color: rgba(123, 211, 255, 0.48);
+  background: rgba(123, 211, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(123, 211, 255, 0.18);
 }
 
 .diagram-widget-form__position-controls {

@@ -51,6 +51,8 @@ interface DiagramConnection {
 }
 
 type AlignDirection = 'horizontal' | 'vertical';
+type AlignPreset = 'left' | 'centerX' | 'right' | 'top' | 'centerY' | 'bottom';
+type DistributeDirection = 'horizontal' | 'vertical';
 
 const CONNECTION_KIND_OPTIONS: Array<{ value: DiagramConnectionKind; label: string }> = [
   { value: 'power', label: 'Силовая' },
@@ -282,9 +284,11 @@ const DiagramDraggableWidget: React.FC<{
   item: DiagramLayoutItem;
   tagName: string;
   hasAlarm?: boolean;
+  isSelected?: boolean;
   onEdit: (item: DiagramLayoutItem) => void;
   onDelete: (id: string) => void;
-}> = ({ item, tagName, hasAlarm = false, onEdit, onDelete }) => {
+  onSelect: (item: DiagramLayoutItem, append: boolean) => void;
+}> = ({ item, tagName, hasAlarm = false, isSelected = false, onEdit, onDelete, onSelect }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'diagram-widget',
     item: { id: item.id },
@@ -300,9 +304,10 @@ const DiagramDraggableWidget: React.FC<{
   return (
     <div
       ref={drag as never}
-      className={`diagram-admin-canvas-widget ${isDragging ? 'is-dragging' : ''} ${hasAlarm ? 'is-alarm' : ''}`}
+      className={`diagram-admin-canvas-widget ${isDragging ? 'is-dragging' : ''} ${hasAlarm ? 'is-alarm' : ''} ${isSelected ? 'is-selected' : ''}`}
       style={{ left: `${position.x}px`, top: `${position.y}px`, width: `${definition.width}px`, height: `${definition.height}px` }}
       onDoubleClick={() => onEdit(item)}
+      onClick={(event) => onSelect(item, event.ctrlKey || event.metaKey)}
       title={label}
     >
       <div className="diagram-admin-canvas-widget__symbol">
@@ -686,6 +691,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [search, setSearch] = useState('');
   const [librarySearch, setLibrarySearch] = useState('');
   const [zoom, setZoom] = useState(0.7);
+  const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
 
   const layoutsRef = useRef<DiagramLayoutItem[]>([]);
 
@@ -819,10 +825,38 @@ export default function DiagramWidgetsPage({ title }: Props) {
     return availablePages.find((item) => item.value === selectedPage)?.label || selectedPage;
   }, [availablePages, selectedPage]);
 
+  useEffect(() => {
+    const visibleIds = new Set(allPageLayouts.map((item) => item.id));
+    setSelectedWidgetIds((current) => current.filter((id) => visibleIds.has(id)));
+  }, [allPageLayouts]);
+
+  const activeWidgetIds = useMemo(() => {
+    const selectedVisible = selectedWidgetIds.filter((id) => allPageLayouts.some((item) => item.id === id));
+    return selectedVisible.length > 0 ? selectedVisible : pageLayouts.map((item) => item.id);
+  }, [selectedWidgetIds, allPageLayouts, pageLayouts]);
+
+  const activeWidgets = useMemo(() => {
+    const activeIds = new Set(activeWidgetIds);
+    return pageLayouts.filter((item) => activeIds.has(item.id));
+  }, [pageLayouts, activeWidgetIds]);
+
   const handleEdgeSelect = (edgeId: string, edgePath: Edge[]) => {
     setSelectedEdge(edgeId);
     setSelectedEdgePath(edgePath);
+    setSelectedWidgetIds([]);
   };
+
+  const handleSelectWidget = useCallback((item: DiagramLayoutItem, append: boolean) => {
+    setSelectedWidgetIds((current) => {
+      if (append) {
+        return current.includes(item.id)
+          ? current.filter((id) => id !== item.id)
+          : [...current, item.id];
+      }
+
+      return current.length === 1 && current[0] === item.id ? [] : [item.id];
+    });
+  }, []);
 
   const openCreateDialog = (widgetType: SchemeWidgetType) => {
     if (!selectedEdge || !selectedPage) {
@@ -860,6 +894,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
     const changed = updated.find((item) => item.id === draggedItem.id);
     setLayouts(updated);
+    setSelectedWidgetIds([draggedItem.id]);
     if (changed) {
       saveMutation.mutate(changed);
     }
@@ -881,21 +916,22 @@ export default function DiagramWidgetsPage({ title }: Props) {
     saveMutation.mutate(nextItem);
     setShowForm(false);
     setEditingItem(null);
+    setSelectedWidgetIds([nextItem.id]);
   };
 
   const alignWidgets = (direction: AlignDirection) => {
-    if (pageLayouts.length < 2) {
+    if (activeWidgets.length < 2) {
       return;
     }
 
-    const visibleIds = new Set(pageLayouts.map((item) => item.id));
-    const targetCenter = pageLayouts.reduce((sum, item) => {
+    const visibleIds = new Set(activeWidgets.map((item) => item.id));
+    const targetCenter = activeWidgets.reduce((sum, item) => {
       const definition = getSchemeWidgetDefinition(item.widgetType);
       const center = direction === 'horizontal'
         ? item.position.y + definition.height / 2
         : item.position.x + definition.width / 2;
       return sum + center;
-    }, 0) / pageLayouts.length;
+    }, 0) / activeWidgets.length;
 
     const updatedLayouts = layoutsRef.current.map((item) => {
       if (!visibleIds.has(item.id)) {
@@ -915,7 +951,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
       return {
         ...item,
-        position: nextPosition,
+        position: clampWidgetPosition(nextPosition, item.widgetType),
       };
     });
 
@@ -924,6 +960,141 @@ export default function DiagramWidgetsPage({ title }: Props) {
       .filter((item) => visibleIds.has(item.id))
       .forEach((item) => saveMutation.mutate(item));
   };
+
+  const alignWidgetsByPreset = (preset: AlignPreset) => {
+    if (activeWidgets.length < 2) {
+      return;
+    }
+
+    const activeIds = new Set(activeWidgets.map((item) => item.id));
+    const anchors = activeWidgets.map((item) => {
+      const definition = getSchemeWidgetDefinition(item.widgetType);
+      return {
+        left: item.position.x,
+        centerX: item.position.x + definition.width / 2,
+        right: item.position.x + definition.width,
+        top: item.position.y,
+        centerY: item.position.y + definition.height / 2,
+        bottom: item.position.y + definition.height,
+      };
+    });
+
+    const target = anchors.reduce((sum, item) => sum + item[preset], 0) / anchors.length;
+
+    const updatedLayouts = layoutsRef.current.map((item) => {
+      if (!activeIds.has(item.id)) {
+        return item;
+      }
+
+      const definition = getSchemeWidgetDefinition(item.widgetType);
+      const nextPosition = (() => {
+        switch (preset) {
+          case 'left':
+            return { ...item.position, x: target };
+          case 'centerX':
+            return { ...item.position, x: target - definition.width / 2 };
+          case 'right':
+            return { ...item.position, x: target - definition.width };
+          case 'top':
+            return { ...item.position, y: target };
+          case 'centerY':
+            return { ...item.position, y: target - definition.height / 2 };
+          case 'bottom':
+            return { ...item.position, y: target - definition.height };
+          default:
+            return item.position;
+        }
+      })();
+
+      return { ...item, position: clampWidgetPosition(nextPosition, item.widgetType) };
+    });
+
+    setLayouts(updatedLayouts);
+    updatedLayouts.filter((item) => activeIds.has(item.id)).forEach((item) => saveMutation.mutate(item));
+  };
+
+  const distributeWidgets = (direction: DistributeDirection) => {
+    if (activeWidgets.length < 3) {
+      return;
+    }
+
+    const sorted = [...activeWidgets].sort((a, b) =>
+      direction === 'horizontal' ? a.position.x - b.position.x : a.position.y - b.position.y
+    );
+    const activeIds = new Set(sorted.map((item) => item.id));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const start = direction === 'horizontal' ? first.position.x : first.position.y;
+    const end = direction === 'horizontal' ? last.position.x : last.position.y;
+    const gap = (end - start) / (sorted.length - 1);
+    const targets = new Map(sorted.map((item, index) => [item.id, start + gap * index]));
+
+    const updatedLayouts = layoutsRef.current.map((item) => {
+      if (!activeIds.has(item.id)) {
+        return item;
+      }
+
+      const target = targets.get(item.id) ?? (direction === 'horizontal' ? item.position.x : item.position.y);
+      const nextPosition = direction === 'horizontal'
+        ? { ...item.position, x: target }
+        : { ...item.position, y: target };
+
+      return { ...item, position: clampWidgetPosition(nextPosition, item.widgetType) };
+    });
+
+    setLayouts(updatedLayouts);
+    updatedLayouts.filter((item) => activeIds.has(item.id)).forEach((item) => saveMutation.mutate(item));
+  };
+
+  useEffect(() => {
+    if (!selectedWidgetIds.length || showForm) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLElement) {
+        const tagName = event.target.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || event.target.isContentEditable) {
+          return;
+        }
+      }
+
+      const delta = event.shiftKey ? 10 : 1;
+      let dx = 0;
+      let dy = 0;
+
+      if (event.key === 'ArrowLeft') dx = -delta;
+      if (event.key === 'ArrowRight') dx = delta;
+      if (event.key === 'ArrowUp') dy = -delta;
+      if (event.key === 'ArrowDown') dy = delta;
+      if (dx === 0 && dy === 0) return;
+
+      event.preventDefault();
+      const selectedIds = new Set(selectedWidgetIds);
+      const updatedLayouts = layoutsRef.current.map((item) => {
+        if (!selectedIds.has(item.id)) {
+          return item;
+        }
+
+        return {
+          ...item,
+          position: clampWidgetPosition(
+            {
+              x: item.position.x + dx,
+              y: item.position.y + dy,
+            },
+            item.widgetType
+          ),
+        };
+      });
+
+      setLayouts(updatedLayouts);
+      updatedLayouts.filter((item) => selectedIds.has(item.id)).forEach((item) => saveMutation.mutate(item));
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedWidgetIds, saveMutation, showForm]);
 
   const handleDeleteWidget = (id: string) => {
     const widget = layoutsRef.current.find((item) => item.id === id);
@@ -936,11 +1107,12 @@ export default function DiagramWidgetsPage({ title }: Props) {
       header: 'Подтверждение удаления',
       icon: 'pi pi-exclamation-triangle',
       acceptClassName: 'p-button-danger',
-      accept: () => {
-        setLayouts(layoutsRef.current.filter((item) => item.id !== id));
-        deleteTagCustomization(widget.edge_id, widget.tag_id, 'widgetConfig').catch(() => undefined);
-      },
-    });
+        accept: () => {
+          setLayouts(layoutsRef.current.filter((item) => item.id !== id));
+          setSelectedWidgetIds((current) => current.filter((itemId) => itemId !== id));
+          deleteTagCustomization(widget.edge_id, widget.tag_id, 'widgetConfig').catch(() => undefined);
+        },
+      });
   };
 
   const libraryGroups = useMemo(() => {
@@ -972,6 +1144,10 @@ export default function DiagramWidgetsPage({ title }: Props) {
     linked: pageLayouts.filter((item) => (item.connections ?? []).length > 0).length,
     categories: new Set(pageLayouts.map((item) => getSchemeWidgetDefinition(item.widgetType).category)).size,
   };
+
+  const selectedSummary = activeWidgets.length
+    ? `${activeWidgets.length} выбрано`
+    : 'Нет выбора';
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -1101,6 +1277,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
                     </option>
                   ))}
                 </select>
+                <div className="diagram-admin-toolbar__selection">{selectedSummary}</div>
               </div>
 
               <div className="diagram-admin-toolbar__actions">
@@ -1120,6 +1297,14 @@ export default function DiagramWidgetsPage({ title }: Props) {
                   disabled={pageLayouts.length < 2 || saveMutation.isPending}
                   onClick={() => alignWidgets('vertical')}
                 />
+                <Button label="Левый край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('left')} />
+                <Button label="Центр X" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('centerX')} />
+                <Button label="Правый край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('right')} />
+                <Button label="Верхний край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('top')} />
+                <Button label="Центр Y" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('centerY')} />
+                <Button label="Нижний край" severity="secondary" outlined disabled={activeWidgets.length < 2 || saveMutation.isPending} onClick={() => alignWidgetsByPreset('bottom')} />
+                <Button label="Распределить X" severity="secondary" outlined disabled={activeWidgets.length < 3 || saveMutation.isPending} onClick={() => distributeWidgets('horizontal')} />
+                <Button label="Распределить Y" severity="secondary" outlined disabled={activeWidgets.length < 3 || saveMutation.isPending} onClick={() => distributeWidgets('vertical')} />
               </div>
             </div>
 
@@ -1137,11 +1322,13 @@ export default function DiagramWidgetsPage({ title }: Props) {
                     item={item}
                     tagName={tagNames.get(item.tag_id) || item.tag_id}
                     hasAlarm={Boolean(item.connections?.some((connection) => connection.kind === 'alert'))}
+                    isSelected={selectedWidgetIds.includes(item.id)}
                     onEdit={(widget) => {
                       setEditingItem(widget);
                       setShowForm(true);
                     }}
                     onDelete={handleDeleteWidget}
+                    onSelect={handleSelectWidget}
                   />
                 ))}
                 {pageLayouts.length === 0 ? (
@@ -1171,8 +1358,11 @@ export default function DiagramWidgetsPage({ title }: Props) {
                     <button
                       type="button"
                       key={item.id}
-                      className="diagram-admin-list__item"
+                      className={`diagram-admin-list__item ${selectedWidgetIds.includes(item.id) ? 'is-selected' : ''}`}
                       onClick={() => {
+                        handleSelectWidget(item, false);
+                      }}
+                      onDoubleClick={() => {
                         setEditingItem(item);
                         setShowForm(true);
                       }}
