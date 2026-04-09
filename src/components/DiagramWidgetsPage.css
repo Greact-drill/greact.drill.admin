@@ -305,6 +305,43 @@
   cursor: default;
 }
 
+.diagram-admin-canvas__drag-indicator {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  margin-top: -17px;
+  border-radius: 999px;
+  border: 1px solid rgba(123, 211, 255, 0.75);
+  background: radial-gradient(circle, rgba(123, 211, 255, 0.2) 0, rgba(123, 211, 255, 0.08) 38%, transparent 70%);
+  box-shadow:
+    0 0 0 1px rgba(217, 242, 255, 0.18),
+    0 0 18px rgba(123, 211, 255, 0.24);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.diagram-admin-canvas__drag-indicator::before,
+.diagram-admin-canvas__drag-indicator::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgba(217, 242, 255, 0.95);
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+
+.diagram-admin-canvas__drag-indicator::before {
+  width: 1px;
+  height: 34px;
+}
+
+.diagram-admin-canvas__drag-indicator::after {
+  width: 34px;
+  height: 1px;
+}
+
 .diagram-admin-canvas__surface.is-space-pan {
   cursor: grab;
 }

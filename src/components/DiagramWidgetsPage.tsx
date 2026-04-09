@@ -163,6 +163,13 @@ function getWidgetPositionFromFlowNodeCenter(center: { x: number; y: number }) {
   };
 }
 
+function clampFlowNodeCenterPosition(center: { x: number; y: number }) {
+  return {
+    x: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2))),
+    y: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, Math.min(center.y, CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2))),
+  };
+}
+
 function snapToReference(value: number, candidates: number[]) {
   let best = value;
   let bestDistance = SNAP_THRESHOLD + 1;
@@ -498,8 +505,15 @@ const DiagramCanvas: React.FC<{
   onDelete: (id: string) => void;
 }> = ({ selectedPage, selectedPageName, widgets, selectedWidgetIds, tagNames, zoom, onZoomChange, onSelectionChange, onMoveWidgets, onEdit, onDelete }) => {
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<FlowNode<DiagramFlowNodeData>, FlowEdge<DiagramFlowEdgeData>> | null>(null);
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const dragSessionRef = useRef<{
+    primaryId: string;
+    originals: Map<string, { x: number; y: number }>;
+    frame: number | null;
+  } | null>(null);
+  const [dragIndicator, setDragIndicator] = useState<{ x: number; y: number } | null>(null);
 
-  const nodes = useMemo<FlowNode<DiagramFlowNodeData>[]>(() => (
+  const nodesFromProps = useMemo<FlowNode<DiagramFlowNodeData>[]>(() => (
     widgets.map((item) => ({
       id: item.id,
       type: 'diagramWidget',
@@ -516,6 +530,7 @@ const DiagramCanvas: React.FC<{
       selectable: true,
     }))
   ), [onDelete, onEdit, selectedWidgetIds, tagNames, widgets]);
+  const [draftNodes, setDraftNodes] = useState<FlowNode<DiagramFlowNodeData>[]>(nodesFromProps);
 
   const widgetMap = useMemo(() => new Map(widgets.map((widget) => [widget.tag_id, widget])), [widgets]);
 
@@ -571,9 +586,66 @@ const DiagramCanvas: React.FC<{
     flowInstance.zoomTo(zoom, { duration: 120 });
   }, [flowInstance, zoom]);
 
+  useEffect(() => {
+    if (dragSessionRef.current) {
+      return;
+    }
+
+    setDraftNodes(nodesFromProps);
+  }, [nodesFromProps]);
+
   const handleSelectionChange = useCallback<OnSelectionChangeFunc<FlowNode<DiagramFlowNodeData>, FlowEdge<DiagramFlowEdgeData>>>(({ nodes: selectedNodes }) => {
     onSelectionChange(selectedNodes.map((node) => node.id), false);
   }, [onSelectionChange]);
+
+  const applyDragPointerPosition = useCallback((
+    clientX: number,
+    clientY: number,
+    primaryId: string
+  ) => {
+    if (!flowInstance || !dragSessionRef.current) {
+      return null;
+    }
+
+    const pointer = flowInstance.screenToFlowPosition({ x: clientX, y: clientY });
+    const primaryOriginal = dragSessionRef.current.originals.get(primaryId);
+    if (!primaryOriginal) {
+      return null;
+    }
+
+    const deltaX = pointer.x - primaryOriginal.x;
+    const deltaY = pointer.y - primaryOriginal.y;
+    const moved = new Map<string, { x: number; y: number }>();
+
+    dragSessionRef.current.originals.forEach((original, id) => {
+      moved.set(id, clampFlowNodeCenterPosition({
+        x: original.x + deltaX,
+        y: original.y + deltaY,
+      }));
+    });
+
+    return moved;
+  }, [flowInstance]);
+
+  const syncDraftNodes = useCallback((moved: Map<string, { x: number; y: number }>) => {
+    setDraftNodes((current) => current.map((node) => {
+      const nextPosition = moved.get(node.id);
+      return nextPosition ? { ...node, position: nextPosition } : node;
+    }));
+  }, []);
+
+  const updateDragIndicator = useCallback((clientX: number, clientY: number) => {
+    const surface = surfaceRef.current;
+    if (!surface) {
+      return;
+    }
+
+    const bounds = surface.getBoundingClientRect();
+    setDragIndicator({
+      x: clientX - bounds.left,
+      y: clientY - bounds.top,
+    });
+  }, []);
 
   return (
     <div className="diagram-admin-canvas" data-page={selectedPage}>
@@ -584,24 +656,97 @@ const DiagramCanvas: React.FC<{
         </div>
         <div className="diagram-admin-canvas__badge">{selectedPage}</div>
       </div>
-      <div className="diagram-admin-canvas__surface diagram-admin-canvas__surface--flow">
+      <div ref={surfaceRef} className="diagram-admin-canvas__surface diagram-admin-canvas__surface--flow">
+        {dragIndicator ? (
+          <div
+            className="diagram-admin-canvas__drag-indicator"
+            style={{
+              left: `${dragIndicator.x}px`,
+              top: `${dragIndicator.y}px`,
+            }}
+          />
+        ) : null}
         <ReactFlow
-          nodes={nodes}
+          nodes={draftNodes}
           edges={edges}
           nodeTypes={FLOW_NODE_TYPES}
           edgeTypes={FLOW_EDGE_TYPES}
           onInit={setFlowInstance}
           onSelectionChange={handleSelectionChange}
           onNodeDoubleClick={(_, node) => onEdit(node.data.item)}
-          onNodeDragStop={(_, __, draggedNodes) => {
+          onNodeDragStart={(event, node, draggedNodes) => {
+            const dragGroup = draggedNodes.length ? draggedNodes : [node];
+            const originals = new Map(
+              dragGroup.map((draggedNode) => [
+                draggedNode.id,
+                { x: draggedNode.position.x, y: draggedNode.position.y },
+              ])
+            );
+
+            dragSessionRef.current = {
+              primaryId: node.id,
+              originals,
+              frame: null,
+            };
+
+            const moved = applyDragPointerPosition(event.clientX, event.clientY, node.id);
+            if (moved) {
+              updateDragIndicator(event.clientX, event.clientY);
+              syncDraftNodes(moved);
+            }
+          }}
+          onNodeDrag={(event, node) => {
+            const session = dragSessionRef.current;
+            if (!session) {
+              return;
+            }
+
+            const moved = applyDragPointerPosition(event.clientX, event.clientY, node.id);
+            if (!moved) {
+              return;
+            }
+
+            updateDragIndicator(event.clientX, event.clientY);
+
+            if (session.frame !== null) {
+              cancelAnimationFrame(session.frame);
+            }
+
+            session.frame = requestAnimationFrame(() => {
+              syncDraftNodes(moved);
+              if (dragSessionRef.current) {
+                dragSessionRef.current.frame = null;
+              }
+            });
+          }}
+          onNodeDragStop={(event, node, draggedNodes) => {
+            const dragGroup = draggedNodes.length ? draggedNodes : [node];
+            const moved = applyDragPointerPosition(event.clientX, event.clientY, node.id) ?? new Map(
+              dragGroup.map((draggedNode) => [
+                draggedNode.id,
+                clampFlowNodeCenterPosition(draggedNode.position),
+              ])
+            );
+
+            if (dragSessionRef.current?.frame !== null) {
+              cancelAnimationFrame(dragSessionRef.current.frame);
+            }
+
+            syncDraftNodes(moved);
             onMoveWidgets(
-              draggedNodes.map((node) => ({
-                id: node.id,
-                position: normalizeWidgetPosition(getWidgetPositionFromFlowNodeCenter(node.position), node.data.item.widgetType),
+              dragGroup.map((draggedNode) => ({
+                id: draggedNode.id,
+                position: normalizeWidgetPosition(
+                  getWidgetPositionFromFlowNodeCenter(moved.get(draggedNode.id) ?? draggedNode.position),
+                  draggedNode.data.item.widgetType
+                ),
               }))
             );
+            dragSessionRef.current = null;
+            setDragIndicator(null);
           }}
           onPaneClick={() => onSelectionChange([], false)}
+          onPaneMouseLeave={() => setDragIndicator(null)}
           onMoveEnd={(_, viewport) => {
             if (viewport?.zoom !== undefined) {
               onZoomChange?.(clampZoomValue(viewport.zoom));
@@ -610,6 +755,7 @@ const DiagramCanvas: React.FC<{
           minZoom={MIN_ZOOM}
           maxZoom={MAX_ZOOM}
           defaultViewport={{ x: 24, y: 24, zoom }}
+          onlyRenderVisibleElements
           snapToGrid
           snapGrid={[8, 8]}
           selectionOnDrag
