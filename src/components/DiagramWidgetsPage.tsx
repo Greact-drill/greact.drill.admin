@@ -92,6 +92,16 @@ interface DiagramFlowEdgeData {
   kind: DiagramConnectionKind;
 }
 
+interface LayoutHistoryEntry {
+  layouts: DiagramLayoutItem[];
+  selectedWidgetIds: string[];
+}
+
+interface DiagramCanvasGuides {
+  x?: number;
+  y?: number;
+}
+
 const CONNECTION_KIND_OPTIONS: Array<{ value: DiagramConnectionKind; label: string }> = [
   { value: 'power', label: 'Силовая' },
   { value: 'signal', label: 'Сигнальная' },
@@ -113,6 +123,10 @@ const SNAP_THRESHOLD = 14;
 const GRID_OFFSET = 16;
 const MIN_ZOOM = 0.45;
 const MAX_ZOOM = 1.4;
+const AUTOSAVE_DELAY_MS = 500;
+const MAX_HISTORY_ENTRIES = 40;
+const DEFAULT_GRID_STEP = 8;
+const PRECISION_GRID_STEP = 4;
 
 function clampWidgetPosition(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
   const definition = getSchemeWidgetDefinition(widgetType);
@@ -168,6 +182,18 @@ function clampFlowNodeCenterPosition(center: { x: number; y: number }) {
     x: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2))),
     y: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, Math.min(center.y, CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2))),
   };
+}
+
+function cloneLayoutItem(item: DiagramLayoutItem): DiagramLayoutItem {
+  return {
+    ...item,
+    position: { ...item.position },
+    connections: item.connections?.map((connection) => ({ ...connection })) ?? [],
+  };
+}
+
+function cloneLayouts(items: DiagramLayoutItem[]) {
+  return items.map(cloneLayoutItem);
 }
 
 function snapToReference(value: number, candidates: number[]) {
@@ -498,12 +524,14 @@ const DiagramCanvas: React.FC<{
   selectedWidgetIds: string[];
   tagNames: Map<string, string>;
   zoom: number;
+  precisionMode: boolean;
   onZoomChange?: (zoom: number) => void;
   onSelectionChange: (ids: string[], append: boolean) => void;
   onMoveWidgets: (items: Array<{ id: string; position: { x: number; y: number } }>) => void;
   onEdit: (item: DiagramLayoutItem) => void;
+  onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
-}> = ({ selectedPage, selectedPageName, widgets, selectedWidgetIds, tagNames, zoom, onZoomChange, onSelectionChange, onMoveWidgets, onEdit, onDelete }) => {
+}> = ({ selectedPage, selectedPageName, widgets, selectedWidgetIds, tagNames, zoom, precisionMode, onZoomChange, onSelectionChange, onMoveWidgets, onEdit, onDuplicate, onDelete }) => {
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<FlowNode<DiagramFlowNodeData>, FlowEdge<DiagramFlowEdgeData>> | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const dragSessionRef = useRef<{
@@ -512,6 +540,7 @@ const DiagramCanvas: React.FC<{
     frame: number | null;
   } | null>(null);
   const [dragIndicator, setDragIndicator] = useState<{ x: number; y: number } | null>(null);
+  const [alignmentGuides, setAlignmentGuides] = useState<DiagramCanvasGuides | null>(null);
 
   const nodesFromProps = useMemo<FlowNode<DiagramFlowNodeData>[]>(() => (
     widgets.map((item) => ({
@@ -531,6 +560,7 @@ const DiagramCanvas: React.FC<{
     }))
   ), [onDelete, onEdit, selectedWidgetIds, tagNames, widgets]);
   const [draftNodes, setDraftNodes] = useState<FlowNode<DiagramFlowNodeData>[]>(nodesFromProps);
+  const draftNodesRef = useRef<FlowNode<DiagramFlowNodeData>[]>(nodesFromProps);
 
   const widgetMap = useMemo(() => new Map(widgets.map((widget) => [widget.tag_id, widget])), [widgets]);
 
@@ -594,6 +624,10 @@ const DiagramCanvas: React.FC<{
     setDraftNodes(nodesFromProps);
   }, [nodesFromProps]);
 
+  useEffect(() => {
+    draftNodesRef.current = draftNodes;
+  }, [draftNodes]);
+
   const handleSelectionChange = useCallback<OnSelectionChangeFunc<FlowNode<DiagramFlowNodeData>, FlowEdge<DiagramFlowEdgeData>>>(({ nodes: selectedNodes }) => {
     onSelectionChange(selectedNodes.map((node) => node.id), false);
   }, [onSelectionChange]);
@@ -607,14 +641,44 @@ const DiagramCanvas: React.FC<{
       return null;
     }
 
-    const pointer = flowInstance.screenToFlowPosition({ x: clientX, y: clientY });
+    const gridStep = precisionMode ? PRECISION_GRID_STEP : DEFAULT_GRID_STEP;
+    const pointer = clampFlowNodeCenterPosition(flowInstance.screenToFlowPosition({ x: clientX, y: clientY }));
     const primaryOriginal = dragSessionRef.current.originals.get(primaryId);
     if (!primaryOriginal) {
       return null;
     }
 
-    const deltaX = pointer.x - primaryOriginal.x;
-    const deltaY = pointer.y - primaryOriginal.y;
+    let snappedCenter = {
+      x: Math.round(pointer.x / gridStep) * gridStep,
+      y: Math.round(pointer.y / gridStep) * gridStep,
+    };
+
+    const movingIds = new Set(dragSessionRef.current.originals.keys());
+    const otherCenters = draftNodesRef.current
+      .filter((node) => !movingIds.has(node.id))
+      .map((node) => node.position);
+
+    let guideX: number | undefined;
+    let guideY: number | undefined;
+    const threshold = precisionMode ? 6 : 10;
+
+    otherCenters.forEach((candidate) => {
+      const xDistance = Math.abs(candidate.x - snappedCenter.x);
+      const yDistance = Math.abs(candidate.y - snappedCenter.y);
+
+      if (xDistance <= threshold && (guideX === undefined || xDistance < Math.abs(guideX - snappedCenter.x))) {
+        snappedCenter.x = candidate.x;
+        guideX = candidate.x;
+      }
+
+      if (yDistance <= threshold && (guideY === undefined || yDistance < Math.abs(guideY - snappedCenter.y))) {
+        snappedCenter.y = candidate.y;
+        guideY = candidate.y;
+      }
+    });
+
+    const deltaX = snappedCenter.x - primaryOriginal.x;
+    const deltaY = snappedCenter.y - primaryOriginal.y;
     const moved = new Map<string, { x: number; y: number }>();
 
     dragSessionRef.current.originals.forEach((original, id) => {
@@ -624,8 +688,10 @@ const DiagramCanvas: React.FC<{
       }));
     });
 
+    setAlignmentGuides(guideX !== undefined || guideY !== undefined ? { x: guideX, y: guideY } : null);
+
     return moved;
-  }, [flowInstance]);
+  }, [flowInstance, precisionMode]);
 
   const syncDraftNodes = useCallback((moved: Map<string, { x: number; y: number }>) => {
     setDraftNodes((current) => current.map((node) => {
@@ -647,6 +713,42 @@ const DiagramCanvas: React.FC<{
     });
   }, []);
 
+  const flowToSurfacePosition = useCallback((point: { x: number; y: number }) => {
+    if (!flowInstance) {
+      return null;
+    }
+
+    const viewport = flowInstance.getViewport();
+    return {
+      x: (point.x * viewport.zoom) + viewport.x,
+      y: (point.y * viewport.zoom) + viewport.y,
+    };
+  }, [flowInstance]);
+
+  const singleSelectedNode = useMemo(() => {
+    if (selectedWidgetIds.length !== 1) {
+      return null;
+    }
+
+    return draftNodes.find((node) => node.id === selectedWidgetIds[0]) ?? null;
+  }, [draftNodes, selectedWidgetIds]);
+
+  const selectedToolbarPosition = useMemo(() => {
+    if (!singleSelectedNode) {
+      return null;
+    }
+
+    const point = flowToSurfacePosition(singleSelectedNode.position);
+    if (!point) {
+      return null;
+    }
+
+    return {
+      x: point.x,
+      y: point.y - 58,
+    };
+  }, [flowToSurfacePosition, singleSelectedNode]);
+
   return (
     <div className="diagram-admin-canvas" data-page={selectedPage}>
       <div className="diagram-admin-canvas__header">
@@ -657,6 +759,24 @@ const DiagramCanvas: React.FC<{
         <div className="diagram-admin-canvas__badge">{selectedPage}</div>
       </div>
       <div ref={surfaceRef} className="diagram-admin-canvas__surface diagram-admin-canvas__surface--flow">
+        {alignmentGuides?.x !== undefined ? (() => {
+          const point = flowToSurfacePosition({ x: alignmentGuides.x, y: 0 });
+          return point ? (
+            <div
+              className="diagram-admin-canvas__alignment-guide diagram-admin-canvas__alignment-guide--vertical"
+              style={{ left: `${point.x}px` }}
+            />
+          ) : null;
+        })() : null}
+        {alignmentGuides?.y !== undefined ? (() => {
+          const point = flowToSurfacePosition({ x: 0, y: alignmentGuides.y });
+          return point ? (
+            <div
+              className="diagram-admin-canvas__alignment-guide diagram-admin-canvas__alignment-guide--horizontal"
+              style={{ top: `${point.y}px` }}
+            />
+          ) : null;
+        })() : null}
         {dragIndicator ? (
           <div
             className="diagram-admin-canvas__drag-indicator"
@@ -665,6 +785,19 @@ const DiagramCanvas: React.FC<{
               top: `${dragIndicator.y}px`,
             }}
           />
+        ) : null}
+        {selectedToolbarPosition && singleSelectedNode ? (
+          <div
+            className="diagram-admin-canvas__floating-toolbar"
+            style={{
+              left: `${selectedToolbarPosition.x}px`,
+              top: `${selectedToolbarPosition.y}px`,
+            }}
+          >
+            <Button icon="pi pi-pencil" text rounded size="small" onClick={() => onEdit(singleSelectedNode.data.item)} />
+            <Button icon="pi pi-copy" text rounded size="small" onClick={() => onDuplicate(singleSelectedNode.id)} />
+            <Button icon="pi pi-trash" text rounded severity="danger" size="small" onClick={() => onDelete(singleSelectedNode.id)} />
+          </div>
         ) : null}
         <ReactFlow
           nodes={draftNodes}
@@ -744,9 +877,16 @@ const DiagramCanvas: React.FC<{
             );
             dragSessionRef.current = null;
             setDragIndicator(null);
+            setAlignmentGuides(null);
           }}
-          onPaneClick={() => onSelectionChange([], false)}
-          onPaneMouseLeave={() => setDragIndicator(null)}
+          onPaneClick={() => {
+            onSelectionChange([], false);
+            setAlignmentGuides(null);
+          }}
+          onPaneMouseLeave={() => {
+            setDragIndicator(null);
+            setAlignmentGuides(null);
+          }}
           onMoveEnd={(_, viewport) => {
             if (viewport?.zoom !== undefined) {
               onZoomChange?.(clampZoomValue(viewport.zoom));
@@ -757,7 +897,7 @@ const DiagramCanvas: React.FC<{
           defaultViewport={{ x: 24, y: 24, zoom }}
           onlyRenderVisibleElements
           snapToGrid
-          snapGrid={[8, 8]}
+          snapGrid={precisionMode ? [PRECISION_GRID_STEP, PRECISION_GRID_STEP] : [DEFAULT_GRID_STEP, DEFAULT_GRID_STEP]}
           selectionOnDrag
           selectionMode={SelectionMode.Partial}
           selectNodesOnDrag={false}
@@ -1054,17 +1194,25 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [librarySearch, setLibrarySearch] = useState('');
   const [zoom, setZoom] = useState(0.7);
   const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
+  const [precisionMode, setPrecisionMode] = useState(false);
+  const [historyPast, setHistoryPast] = useState<LayoutHistoryEntry[]>([]);
+  const [historyFuture, setHistoryFuture] = useState<LayoutHistoryEntry[]>([]);
 
   const layoutsRef = useRef<DiagramLayoutItem[]>([]);
-  const selectedWidgetIdsRef = useRef<string[]>([]);
+  const persistenceQueueRef = useRef<{
+    save: Map<string, DiagramLayoutItem>;
+    remove: Map<string, Pick<DiagramLayoutItem, 'id' | 'edge_id' | 'tag_id'>>;
+    timer: ReturnType<typeof setTimeout> | null;
+  }>({
+    save: new Map(),
+    remove: new Map(),
+    timer: null,
+  });
+  const isHydratingRef = useRef(true);
 
   useEffect(() => {
     layoutsRef.current = layouts;
   }, [layouts]);
-
-  useEffect(() => {
-    selectedWidgetIdsRef.current = selectedWidgetIds;
-  }, [selectedWidgetIds]);
 
   const { data: tags } = useQuery({
     queryKey: ['tags'],
@@ -1124,9 +1272,22 @@ export default function DiagramWidgetsPage({ title }: Props) {
       }
     });
 
+    isHydratingRef.current = true;
     setLayouts(nextLayouts);
     layoutsRef.current = nextLayouts;
+    setSelectedWidgetIds([]);
+    setHistoryPast([]);
+    setHistoryFuture([]);
+    isHydratingRef.current = false;
   }, [customizations]);
+
+  useEffect(() => {
+    return () => {
+      if (persistenceQueueRef.current.timer) {
+        clearTimeout(persistenceQueueRef.current.timer);
+      }
+    };
+  }, []);
 
   const sortedTags = useMemo(() => sortTagsByName(tags || []), [tags]);
   const filteredTags = useMemo(() => getFilteredAndSortedTags(sortedTags, selectedEdge), [sortedTags, selectedEdge]);
@@ -1167,6 +1328,113 @@ export default function DiagramWidgetsPage({ title }: Props) {
       queryClient.invalidateQueries({ queryKey: ['diagram-widget-customizations'] });
     },
   });
+
+  const flushPersistenceQueue = useCallback(() => {
+    const queuedSave = Array.from(persistenceQueueRef.current.save.values());
+    const queuedRemove = Array.from(persistenceQueueRef.current.remove.values());
+
+    persistenceQueueRef.current.save.clear();
+    persistenceQueueRef.current.remove.clear();
+    persistenceQueueRef.current.timer = null;
+
+    queuedRemove.forEach((item) => {
+      deleteTagCustomization(item.edge_id, item.tag_id, 'widgetConfig').catch(() => undefined);
+    });
+
+    queuedSave.forEach((item) => {
+      saveMutation.mutate(item);
+    });
+  }, [saveMutation]);
+
+  const queueLayoutPersistence = useCallback((items: DiagramLayoutItem[]) => {
+    items.forEach((item) => {
+      persistenceQueueRef.current.remove.delete(item.id);
+      persistenceQueueRef.current.save.set(item.id, cloneLayoutItem(item));
+    });
+
+    if (persistenceQueueRef.current.timer) {
+      clearTimeout(persistenceQueueRef.current.timer);
+    }
+
+    persistenceQueueRef.current.timer = setTimeout(flushPersistenceQueue, AUTOSAVE_DELAY_MS);
+  }, [flushPersistenceQueue]);
+
+  const queueLayoutRemoval = useCallback((items: DiagramLayoutItem[]) => {
+    items.forEach((item) => {
+      persistenceQueueRef.current.save.delete(item.id);
+      persistenceQueueRef.current.remove.set(item.id, {
+        id: item.id,
+        edge_id: item.edge_id,
+        tag_id: item.tag_id,
+      });
+    });
+
+    if (persistenceQueueRef.current.timer) {
+      clearTimeout(persistenceQueueRef.current.timer);
+    }
+
+    persistenceQueueRef.current.timer = setTimeout(flushPersistenceQueue, AUTOSAVE_DELAY_MS);
+  }, [flushPersistenceQueue]);
+
+  const syncLayoutPersistence = useCallback((previousLayouts: DiagramLayoutItem[], nextLayouts: DiagramLayoutItem[]) => {
+    const previousMap = new Map(previousLayouts.map((item) => [item.id, item]));
+    const nextMap = new Map(nextLayouts.map((item) => [item.id, item]));
+    const toSave: DiagramLayoutItem[] = [];
+    const toRemove: DiagramLayoutItem[] = [];
+
+    nextLayouts.forEach((item) => {
+      const previous = previousMap.get(item.id);
+      if (!previous || JSON.stringify(previous) !== JSON.stringify(item)) {
+        toSave.push(item);
+      }
+    });
+
+    previousLayouts.forEach((item) => {
+      if (!nextMap.has(item.id)) {
+        toRemove.push(item);
+      }
+    });
+
+    if (toRemove.length) {
+      queueLayoutRemoval(toRemove);
+    }
+
+    if (toSave.length) {
+      queueLayoutPersistence(toSave);
+    }
+  }, [queueLayoutPersistence, queueLayoutRemoval]);
+
+  const pushHistoryEntry = useCallback((entry: LayoutHistoryEntry) => {
+    setHistoryPast((current) => [...current.slice(-(MAX_HISTORY_ENTRIES - 1)), entry]);
+    setHistoryFuture([]);
+  }, []);
+
+  const commitLayouts = useCallback((
+    nextLayouts: DiagramLayoutItem[],
+    options?: {
+      selectedIds?: string[];
+      recordHistory?: boolean;
+      syncPersistence?: boolean;
+    }
+  ) => {
+    const previousLayouts = cloneLayouts(layoutsRef.current);
+    const previousSelection = [...selectedWidgetIds];
+    const selectedIds = options?.selectedIds ?? selectedWidgetIds;
+
+    if (options?.recordHistory !== false && !isHydratingRef.current) {
+      pushHistoryEntry({
+        layouts: previousLayouts,
+        selectedWidgetIds: previousSelection,
+      });
+    }
+
+    setLayouts(nextLayouts);
+    setSelectedWidgetIds(selectedIds);
+
+    if (options?.syncPersistence !== false && !isHydratingRef.current) {
+      syncLayoutPersistence(previousLayouts, nextLayouts);
+    }
+  }, [pushHistoryEntry, selectedWidgetIds, syncLayoutPersistence]);
 
   const allPageLayouts = useMemo(() => {
     return layouts.filter((item) => item.edge_id === selectedEdge && item.page === selectedPage);
@@ -1273,10 +1541,8 @@ export default function DiagramWidgetsPage({ title }: Props) {
     });
 
     const changed = updated.filter((item) => nextPositions.has(item.id));
-    setLayouts(updated);
-    setSelectedWidgetIds(changed.map((item) => item.id));
-    changed.forEach((item) => saveMutation.mutate(item));
-  }, [saveMutation]);
+    commitLayouts(updated, { selectedIds: changed.map((item) => item.id) });
+  }, [commitLayouts]);
 
   const handleSaveWidget = (item: DiagramLayoutItem) => {
     const normalizedId = `${item.edge_id}-${item.tag_id}`;
@@ -1294,12 +1560,89 @@ export default function DiagramWidgetsPage({ title }: Props) {
       nextLayouts.push(nextItem);
     }
 
-    setLayouts(nextLayouts);
-    saveMutation.mutate(nextItem);
+    commitLayouts(nextLayouts, { selectedIds: [nextItem.id] });
     setShowForm(false);
     setEditingItem(null);
-    setSelectedWidgetIds([nextItem.id]);
   };
+
+  const handleDeleteWidget = (id: string) => {
+    const widget = layoutsRef.current.find((item) => item.id === id);
+    if (!widget) {
+      return;
+    }
+
+    confirmDialog({
+      message: `Удалить элемент для тега ${tagNames.get(widget.tag_id) || widget.tag_id}?`,
+      header: 'Подтверждение удаления',
+      icon: 'pi pi-exclamation-triangle',
+      acceptClassName: 'p-button-danger',
+      accept: () => {
+        commitLayouts(
+          layoutsRef.current.filter((item) => item.id !== id),
+          {
+            selectedIds: selectedWidgetIds.filter((itemId) => itemId !== id),
+          }
+        );
+      },
+    });
+  };
+
+  const handleDuplicateWidget = useCallback((id: string) => {
+    const source = layoutsRef.current.find((item) => item.id === id);
+    if (!source) {
+      return;
+    }
+
+    setEditingItem({
+      ...cloneLayoutItem(source),
+      id: `new-${Date.now()}`,
+      tag_id: '',
+      position: normalizeWidgetPosition(
+        {
+          x: source.position.x + 18,
+          y: source.position.y + 18,
+        },
+        source.widgetType
+      ),
+    });
+    setShowForm(true);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (!historyPast.length) {
+      return;
+    }
+
+    const previous = historyPast[historyPast.length - 1];
+    const currentEntry: LayoutHistoryEntry = {
+      layouts: cloneLayouts(layoutsRef.current),
+      selectedWidgetIds: [...selectedWidgetIds],
+    };
+
+    setHistoryPast((current) => current.slice(0, -1));
+    setHistoryFuture((current) => [currentEntry, ...current]);
+    setLayouts(cloneLayouts(previous.layouts));
+    setSelectedWidgetIds([...previous.selectedWidgetIds]);
+    syncLayoutPersistence(currentEntry.layouts, previous.layouts);
+  }, [historyPast, selectedWidgetIds, syncLayoutPersistence]);
+
+  const handleRedo = useCallback(() => {
+    if (!historyFuture.length) {
+      return;
+    }
+
+    const next = historyFuture[0];
+    const currentEntry: LayoutHistoryEntry = {
+      layouts: cloneLayouts(layoutsRef.current),
+      selectedWidgetIds: [...selectedWidgetIds],
+    };
+
+    setHistoryFuture((current) => current.slice(1));
+    setHistoryPast((current) => [...current.slice(-(MAX_HISTORY_ENTRIES - 1)), currentEntry]);
+    setLayouts(cloneLayouts(next.layouts));
+    setSelectedWidgetIds([...next.selectedWidgetIds]);
+    syncLayoutPersistence(currentEntry.layouts, next.layouts);
+  }, [historyFuture, selectedWidgetIds, syncLayoutPersistence]);
 
   useEffect(() => {
     if (!selectedWidgetIds.length || showForm) {
@@ -1312,6 +1655,26 @@ export default function DiagramWidgetsPage({ title }: Props) {
         if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || event.target.isContentEditable) {
           return;
         }
+      }
+
+      const commandPressed = event.ctrlKey || event.metaKey;
+
+      if (commandPressed && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      if (commandPressed && (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))) {
+        event.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      if (event.key === 'Delete' && selectedWidgetIds.length === 1) {
+        event.preventDefault();
+        handleDeleteWidget(selectedWidgetIds[0]);
+        return;
       }
 
       const delta = event.shiftKey ? 10 : 1;
@@ -1343,32 +1706,12 @@ export default function DiagramWidgetsPage({ title }: Props) {
         };
       });
 
-      setLayouts(updatedLayouts);
-      updatedLayouts.filter((item) => selectedIds.has(item.id)).forEach((item) => saveMutation.mutate(item));
+      commitLayouts(updatedLayouts, { selectedIds: Array.from(selectedIds) });
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saveMutation, selectedWidgetIds, showForm]);
-
-  const handleDeleteWidget = (id: string) => {
-    const widget = layoutsRef.current.find((item) => item.id === id);
-    if (!widget) {
-      return;
-    }
-
-    confirmDialog({
-      message: `Удалить элемент для тега ${tagNames.get(widget.tag_id) || widget.tag_id}?`,
-      header: 'Подтверждение удаления',
-      icon: 'pi pi-exclamation-triangle',
-      acceptClassName: 'p-button-danger',
-        accept: () => {
-          setLayouts(layoutsRef.current.filter((item) => item.id !== id));
-          setSelectedWidgetIds((current) => current.filter((itemId) => itemId !== id));
-          deleteTagCustomization(widget.edge_id, widget.tag_id, 'widgetConfig').catch(() => undefined);
-        },
-      });
-  };
+  }, [commitLayouts, handleDeleteWidget, handleRedo, handleUndo, selectedWidgetIds, showForm]);
 
   const libraryGroups = useMemo(() => {
     const normalized = librarySearch.trim().toLowerCase();
@@ -1408,25 +1751,22 @@ export default function DiagramWidgetsPage({ title }: Props) {
     <ReactFlowProvider>
       <div className="diagram-admin-page">
         <div className="diagram-admin-page__hero">
-          <div>
+          <div className="diagram-admin-page__hero-title">
             <h2>{title}</h2>
-            <p>
-              Настраивайте библиотеку схемных элементов цифрового двойника буровой, размещайте их на полотне,
-              связывайте между собой и сохраняйте все в текущий `widgetConfig`.
-            </p>
+            <p>Focused editor for scheme widgets with precise placement, alignment guides and action history.</p>
           </div>
           <div className="diagram-admin-page__hero-stats">
             <div>
               <strong>{stats.total}</strong>
-              <span>элементов</span>
+              <span>items</span>
             </div>
             <div>
               <strong>{stats.linked}</strong>
-              <span>со связями</span>
+              <span>linked</span>
             </div>
             <div>
               <strong>{stats.categories}</strong>
-              <span>категорий</span>
+              <span>groups</span>
             </div>
           </div>
         </div>
@@ -1504,7 +1844,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 <input
                   type="text"
                   className="p-inputtext"
-                  placeholder="Поиск по тегу, подписи или типу"
+                  placeholder="Search by tag, label or type"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
@@ -1514,7 +1854,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
                   className="p-dropdown"
                   disabled={!availablePages.length}
                 >
-                  {!availablePages.length ? <option value="">Сначала выберите оборудование</option> : null}
+                  {!availablePages.length ? <option value="">Select equipment first</option> : null}
                   {availablePages.map((page) => (
                     <option key={page.value} value={page.value}>
                       {page.label}
@@ -1528,14 +1868,25 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 >
                   {ZOOM_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
-                      Масштаб {option.label}
+                      Zoom {option.label}
                     </option>
                   ))}
                 </select>
                 <div className="diagram-admin-toolbar__selection">{selectedSummary}</div>
+                <label className={`diagram-admin-toolbar__mode ${precisionMode ? 'is-active' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={precisionMode}
+                    onChange={(event) => setPrecisionMode(event.target.checked)}
+                  />
+                  <span>Precision mode</span>
+                </label>
+                <span className="diagram-admin-toolbar__autosave">Autosave 0.5s</span>
               </div>
 
               <div className="diagram-admin-toolbar__actions">
+                <Button icon="pi pi-undo" text rounded size="small" disabled={!historyPast.length} onClick={handleUndo} tooltip="Undo" />
+                <Button icon="pi pi-refresh" text rounded size="small" disabled={!historyFuture.length} onClick={handleRedo} tooltip="Redo" />
               </div>
             </div>
 
@@ -1547,6 +1898,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 selectedWidgetIds={selectedWidgetIds}
                 tagNames={tagNames}
                 zoom={zoom}
+                precisionMode={precisionMode}
                 onZoomChange={setZoom}
                 onSelectionChange={handleCanvasSelection}
                 onMoveWidgets={handleMoveWidgets}
@@ -1554,6 +1906,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
                   setEditingItem(widget);
                   setShowForm(true);
                 }}
+                onDuplicate={handleDuplicateWidget}
                 onDelete={handleDeleteWidget}
               />
             ) : (
