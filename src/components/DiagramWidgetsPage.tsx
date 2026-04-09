@@ -898,10 +898,11 @@ const DiagramCanvas: React.FC<{
           onlyRenderVisibleElements
           snapToGrid
           snapGrid={precisionMode ? [PRECISION_GRID_STEP, PRECISION_GRID_STEP] : [DEFAULT_GRID_STEP, DEFAULT_GRID_STEP]}
-          selectionOnDrag
+          selectionOnDrag={false}
+          selectionKeyCode="Shift"
           selectionMode={SelectionMode.Partial}
           selectNodesOnDrag={false}
-          panOnDrag={[1]}
+          panOnDrag
           panActivationKeyCode="Space"
           zoomActivationKeyCode={['Meta', 'Control']}
           multiSelectionKeyCode={['Meta', 'Control']}
@@ -1758,15 +1759,15 @@ export default function DiagramWidgetsPage({ title }: Props) {
           <div className="diagram-admin-page__hero-stats">
             <div>
               <strong>{stats.total}</strong>
-              <span>items</span>
+              <span>элементов</span>
             </div>
             <div>
               <strong>{stats.linked}</strong>
-              <span>linked</span>
+              <span>со связями</span>
             </div>
             <div>
               <strong>{stats.categories}</strong>
-              <span>groups</span>
+              <span>категорий</span>
             </div>
           </div>
         </div>

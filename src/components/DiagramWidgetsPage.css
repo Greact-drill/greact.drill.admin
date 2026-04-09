@@ -265,18 +265,20 @@
 .diagram-admin-toolbar__mode {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   border-radius: 12px;
   border: 1px solid rgba(232, 201, 160, 0.12);
   background: rgba(255, 255, 255, 0.03);
   color: rgba(248, 241, 231, 0.72);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   cursor: pointer;
 }
 
 .diagram-admin-toolbar__mode input {
   margin: 0;
+  width: 13px;
+  height: 13px;
 }
 
 .diagram-admin-toolbar__mode.is-active {
