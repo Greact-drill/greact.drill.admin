@@ -300,6 +300,11 @@
   cursor: grab;
 }
 
+.diagram-admin-canvas__surface--flow {
+  overflow: hidden;
+  cursor: default;
+}
+
 .diagram-admin-canvas__surface.is-space-pan {
   cursor: grab;
 }
@@ -424,6 +429,58 @@
   cursor: grab;
   z-index: 1;
   transition: border-color 0.24s ease, background-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.diagram-admin-flow {
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 28%),
+    linear-gradient(180deg, rgba(8, 12, 18, 0.92), rgba(10, 15, 22, 0.98));
+}
+
+.diagram-admin-flow .react-flow__renderer,
+.diagram-admin-flow .react-flow__pane,
+.diagram-admin-flow .react-flow__viewport {
+  cursor: default;
+}
+
+.diagram-admin-flow .react-flow__node {
+  width: 72px;
+  height: 72px;
+  background: transparent;
+  border: 0;
+}
+
+.diagram-admin-flow .react-flow__node.selectable:focus,
+.diagram-admin-flow .react-flow__node.selectable:focus-visible {
+  outline: none;
+}
+
+.diagram-admin-flow .diagram-admin-canvas-widget {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  cursor: grab;
+}
+
+.diagram-admin-flow .react-flow__node.dragging .diagram-admin-canvas-widget {
+  cursor: grabbing;
+}
+
+.diagram-admin-flow .react-flow__edge-path,
+.diagram-admin-flow .react-flow__edge-interaction {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.diagram-admin-flow-node__handle {
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
 }
 
 .diagram-admin-canvas-widget:hover {

@@ -1,7 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import {
+  Background,
+  BackgroundVariant,
+  BaseEdge,
+  Handle,
+  MarkerType,
+  Position,
+  ReactFlow,
+  ReactFlowProvider,
+  SelectionMode,
+  getSmoothStepPath,
+  type Edge as FlowEdge,
+  type EdgeProps as FlowEdgeProps,
+  type Node as FlowNode,
+  type NodeProps as FlowNodeProps,
+  type OnSelectionChangeFunc,
+  type ReactFlowInstance,
+} from '@xyflow/react';
 import { Button } from 'primereact/button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Dialog } from 'primereact/dialog';
@@ -26,6 +42,7 @@ import { getFilteredAndSortedTags, sortTagsByName } from '../utils/tagUtils';
 import EdgePathDisplay from './EdgePathDisplay';
 import EdgeTreeSelector from './EdgeTreeSelector';
 import SchemeWidgetPreview from './SchemeWidgetPreview';
+import '@xyflow/react/dist/style.css';
 import './DiagramWidgetsPage.css';
 
 interface DiagramWidgetConfig {
@@ -61,6 +78,18 @@ interface CanvasSelectionBox {
 interface SmartSnapGuides {
   x?: number;
   y?: number;
+}
+
+interface DiagramFlowNodeData {
+  item: DiagramLayoutItem;
+  tagName: string;
+  hasAlarm: boolean;
+  onEdit: (item: DiagramLayoutItem) => void;
+  onDelete: (id: string) => void;
+}
+
+interface DiagramFlowEdgeData {
+  kind: DiagramConnectionKind;
 }
 
 const CONNECTION_KIND_OPTIONS: Array<{ value: DiagramConnectionKind; label: string }> = [
@@ -115,6 +144,22 @@ function getScaledCanvasPosition(position: { x: number; y: number }) {
   return {
     x: Math.round(position.x * ADMIN_PREVIEW_SCALE),
     y: Math.round(position.y * ADMIN_PREVIEW_SCALE),
+  };
+}
+
+function getFlowNodeCenterFromWidget(position: { x: number; y: number }) {
+  const scaled = getScaledCanvasPosition(position);
+
+  return {
+    x: scaled.x + (ADMIN_WIDGET_PREVIEW_SIZE / 2),
+    y: scaled.y + (ADMIN_WIDGET_PREVIEW_SIZE / 2),
+  };
+}
+
+function getWidgetPositionFromFlowNodeCenter(center: { x: number; y: number }) {
+  return {
+    x: (center.x - (ADMIN_WIDGET_PREVIEW_SIZE / 2)) / ADMIN_PREVIEW_SCALE,
+    y: (center.y - (ADMIN_WIDGET_PREVIEW_SIZE / 2)) / ADMIN_PREVIEW_SCALE,
   };
 }
 
@@ -262,15 +307,39 @@ const getAvailablePages = (selectedEdge: string, edgePath: Edge[]): Array<{ labe
 };
 
 function getWidgetCenter(item: DiagramLayoutItem) {
-  const definition = getAdminPreviewDimensions(item.widgetType);
-  const position = getScaledCanvasPosition(item.position);
-  return {
-    x: position.x + (definition.width / 2),
-    y: position.y + (definition.height / 2),
-  };
+  return getFlowNodeCenterFromWidget(item.position);
 }
 
 type AnchorSide = 'left' | 'right' | 'top' | 'bottom';
+
+function getHandleId(side: AnchorSide, type: 'source' | 'target') {
+  return `${type}-${side}`;
+}
+
+function getConnectionSide(source: DiagramLayoutItem, target: DiagramLayoutItem): AnchorSide {
+  const sourceCenter = getWidgetCenter(source);
+  const targetCenter = getWidgetCenter(target);
+  const dx = targetCenter.x - sourceCenter.x;
+  const dy = targetCenter.y - sourceCenter.y;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0 ? 'right' : 'left';
+  }
+
+  return dy >= 0 ? 'bottom' : 'top';
+}
+
+function getEdgeColor(kind: DiagramConnectionKind) {
+  switch (kind) {
+    case 'power':
+      return 'rgba(232, 201, 160, 0.82)';
+    case 'alert':
+      return 'rgba(255, 122, 122, 0.9)';
+    case 'signal':
+    default:
+      return 'rgba(123, 211, 255, 0.82)';
+  }
+}
 
 function getWidgetAnchor(item: DiagramLayoutItem, target: DiagramLayoutItem) {
   const definition = getAdminPreviewDimensions(item.widgetType);
@@ -350,378 +419,226 @@ function getOrthogonalLinkPath(
   ].join(' ');
 }
 
-const DiagramDraggableWidget: React.FC<{
-  item: DiagramLayoutItem;
-  tagName: string;
-  hasAlarm?: boolean;
-  isSelected?: boolean;
-  onEdit: (item: DiagramLayoutItem) => void;
-  onDelete: (id: string) => void;
-  onSelect: (item: DiagramLayoutItem, append: boolean) => void;
-}> = ({ item, tagName, hasAlarm = false, isSelected = false, onEdit, onDelete, onSelect }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'diagram-widget',
-    item: { id: item.id, origin: item.position },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  }));
-
-  const definition = getAdminPreviewDimensions(item.widgetType);
-  const position = getScaledCanvasPosition(item.position);
-  const label = tagName;
+const DiagramFlowNode: React.FC<FlowNodeProps<FlowNode<DiagramFlowNodeData>>> = ({ data, selected, dragging }) => {
+  const label = data.tagName;
+  const definition = getSchemeWidgetDefinition(data.item.widgetType);
 
   return (
     <div
-      ref={drag as never}
-      className={`diagram-admin-canvas-widget ${isDragging ? 'is-dragging' : ''} ${hasAlarm ? 'is-alarm' : ''} ${isSelected ? 'is-selected' : ''}`}
-      style={{ left: `${position.x}px`, top: `${position.y}px`, width: `${definition.width}px`, height: `${definition.height}px` }}
-      onDoubleClick={() => onEdit(item)}
-      onClick={(event) => {
-        event.stopPropagation();
-        onSelect(item, event.ctrlKey || event.metaKey);
-      }}
+      className={`diagram-admin-canvas-widget ${dragging ? 'is-dragging' : ''} ${data.hasAlarm ? 'is-alarm' : ''} ${selected ? 'is-selected' : ''}`}
       title={label}
     >
+      <Handle id={getHandleId('left', 'source')} type="source" position={Position.Left} isConnectable={false} className="diagram-admin-flow-node__handle" />
+      <Handle id={getHandleId('right', 'source')} type="source" position={Position.Right} isConnectable={false} className="diagram-admin-flow-node__handle" />
+      <Handle id={getHandleId('top', 'source')} type="source" position={Position.Top} isConnectable={false} className="diagram-admin-flow-node__handle" />
+      <Handle id={getHandleId('bottom', 'source')} type="source" position={Position.Bottom} isConnectable={false} className="diagram-admin-flow-node__handle" />
+      <Handle id={getHandleId('left', 'target')} type="target" position={Position.Left} isConnectable={false} className="diagram-admin-flow-node__handle" />
+      <Handle id={getHandleId('right', 'target')} type="target" position={Position.Right} isConnectable={false} className="diagram-admin-flow-node__handle" />
+      <Handle id={getHandleId('top', 'target')} type="target" position={Position.Top} isConnectable={false} className="diagram-admin-flow-node__handle" />
+      <Handle id={getHandleId('bottom', 'target')} type="target" position={Position.Bottom} isConnectable={false} className="diagram-admin-flow-node__handle" />
+
       <div className="diagram-admin-canvas-widget__symbol">
-        <SchemeWidgetPreview type={item.widgetType} active={!hasAlarm} alarm={hasAlarm} />
+        <SchemeWidgetPreview type={data.item.widgetType} active={!data.hasAlarm} alarm={data.hasAlarm} />
       </div>
       <div className="diagram-admin-canvas-widget__meta">
         <strong>{label}</strong>
         <span>{definition.label}</span>
       </div>
-      <div className="diagram-admin-canvas-widget__actions">
-        <Button icon="pi pi-pencil" text rounded size="small" onClick={(event) => { event.stopPropagation(); onEdit(item); }} />
-        <Button icon="pi pi-trash" text rounded severity="danger" size="small" onClick={(event) => { event.stopPropagation(); onDelete(item.id); }} />
+      <div className="diagram-admin-canvas-widget__actions nodrag nopan">
+        <Button icon="pi pi-pencil" text rounded size="small" onClick={(event) => { event.stopPropagation(); data.onEdit(data.item); }} />
+        <Button icon="pi pi-trash" text rounded severity="danger" size="small" onClick={(event) => { event.stopPropagation(); data.onDelete(data.item.id); }} />
       </div>
     </div>
   );
 };
 
-const DiagramDropZone: React.FC<{
+const FLOW_NODE_TYPES = {
+  diagramWidget: DiagramFlowNode,
+};
+
+const DiagramFlowEdge: React.FC<FlowEdgeProps<FlowEdge<DiagramFlowEdgeData>>> = ({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, style, data }) => {
+  const [path] = getSmoothStepPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+    borderRadius: 12,
+    offset: 18,
+  });
+
+  return (
+    <BaseEdge
+      path={path}
+      markerEnd={markerEnd}
+      style={{
+        ...style,
+        stroke: getEdgeColor(data?.kind ?? 'signal'),
+      }}
+    />
+  );
+};
+
+const FLOW_EDGE_TYPES = {
+  diagram: DiagramFlowEdge,
+};
+
+const DiagramCanvas: React.FC<{
   selectedPage: string;
   selectedPageName: string;
   widgets: DiagramLayoutItem[];
+  selectedWidgetIds: string[];
+  tagNames: Map<string, string>;
   zoom: number;
-  children: React.ReactNode;
-  onDrop: (item: { id: string; origin?: { x: number; y: number } }, position: { x: number; y: number }) => void;
   onZoomChange?: (zoom: number) => void;
   onSelectionChange: (ids: string[], append: boolean) => void;
-}> = ({ selectedPage, selectedPageName, widgets, zoom, children, onDrop, onZoomChange, onSelectionChange }) => {
-  const surfaceRef = useRef<HTMLDivElement>(null);
-  const [isPanning, setIsPanning] = useState(false);
-  const [spacePressed, setSpacePressed] = useState(false);
-  const [selectionBox, setSelectionBox] = useState<CanvasSelectionBox | null>(null);
-  const [snapGuides, setSnapGuides] = useState<SmartSnapGuides | null>(null);
-  const panStartRef = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
+  onMoveWidgets: (items: Array<{ id: string; position: { x: number; y: number } }>) => void;
+  onEdit: (item: DiagramLayoutItem) => void;
+  onDelete: (id: string) => void;
+}> = ({ selectedPage, selectedPageName, widgets, selectedWidgetIds, tagNames, zoom, onZoomChange, onSelectionChange, onMoveWidgets, onEdit, onDelete }) => {
+  const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<FlowNode<DiagramFlowNodeData>, FlowEdge<DiagramFlowEdgeData>> | null>(null);
 
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'diagram-widget',
-    hover: (item: { id: string; origin?: { x: number; y: number } }, monitor) => {
-      const moved = widgets.find((widget) => widget.id === item.id);
-      const movement = monitor.getDifferenceFromInitialOffset();
+  const nodes = useMemo<FlowNode<DiagramFlowNodeData>[]>(() => (
+    widgets.map((item) => ({
+      id: item.id,
+      type: 'diagramWidget',
+      position: getFlowNodeCenterFromWidget(item.position),
+      data: {
+        item,
+        tagName: tagNames.get(item.tag_id) || item.tag_id,
+        hasAlarm: Boolean(item.connections?.some((connection) => connection.kind === 'alert')),
+        onEdit,
+        onDelete,
+      },
+      selected: selectedWidgetIds.includes(item.id),
+      draggable: true,
+      selectable: true,
+    }))
+  ), [onDelete, onEdit, selectedWidgetIds, tagNames, widgets]);
 
-      if (!movement || !moved) {
-        setSnapGuides(null);
-        return;
-      }
+  const widgetMap = useMemo(() => new Map(widgets.map((widget) => [widget.tag_id, widget])), [widgets]);
 
-      const origin = item.origin ?? moved.position;
-      const nextPosition = {
-        x: origin.x + (movement.x / zoom / ADMIN_PREVIEW_SCALE),
-        y: origin.y + (movement.y / zoom / ADMIN_PREVIEW_SCALE),
-      };
+  const edges = useMemo<FlowEdge<DiagramFlowEdgeData>[]>(() => (
+    widgets.flatMap((widget) =>
+      (widget.connections ?? [])
+        .map((connection) => {
+          const target = widgetMap.get(connection.targetTagId);
+          if (!target) {
+            return null;
+          }
 
-      const guides = getSmartSnapGuides(nextPosition, moved, widgets);
-      setSnapGuides(guides.x !== undefined || guides.y !== undefined ? guides : null);
-    },
-    drop: (item: { id: string; origin?: { x: number; y: number } }, monitor) => {
-      const moved = widgets.find((widget) => widget.id === item.id);
-      const movement = monitor.getDifferenceFromInitialOffset();
+          const sourceSide = getConnectionSide(widget, target);
+          const targetSide = getConnectionSide(target, widget);
 
-      if (!movement || !moved) {
-        setSnapGuides(null);
-        return;
-      }
-
-      const origin = item.origin ?? moved.position;
-      onDrop(item, {
-        x: origin.x + (movement.x / zoom / ADMIN_PREVIEW_SCALE),
-        y: origin.y + (movement.y / zoom / ADMIN_PREVIEW_SCALE),
-      });
-      setSnapGuides(null);
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  }));
-
-  drop(surfaceRef);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const tagName = target?.tagName?.toLowerCase();
-      if (event.code === 'Space' && tagName !== 'input' && tagName !== 'textarea' && tagName !== 'select' && !target?.isContentEditable) {
-        setSpacePressed(true);
-      }
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.code === 'Space') {
-        setSpacePressed(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, []);
+          return {
+            id: `${widget.id}-${connection.targetTagId}-${connection.kind}`,
+            source: widget.id,
+            target: target.id,
+            sourceHandle: getHandleId(sourceSide, 'source'),
+            targetHandle: getHandleId(targetSide, 'target'),
+            type: 'diagram',
+            selectable: false,
+            focusable: false,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 16,
+              height: 16,
+              color: getEdgeColor(connection.kind),
+            },
+            data: {
+              kind: connection.kind,
+            },
+            style: {
+              strokeWidth: connection.kind === 'power' ? 3.5 : 2.5,
+            },
+          };
+        })
+        .filter((item): item is FlowEdge<DiagramFlowEdgeData> => item !== null)
+    )
+  ), [widgetMap, widgets]);
 
   useEffect(() => {
-    if (!isOver) {
-      setSnapGuides(null);
+    if (!flowInstance) {
+      return;
     }
-  }, [isOver]);
 
-  const widgetMap = new Map(widgets.map((widget) => [widget.tag_id, widget]));
-  const selectionBounds = selectionBox
-    ? {
-        left: Math.min(selectionBox.startX, selectionBox.currentX),
-        top: Math.min(selectionBox.startY, selectionBox.currentY),
-        width: Math.abs(selectionBox.currentX - selectionBox.startX),
-        height: Math.abs(selectionBox.currentY - selectionBox.startY),
-      }
-    : null;
-  const links = widgets.flatMap((widget) =>
-    (widget.connections ?? [])
-      .map((connection) => {
-        const targetTagId = connection.targetTagId;
-        const target = widgetMap.get(targetTagId);
-        if (!target) {
-          return null;
-        }
+    const currentZoom = flowInstance.getZoom();
+    if (Math.abs(currentZoom - zoom) < 0.01) {
+      return;
+    }
 
-        const sourceAnchor = getWidgetAnchor(widget, target);
-        const targetAnchor = getWidgetAnchor(target, widget);
+    flowInstance.zoomTo(zoom, { duration: 120 });
+  }, [flowInstance, zoom]);
 
-        return {
-          id: `${widget.id}-${targetTagId}`,
-          x1: sourceAnchor.x,
-          y1: sourceAnchor.y,
-          x2: targetAnchor.x,
-          y2: targetAnchor.y,
-          path: getOrthogonalLinkPath(sourceAnchor, targetAnchor),
-          kind: connection.kind,
-        };
-      })
-      .filter((item): item is { id: string; x1: number; y1: number; x2: number; y2: number; path: string; kind: DiagramConnectionKind } => item !== null)
-  );
+  const handleSelectionChange = useCallback<OnSelectionChangeFunc<FlowNode<DiagramFlowNodeData>, FlowEdge<DiagramFlowEdgeData>>>(({ nodes: selectedNodes }) => {
+    onSelectionChange(selectedNodes.map((node) => node.id), false);
+  }, [onSelectionChange]);
 
   return (
-    <div className={`diagram-admin-canvas ${isOver ? 'is-over' : ''}`} data-page={selectedPage}>
+    <div className="diagram-admin-canvas" data-page={selectedPage}>
       <div className="diagram-admin-canvas__header">
         <div>
           <h3>{selectedPageName}</h3>
-          <p>Размещайте элементы drag & drop, открывайте свойства двойным кликом и отмечайте связи между узлами схемы.</p>
+          <p>Размещайте элементы прямо на полотне, выделяйте рамкой, перетаскивайте группами и открывайте свойства двойным кликом.</p>
         </div>
         <div className="diagram-admin-canvas__badge">{selectedPage}</div>
       </div>
-      <div
-        ref={surfaceRef}
-        className={`diagram-admin-canvas__surface ${isPanning ? 'is-panning' : ''} ${spacePressed ? 'is-space-pan' : ''}`}
-        onMouseDown={(event) => {
-          const surface = surfaceRef.current;
-          if (!surface) {
-            return;
-          }
-
-          const target = event.target as HTMLElement | null;
-          const clickedWidget = target?.closest('.diagram-admin-canvas-widget');
-          const canPan = event.button === 1 || ((spacePressed || event.altKey) && event.button === 0);
-
-          if (event.button === 0 && !clickedWidget && !spacePressed && !event.altKey) {
-            const bounds = surface.getBoundingClientRect();
-            const contentX = event.clientX - bounds.left + surface.scrollLeft;
-            const contentY = event.clientY - bounds.top + surface.scrollTop;
-
-            setSelectionBox({
-              startX: contentX,
-              startY: contentY,
-              currentX: contentX,
-              currentY: contentY,
-              append: event.ctrlKey || event.metaKey,
-            });
-            return;
-          }
-
-          if (!canPan || (!spacePressed && event.button !== 1 && clickedWidget)) {
-            return;
-          }
-
-          event.preventDefault();
-          panStartRef.current = {
-            x: event.clientX,
-            y: event.clientY,
-            left: surface.scrollLeft,
-            top: surface.scrollTop,
-          };
-          setIsPanning(true);
-        }}
-        onMouseMove={(event) => {
-          const surface = surfaceRef.current;
-          const panStart = panStartRef.current;
-          if (!surface) {
-            return;
-          }
-
-          if (selectionBox) {
-            const bounds = surface.getBoundingClientRect();
-            setSelectionBox((current) => current ? {
-              ...current,
-              currentX: event.clientX - bounds.left + surface.scrollLeft,
-              currentY: event.clientY - bounds.top + surface.scrollTop,
-            } : null);
-            return;
-          }
-
-          if (!panStart) {
-            return;
-          }
-
-          event.preventDefault();
-          surface.scrollLeft = panStart.left - (event.clientX - panStart.x);
-          surface.scrollTop = panStart.top - (event.clientY - panStart.y);
-        }}
-        onMouseUp={() => {
-          if (selectionBox) {
-            const nextSelection = widgets
-              .filter((widget) => {
-                const position = getScaledCanvasPosition(widget.position);
-                const dimensions = getAdminPreviewDimensions(widget.widgetType);
-                const left = position.x * zoom;
-                const top = position.y * zoom;
-                const right = left + dimensions.width * zoom;
-                const bottom = top + dimensions.height * zoom;
-
-                return !selectionBounds || !(
-                  right < selectionBounds.left ||
-                  left > selectionBounds.left + selectionBounds.width ||
-                  bottom < selectionBounds.top ||
-                  top > selectionBounds.top + selectionBounds.height
-                );
-              })
-              .map((widget) => widget.id);
-
-            onSelectionChange(nextSelection, selectionBox.append);
-            setSelectionBox(null);
-          }
-
-          panStartRef.current = null;
-          setIsPanning(false);
-        }}
-        onMouseLeave={() => {
-          setSelectionBox(null);
-          setSnapGuides(null);
-          panStartRef.current = null;
-          setIsPanning(false);
-        }}
-        onWheel={(event) => {
-          if (!(event.ctrlKey || event.metaKey) || !onZoomChange) {
-            return;
-          }
-
-          const surface = surfaceRef.current;
-          if (!surface) {
-            return;
-          }
-
-          event.preventDefault();
-
-          const nextZoom = clampZoomValue(zoom + (event.deltaY < 0 ? 0.08 : -0.08));
-          if (nextZoom === zoom) {
-            return;
-          }
-
-          const rect = surface.getBoundingClientRect();
-          const canvasX = (event.clientX - rect.left + surface.scrollLeft) / zoom;
-          const canvasY = (event.clientY - rect.top + surface.scrollTop) / zoom;
-
-          onZoomChange(nextZoom);
-
-          requestAnimationFrame(() => {
-            surface.scrollLeft = canvasX * nextZoom - (event.clientX - rect.left);
-            surface.scrollTop = canvasY * nextZoom - (event.clientY - rect.top);
-          });
-        }}
-      >
-        <div
-          className="diagram-admin-canvas__workspace-shell"
-          style={{ width: `${CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE * zoom}px`, height: `${CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE * zoom}px` }}
+      <div className="diagram-admin-canvas__surface diagram-admin-canvas__surface--flow">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={FLOW_NODE_TYPES}
+          edgeTypes={FLOW_EDGE_TYPES}
+          onInit={setFlowInstance}
+          onSelectionChange={handleSelectionChange}
+          onNodeDoubleClick={(_, node) => onEdit(node.data.item)}
+          onNodeDragStop={(_, __, draggedNodes) => {
+            onMoveWidgets(
+              draggedNodes.map((node) => ({
+                id: node.id,
+                position: normalizeWidgetPosition(getWidgetPositionFromFlowNodeCenter(node.position), node.data.item.widgetType),
+              }))
+            );
+          }}
+          onPaneClick={() => onSelectionChange([], false)}
+          onMoveEnd={(_, viewport) => {
+            if (viewport?.zoom !== undefined) {
+              onZoomChange?.(clampZoomValue(viewport.zoom));
+            }
+          }}
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
+          defaultViewport={{ x: 24, y: 24, zoom }}
+          snapToGrid
+          snapGrid={[8, 8]}
+          selectionOnDrag
+          selectionMode={SelectionMode.Partial}
+          selectNodesOnDrag={false}
+          panOnDrag={[1]}
+          panActivationKeyCode="Space"
+          zoomActivationKeyCode={['Meta', 'Control']}
+          multiSelectionKeyCode={['Meta', 'Control']}
+          zoomOnDoubleClick={false}
+          fitView={false}
+          nodesDraggable
+          nodesConnectable={false}
+          elementsSelectable
+          elevateNodesOnSelect
+          nodeOrigin={[0.5, 0.5]}
+          nodeExtent={[[ADMIN_WIDGET_PREVIEW_SIZE / 2, ADMIN_WIDGET_PREVIEW_SIZE / 2], [CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2), CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2)]]}
+          translateExtent={[[-120, -120], [CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE + 120, CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE + 120]]}
+          className="diagram-admin-flow"
+          proOptions={{ hideAttribution: true }}
         >
-          <div
-            className="diagram-admin-canvas__workspace"
-            style={{
-              width: `${CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE}px`,
-              height: `${CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}px`,
-              transform: `scale(${zoom})`,
-            }}
-          >
-            <div
-              className="diagram-admin-canvas__grid"
-              style={{ backgroundSize: `${24 * ADMIN_PREVIEW_SCALE}px ${24 * ADMIN_PREVIEW_SCALE}px` }}
-              aria-hidden="true"
-            />
-            <svg
-              className="diagram-admin-canvas__links"
-              width={CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE}
-              height={CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}
-              viewBox={`0 0 ${CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE} ${CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}`}
-              aria-hidden="true"
-            >
-              {snapGuides?.x !== undefined ? (
-                <line
-                  x1={snapGuides.x * ADMIN_PREVIEW_SCALE}
-                  y1={0}
-                  x2={snapGuides.x * ADMIN_PREVIEW_SCALE}
-                  y2={CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE}
-                  className="diagram-admin-canvas__guide"
-                />
-              ) : null}
-              {snapGuides?.y !== undefined ? (
-                <line
-                  x1={0}
-                  y1={snapGuides.y * ADMIN_PREVIEW_SCALE}
-                  x2={CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE}
-                  y2={snapGuides.y * ADMIN_PREVIEW_SCALE}
-                  className="diagram-admin-canvas__guide"
-                />
-              ) : null}
-              {links.map((link) => (
-                <g key={link.id} className={`diagram-admin-canvas__link-group diagram-admin-canvas__link-group--${link.kind}`}>
-                  <path d={link.path} className="diagram-admin-canvas__link" />
-                  <circle cx={link.x2} cy={link.y2} r="4" className="diagram-admin-canvas__link-end" />
-                </g>
-              ))}
-            </svg>
-            {children}
-          </div>
-          {selectionBounds ? (
-            <div
-              className="diagram-admin-canvas__selection-box"
-              style={{
-                left: `${selectionBounds.left}px`,
-                top: `${selectionBounds.top}px`,
-                width: `${selectionBounds.width}px`,
-                height: `${selectionBounds.height}px`,
-              }}
-            />
-          ) : null}
-        </div>
+          <Background
+            id="diagram-grid"
+            variant={BackgroundVariant.Lines}
+            gap={8}
+            size={1}
+            color="rgba(255,255,255,0.06)"
+          />
+        </ReactFlow>
       </div>
     </div>
   );
@@ -1191,40 +1108,27 @@ export default function DiagramWidgetsPage({ title }: Props) {
     setShowForm(true);
   };
 
-  const handleDrop = useCallback((draggedItem: { id: string; origin?: { x: number; y: number } }, position: { x: number; y: number }) => {
-    const moved = layoutsRef.current.find((item) => item.id === draggedItem.id);
-    if (!moved) {
+  const handleMoveWidgets = useCallback((items: Array<{ id: string; position: { x: number; y: number } }>) => {
+    if (!items.length) {
       return;
     }
 
-    const constrained = normalizeWidgetPosition(position, moved.widgetType);
-    const selectedIds = selectedWidgetIdsRef.current.includes(draggedItem.id)
-      ? new Set(selectedWidgetIdsRef.current)
-      : new Set([draggedItem.id]);
-    const origin = draggedItem.origin ?? moved.position;
-    const deltaX = constrained.x - origin.x;
-    const deltaY = constrained.y - origin.y;
-
+    const nextPositions = new Map(items.map((item) => [item.id, item.position]));
     const updated = layoutsRef.current.map((item) => {
-      if (!selectedIds.has(item.id)) {
+      const nextPosition = nextPositions.get(item.id);
+      if (!nextPosition) {
         return item;
       }
 
       return {
         ...item,
-        position: normalizeWidgetPosition(
-          {
-            x: item.position.x + deltaX,
-            y: item.position.y + deltaY,
-          },
-          item.widgetType
-        ),
+        position: normalizeWidgetPosition(nextPosition, item.widgetType),
       };
     });
 
-    const changed = updated.filter((item) => selectedIds.has(item.id));
+    const changed = updated.filter((item) => nextPositions.has(item.id));
     setLayouts(updated);
-    setSelectedWidgetIds(Array.from(selectedIds));
+    setSelectedWidgetIds(changed.map((item) => item.id));
     changed.forEach((item) => saveMutation.mutate(item));
   }, [saveMutation]);
 
@@ -1355,7 +1259,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
     : 'Нет выбора';
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <ReactFlowProvider>
       <div className="diagram-admin-page">
         <div className="diagram-admin-page__hero">
           <div>
@@ -1490,38 +1394,22 @@ export default function DiagramWidgetsPage({ title }: Props) {
             </div>
 
             {selectedEdge && selectedPage ? (
-              <DiagramDropZone
+              <DiagramCanvas
                 selectedPage={selectedPage}
                 selectedPageName={selectedPageName}
                 widgets={pageLayouts}
+                selectedWidgetIds={selectedWidgetIds}
+                tagNames={tagNames}
                 zoom={zoom}
-                onDrop={handleDrop}
                 onZoomChange={setZoom}
                 onSelectionChange={handleCanvasSelection}
-              >
-                {pageLayouts.map((item) => (
-                  <DiagramDraggableWidget
-                    key={item.id}
-                    item={item}
-                    tagName={tagNames.get(item.tag_id) || item.tag_id}
-                    hasAlarm={Boolean(item.connections?.some((connection) => connection.kind === 'alert'))}
-                    isSelected={selectedWidgetIds.includes(item.id)}
-                    onEdit={(widget) => {
-                      setEditingItem(widget);
-                      setShowForm(true);
-                    }}
-                    onDelete={handleDeleteWidget}
-                    onSelect={handleSelectWidget}
-                  />
-                ))}
-                {pageLayouts.length === 0 ? (
-                  <div className="diagram-admin-empty">
-                    <i className="pi pi-sitemap" />
-                    <strong>Полотно пока пустое</strong>
-                    <span>Выберите элемент из библиотеки слева и разместите его на странице оборудования.</span>
-                  </div>
-                ) : null}
-              </DiagramDropZone>
+                onMoveWidgets={handleMoveWidgets}
+                onEdit={(widget) => {
+                  setEditingItem(widget);
+                  setShowForm(true);
+                }}
+                onDelete={handleDeleteWidget}
+              />
             ) : (
               <div className="diagram-admin-empty diagram-admin-empty--idle">
                 <i className="pi pi-compass" />
@@ -1593,6 +1481,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
         <ConfirmDialog />
       </div>
-    </DndProvider>
+    </ReactFlowProvider>
   );
 }
