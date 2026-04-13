@@ -186,6 +186,24 @@ export async function getAllWidgetConfigs(): Promise<any[]> {
   return response.data;
 }
 
+export interface DiagramConfigResponse {
+  id: number;
+  page: string;
+  ownerEdgeId?: string;
+  backgroundUrl?: string;
+  backgroundOpacity?: number;
+  backgroundFit?: 'contain' | 'cover' | 'stretch';
+  viewport?: { x: number; y: number; zoom: number } | null;
+  items?: unknown[];
+  edges?: unknown[];
+  regions?: unknown[];
+}
+
+export async function getDiagramConfigByPage(page: string): Promise<DiagramConfigResponse | null> {
+  const response = await apiClient.get<DiagramConfigResponse | null>(`/edge/page/${page}/diagram-config`);
+  return response.data;
+}
+
 // Интерфейсы для конфигурации таблиц
 export interface TableCell {
   type: 'text' | 'tag-number' | 'tag-text';
