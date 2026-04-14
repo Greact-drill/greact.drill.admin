@@ -338,8 +338,8 @@
 
 .diagram-admin-canvas__surface {
   position: relative;
-  min-height: 860px;
-  height: 860px;
+  min-height: 1040px;
+  height: clamp(1040px, calc(100vh - 240px), 1360px);
   overflow: auto;
   cursor: grab;
 }
@@ -912,9 +912,57 @@
   overflow: auto;
 }
 
+.diagram-widget-form__connection-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.diagram-widget-form__connection-picker {
+  width: 100%;
+  min-width: 0;
+}
+
+.diagram-widget-form__connection-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.diagram-widget-form__connection-quick-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 201, 160, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f8f1e7;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.diagram-widget-form__connection-quick-item:hover {
+  background: rgba(123, 211, 255, 0.1);
+  border-color: rgba(123, 211, 255, 0.24);
+  transform: translateY(-1px);
+}
+
+.diagram-widget-form__connection-quick-item .scheme-widget-preview {
+  transform: scale(0.82);
+  transform-origin: left center;
+}
+
+.diagram-widget-form__connection-quick-item span {
+  overflow-wrap: anywhere;
+}
+
 .diagram-widget-form__connection-item {
   display: grid;
-  grid-template-columns: auto 72px minmax(0, 1fr) minmax(150px, 180px);
+  grid-template-columns: 72px minmax(0, 1fr) minmax(150px, 180px) auto;
   gap: 12px;
   align-items: center;
   padding: 10px 12px;
@@ -952,11 +1000,19 @@
   }
 
   .diagram-widget-form__connection-item {
-    grid-template-columns: auto 72px minmax(0, 1fr);
+    grid-template-columns: 72px minmax(0, 1fr) auto;
   }
 
   .diagram-widget-form__connection-kind {
-    grid-column: 2 / 4;
+    grid-column: 2 / 3;
+  }
+
+  .diagram-widget-form__connection-add {
+    grid-template-columns: 1fr;
+  }
+
+  .diagram-widget-form__connection-item > .p-button {
+    justify-self: end;
   }
 }
 

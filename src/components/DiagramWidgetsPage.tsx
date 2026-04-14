@@ -159,7 +159,6 @@ const MAX_ZOOM = 1.4;
 const AUTOSAVE_DELAY_MS = 500;
 const MAX_HISTORY_ENTRIES = 40;
 const DEFAULT_GRID_STEP = 8;
-const PRECISION_GRID_STEP = 4;
 
 function clampWidgetPosition(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
   const definition = getSchemeWidgetDefinition(widgetType);
@@ -795,7 +794,6 @@ const DiagramCanvas: React.FC<{
   selectedWidgetIds: string[];
   tagNames: Map<string, string>;
   zoom: number;
-  precisionMode: boolean;
   onZoomChange?: (zoom: number) => void;
   onSelectionChange: (ids: string[], append: boolean) => void;
   onMoveNodes: (items: Array<{ id: string; position: { x: number; y: number } }>) => void;
@@ -813,7 +811,6 @@ const DiagramCanvas: React.FC<{
   selectedWidgetIds,
   tagNames,
   zoom,
-  precisionMode,
   onZoomChange,
   onSelectionChange,
   onMoveNodes,
@@ -1053,7 +1050,7 @@ const DiagramCanvas: React.FC<{
     }
 
     const primaryItem = itemMap.get(primaryId);
-    const gridStep = precisionMode ? PRECISION_GRID_STEP : DEFAULT_GRID_STEP;
+    const gridStep = DEFAULT_GRID_STEP;
     const primaryOriginal = dragSessionRef.current.originals.get(primaryId);
     if (!primaryItem || !primaryOriginal) {
       return null;
@@ -1073,7 +1070,7 @@ const DiagramCanvas: React.FC<{
 
     let guideX: number | undefined;
     let guideY: number | undefined;
-    const threshold = precisionMode ? 6 : 10;
+    const threshold = 10;
 
     otherCenters.forEach((candidate) => {
       const xDistance = Math.abs(candidate.x - snappedCenter.x);
@@ -1109,7 +1106,7 @@ const DiagramCanvas: React.FC<{
     setAlignmentGuides(guideX !== undefined || guideY !== undefined ? { x: guideX, y: guideY } : null);
 
     return moved;
-  }, [flowInstance, itemMap, precisionMode]);
+  }, [flowInstance, itemMap]);
 
   const syncDraftNodes = useCallback((moved: Map<string, { x: number; y: number }>) => {
     setDraftNodes((current) => current.map((node) => {
@@ -1398,7 +1395,7 @@ const DiagramCanvas: React.FC<{
           defaultViewport={{ x: 24, y: 24, zoom }}
           onlyRenderVisibleElements
           snapToGrid
-          snapGrid={precisionMode ? [PRECISION_GRID_STEP, PRECISION_GRID_STEP] : [DEFAULT_GRID_STEP, DEFAULT_GRID_STEP]}
+          snapGrid={[DEFAULT_GRID_STEP, DEFAULT_GRID_STEP]}
           selectionOnDrag={false}
           selectionKeyCode="Shift"
           selectionMode={SelectionMode.Partial}
@@ -1442,10 +1439,12 @@ const DiagramWidgetForm: React.FC<{
 }> = ({ item, tags, pages, pageWidgets, tagNames, onSave, onCancel }) => {
   const [formData, setFormData] = useState<DiagramLayoutItem | null>(item);
   const [error, setError] = useState('');
+  const [connectionDraftTagId, setConnectionDraftTagId] = useState('');
 
   useEffect(() => {
     setFormData(item);
     setError('');
+    setConnectionDraftTagId('');
   }, [item]);
 
   if (!formData) {
@@ -1454,6 +1453,15 @@ const DiagramWidgetForm: React.FC<{
 
   const definition = getSchemeWidgetDefinition(formData.widgetType);
   const connectionCandidates = pageWidgets.filter((widget) => widget.id !== formData.id && widget.page === formData.page);
+  const selectedConnections = (formData.connections ?? [])
+    .map((connection) => {
+      const widget = connectionCandidates.find((candidate) => candidate.tag_id === connection.targetTagId);
+      return widget ? { connection, widget } : null;
+    })
+    .filter((item): item is { connection: DiagramConnection; widget: DiagramLayoutItem } => item !== null);
+  const availableConnectionCandidates = connectionCandidates.filter(
+    (widget) => !(formData.connections ?? []).some((item) => item.targetTagId === widget.tag_id)
+  );
 
   const updatePosition = (axis: 'x' | 'y', value: string) => {
     const parsed = Number(value);
@@ -1469,17 +1477,23 @@ const DiagramWidgetForm: React.FC<{
     setFormData({ ...formData, position: nextPosition });
   };
 
-  const toggleConnection = (tagId: string) => {
-    const current = [...(formData.connections ?? [])];
-    const existingIndex = current.findIndex((item) => item.targetTagId === tagId);
-
-    if (existingIndex >= 0) {
-      current.splice(existingIndex, 1);
-    } else {
-      current.push({ targetTagId: tagId, kind: 'signal' });
+  const addConnection = (tagId: string) => {
+    if (!tagId || (formData.connections ?? []).some((item) => item.targetTagId === tagId)) {
+      return;
     }
 
-    setFormData({ ...formData, connections: current });
+    setFormData({
+      ...formData,
+      connections: [...(formData.connections ?? []), { targetTagId: tagId, kind: 'signal' }],
+    });
+    setConnectionDraftTagId('');
+  };
+
+  const removeConnection = (tagId: string) => {
+    setFormData({
+      ...formData,
+      connections: (formData.connections ?? []).filter((item) => item.targetTagId !== tagId),
+    });
   };
 
   const updateConnectionKind = (tagId: string, kind: DiagramConnectionKind) => {
@@ -1600,34 +1614,82 @@ const DiagramWidgetForm: React.FC<{
           </div>
         </div>
         {connectionCandidates.length ? (
-          <div className="diagram-widget-form__connections">
-            {connectionCandidates.map((widget) => (
-              <label key={widget.id} className="diagram-widget-form__connection-item">
-                <input
-                  type="checkbox"
-                  checked={(formData.connections ?? []).some((item) => item.targetTagId === widget.tag_id)}
-                  onChange={() => toggleConnection(widget.tag_id)}
-                />
-                <SchemeWidgetPreview type={widget.widgetType} active={false} />
-                <div className="diagram-widget-form__connection-meta">
-                  <strong>{widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id}</strong>
-                  <span>{getSchemeWidgetDefinition(widget.widgetType).label}</span>
-                </div>
-                <select
-                  className="diagram-widget-form__connection-kind"
-                  value={(formData.connections ?? []).find((item) => item.targetTagId === widget.tag_id)?.kind ?? 'signal'}
-                  onChange={(event) => updateConnectionKind(widget.tag_id, event.target.value as DiagramConnectionKind)}
-                  disabled={!(formData.connections ?? []).some((item) => item.targetTagId === widget.tag_id)}
-                >
-                  {CONNECTION_KIND_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
+          <>
+            <div className="diagram-widget-form__connection-add">
+              <select
+                className="diagram-widget-form__connection-picker"
+                value={connectionDraftTagId}
+                onChange={(event) => setConnectionDraftTagId(event.target.value)}
+              >
+                <option value="">Выберите элемент для связи</option>
+                {availableConnectionCandidates.map((widget) => (
+                  <option key={widget.id} value={widget.tag_id}>
+                    {(widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id)} · {getSchemeWidgetDefinition(widget.widgetType).label}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                label="Добавить"
+                icon="pi pi-plus"
+                size="small"
+                onClick={() => addConnection(connectionDraftTagId)}
+                disabled={!connectionDraftTagId}
+              />
+            </div>
+
+            {availableConnectionCandidates.length ? (
+              <div className="diagram-widget-form__connection-quick">
+                {availableConnectionCandidates.slice(0, 8).map((widget) => (
+                  <button
+                    key={widget.id}
+                    type="button"
+                    className="diagram-widget-form__connection-quick-item"
+                    onClick={() => addConnection(widget.tag_id)}
+                  >
+                    <SchemeWidgetPreview type={widget.widgetType} active={false} />
+                    <span>{widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            {selectedConnections.length ? (
+              <div className="diagram-widget-form__connections">
+                {selectedConnections.map(({ connection, widget }) => (
+                  <div key={widget.id} className="diagram-widget-form__connection-item">
+                    <SchemeWidgetPreview type={widget.widgetType} active={false} />
+                    <div className="diagram-widget-form__connection-meta">
+                      <strong>{widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id}</strong>
+                      <span>{getSchemeWidgetDefinition(widget.widgetType).label}</span>
+                    </div>
+                    <select
+                      className="diagram-widget-form__connection-kind"
+                      value={connection.kind}
+                      onChange={(event) => updateConnectionKind(widget.tag_id, event.target.value as DiagramConnectionKind)}
+                    >
+                      {CONNECTION_KIND_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      type="button"
+                      icon="pi pi-times"
+                      text
+                      rounded
+                      severity="secondary"
+                      onClick={() => removeConnection(widget.tag_id)}
+                      aria-label={`Удалить связь ${widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="diagram-admin-muted">Связи пока не добавлены. Выберите элемент выше или воспользуйтесь быстрыми кнопками.</p>
+            )}
+          </>
         ) : (
           <p className="diagram-admin-muted">На этой странице пока нет других элементов для связи.</p>
         )}
@@ -2237,7 +2299,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [zoom, setZoom] = useState(0.7);
   const [fitRequestKey, setFitRequestKey] = useState(0);
   const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
-  const [precisionMode, setPrecisionMode] = useState(false);
   const [historyPast, setHistoryPast] = useState<LayoutHistoryEntry[]>([]);
   const [historyFuture, setHistoryFuture] = useState<LayoutHistoryEntry[]>([]);
   const [pageConfig, setPageConfig] = useState<DiagramPageConfig>(createEmptyDiagramPageConfig('', ''));
@@ -3354,14 +3415,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
                   ))}
                 </select>
                 <div className="diagram-admin-toolbar__selection">{selectedSummary}</div>
-                <label className={`diagram-admin-toolbar__mode ${precisionMode ? 'is-active' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={precisionMode}
-                    onChange={(event) => setPrecisionMode(event.target.checked)}
-                  />
-                  <span>Precision mode</span>
-                </label>
                 <Button
                   label="Fit Like View"
                   icon="pi pi-expand"
@@ -3390,7 +3443,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
                 selectedWidgetIds={selectedWidgetIds}
                 tagNames={tagNames}
                 zoom={zoom}
-                precisionMode={precisionMode}
                 onZoomChange={setZoom}
                 onSelectionChange={handleCanvasSelection}
                 onMoveNodes={handleMoveWidgets}
