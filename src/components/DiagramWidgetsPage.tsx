@@ -150,6 +150,7 @@ const CANVAS_LIMITS = {
   height: 1200,
 };
 
+const CANVAS_UNBOUNDED_Y = 1_000_000;
 const ADMIN_PREVIEW_SCALE = 0.82;
 const ADMIN_WIDGET_PREVIEW_SIZE = 72;
 const SNAP_THRESHOLD = 14;
@@ -165,7 +166,7 @@ function clampWidgetPosition(position: { x: number; y: number }, widgetType: Sch
 
   return {
     x: Math.max(GRID_OFFSET, Math.min(Math.round(position.x), CANVAS_LIMITS.width - definition.width - GRID_OFFSET)),
-    y: Math.max(GRID_OFFSET, Math.min(Math.round(position.y), CANVAS_LIMITS.height - definition.height - GRID_OFFSET)),
+    y: Math.max(GRID_OFFSET, Math.round(position.y)),
   };
 }
 
@@ -196,7 +197,7 @@ function getAdminDecorationPreviewDimensions(item: Pick<DiagramDecorationNode, '
 function clampCanvasPosition(position: { x: number; y: number }, size: { width: number; height: number }) {
   return {
     x: Math.max(GRID_OFFSET, Math.min(Math.round(position.x), CANVAS_LIMITS.width - size.width - GRID_OFFSET)),
-    y: Math.max(GRID_OFFSET, Math.min(Math.round(position.y), CANVAS_LIMITS.height - size.height - GRID_OFFSET)),
+    y: Math.max(GRID_OFFSET, Math.round(position.y)),
   };
 }
 
@@ -240,7 +241,7 @@ function getWidgetPositionFromFlowNodeCenter(center: { x: number; y: number }) {
 function clampFlowNodeCenterPosition(center: { x: number; y: number }) {
   return {
     x: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2))),
-    y: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, Math.min(center.y, CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2))),
+    y: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, center.y),
   };
 }
 
@@ -258,7 +259,7 @@ function clampDecorationFlowNodeCenterPosition(center: { x: number; y: number },
 
   return {
     x: Math.max(dimensions.width / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (dimensions.width / 2))),
-    y: Math.max(dimensions.height / 2, Math.min(center.y, CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE - (dimensions.height / 2))),
+    y: Math.max(dimensions.height / 2, center.y),
   };
 }
 
@@ -1411,7 +1412,7 @@ const DiagramCanvas: React.FC<{
           elementsSelectable
           elevateNodesOnSelect
           nodeOrigin={[0.5, 0.5]}
-          translateExtent={[[-120, -120], [CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE + 120, CANVAS_LIMITS.height * ADMIN_PREVIEW_SCALE + 120]]}
+          translateExtent={[[-120, -120], [CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE + 120, CANVAS_UNBOUNDED_Y * ADMIN_PREVIEW_SCALE + 120]]}
           className="diagram-admin-flow"
           proOptions={{ hideAttribution: true }}
         >
@@ -1726,7 +1727,6 @@ const DiagramWidgetForm: React.FC<{
                 type="number"
                 step="1"
                 min={String(GRID_OFFSET)}
-                max={String(CANVAS_LIMITS.height - definition.height - GRID_OFFSET)}
                 value={Math.round(formData.position.y)}
                 onChange={(event) => updatePosition('y', event.target.value)}
                 className="p-inputtext"
