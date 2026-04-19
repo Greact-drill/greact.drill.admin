@@ -25,7 +25,7 @@ const MOBILE_BREAKPOINT = 768;
 export default function AdminApp() {
   const location = useLocation();
   const { fullName, username, logout } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 

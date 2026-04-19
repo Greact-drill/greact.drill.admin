@@ -14,6 +14,11 @@ const DEFAULT_FILL = '#72757b';
 const DEFAULT_ACCENT = '#79d66f';
 const DEFAULT_TEXT = '#2f4054';
 
+/** Горизонтальный отступ внешней рамки «частотника» (уже стандартных 8px), чтобы подогнать рамку к фактической графике. */
+function getFrequencyConverterFrameInsetX(width: number): number {
+  return Math.min(14, Math.max(8, Math.floor((width - 32) / 4)));
+}
+
 function getStroke(item: DiagramDecorationNode) {
   return item.style?.strokeColor ?? DEFAULT_STROKE;
 }
@@ -32,6 +37,21 @@ function getTextColor(item: DiagramDecorationNode) {
 
 function getCornerRadius(item: DiagramDecorationNode, fallback = 12) {
   return item.style?.cornerRadius ?? fallback;
+}
+
+/**
+ * Окно SVG в координатах макета — как во view (`DiagramDecorationPreview`):
+ * всегда полный bbox `0 0 width height`, иначе при ужатом viewBox другой aspect ratio и SVG с `width/height: 100%`
+ * даёт letterbox и не совпадает с узлом React Flow (`width*FLOW_SCALE` × `height*FLOW_SCALE`).
+ * `motorUnit` — доп. высота под подпись, как во view.
+ */
+export function getDecorationSvgViewBox(item: DiagramDecorationNode): string {
+  switch (item.type) {
+    case 'motorUnit':
+      return `0 0 ${item.width} ${item.height + 26}`;
+    default:
+      return `0 0 ${item.width} ${item.height}`;
+  }
 }
 
 function getTextStyle(item: DiagramDecorationNode): CSSProperties {
@@ -83,7 +103,7 @@ function renderRegionFrame(item: DiagramDecorationNode) {
   const radius = getCornerRadius(item, 16);
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <rect
         x="3"
         y="3"
@@ -133,7 +153,7 @@ function renderBusbar(item: DiagramDecorationNode) {
     const segmentCount = Math.ceil(channelHeight / segmentPitch) + 1;
 
     return (
-      <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+      <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
         <rect x={channelX} y={channelY} width={channelWidth} height={channelHeight} rx="12" fill="none" stroke={stroke} strokeWidth="2.2" />
         <rect x={channelX + 3} y={channelY + 3} width={channelWidth - 6} height={channelHeight - 6} rx="9" fill="none" stroke={withAlpha(stroke, '42')} strokeWidth="0.9" />
         {Array.from({ length: segmentCount }).map((_, index) => (
@@ -160,7 +180,7 @@ function renderBusbar(item: DiagramDecorationNode) {
   const segmentCount = Math.ceil(channelWidth / segmentPitch) + 1;
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <rect x={channelX} y={channelY} width={channelWidth} height={channelHeight} rx="12" fill="none" stroke={stroke} strokeWidth="2.2" />
       <rect x={channelX + 3} y={channelY + 3} width={channelWidth - 6} height={channelHeight - 6} rx="9" fill="none" stroke={withAlpha(stroke, '42')} strokeWidth="0.9" />
       {Array.from({ length: segmentCount }).map((_, index) => (
@@ -194,7 +214,7 @@ function renderSwitchgearCell(item: DiagramDecorationNode) {
   const midY = Math.max(56, item.height * 0.36);
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <rect x="4" y="6" width={item.width - 8} height={item.height - 12} rx="16" fill={withAlpha(fill, 'e4')} stroke={stroke} strokeWidth="2.8" />
       <rect x="10" y="12" width={item.width - 20} height={item.height - 24} rx="12" fill={withAlpha('#f5f8fb', '0e')} stroke={withAlpha(stroke, '3e')} strokeWidth="1" />
       <rect x="4" y="6" width={item.width - 8} height={midY - 6} rx="16" fill={withAlpha('#a3a9b1', 'c8')} />
@@ -223,7 +243,7 @@ function renderPowerCabinet(item: DiagramDecorationNode) {
   const bottomLabel = item.data?.bottomLabel || '= 1000 V';
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <rect x="10" y={item.height * 0.2} width={item.width - 20} height={item.height * 0.54} rx="16" fill={withAlpha(fill, 'ea')} stroke={stroke} strokeWidth="2.9" />
       <rect x="16" y={item.height * 0.235} width={item.width - 32} height={item.height * 0.47} rx="13" fill={withAlpha('#f7fafc', '0d')} stroke={withAlpha(stroke, '3f')} strokeWidth="1" />
       <rect x="22" y={item.height * 0.255} width={item.width - 44} height={item.height * 0.07} rx="8" fill={withAlpha('#c6ccd3', '5a')} />
@@ -260,7 +280,7 @@ function renderDriveCabinet(item: DiagramDecorationNode) {
   const helperText = item.data?.helperText || 'ShUN 1';
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <text x={item.width / 2} y="18" fill={withAlpha(textColor, 'bb')} fontSize="13" fontWeight="700" textAnchor="middle" letterSpacing="0.02em">
         {helperText}
       </text>
@@ -285,7 +305,7 @@ function renderPowerModuleUnit(item: DiagramDecorationNode) {
   const detailStroke = withAlpha(stroke, 'c0');
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <rect x="6" y="8" width={item.width - 12} height={item.height - 16} rx="8" fill="none" stroke={stroke} strokeWidth="2.4" />
       <rect x="11" y="13" width={item.width - 22} height={item.height - 26} rx="5" fill="none" stroke={withAlpha(stroke, '4e')} strokeWidth="0.9" />
       <line x1={item.width * 0.16} y1={item.height * 0.54} x2={item.width * 0.86} y2={item.height * 0.54} stroke={detailStroke} strokeWidth="2.4" strokeLinecap="round" />
@@ -299,11 +319,25 @@ function renderFrequencyConverterUnit(item: DiagramDecorationNode) {
   const stroke = getStroke(item);
   const detailStroke = withAlpha(stroke, 'c0');
   const title = item.data?.title || '';
+  const ix = getFrequencyConverterFrameInsetX(item.width);
+  const iy = 8;
+  const outerW = item.width - ix * 2;
+  const outerH = item.height - iy * 2;
+  const innerMargin = 5;
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
-      <rect x="8" y="8" width={item.width - 16} height={item.height - 16} rx="10" fill="none" stroke={stroke} strokeWidth="2.8" />
-      <rect x="13" y="13" width={item.width - 26} height={item.height - 26} rx="7" fill="none" stroke={withAlpha(stroke, '46')} strokeWidth="1" />
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
+      <rect x={ix} y={iy} width={outerW} height={outerH} rx="10" fill="none" stroke={stroke} strokeWidth="2.8" />
+      <rect
+        x={ix + innerMargin}
+        y={iy + innerMargin}
+        width={item.width - 2 * (ix + innerMargin)}
+        height={item.height - 2 * (iy + innerMargin)}
+        rx="7"
+        fill="none"
+        stroke={withAlpha(stroke, '46')}
+        strokeWidth="1"
+      />
       {title ? (
         <text x={item.width / 2} y="22" fill={withAlpha(getTextColor(item), 'dd')} fontSize="11.5" fontWeight="700" textAnchor="middle">
           {title}
@@ -324,7 +358,7 @@ function renderSlimModuleUnit(item: DiagramDecorationNode) {
   const detailStroke = withAlpha(stroke, 'bc');
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <rect x={item.width * 0.18} y="6" width={item.width * 0.64} height={item.height - 12} rx="5" fill="none" stroke={stroke} strokeWidth="1.5" />
       <rect x={item.width * 0.3} y="10" width={item.width * 0.16} height={item.height - 20} rx="4" fill="none" stroke={detailStroke} strokeWidth="1.5" />
       <rect x={item.width * 0.54} y="10" width={item.width * 0.16} height={item.height - 20} rx="4" fill="none" stroke={detailStroke} strokeWidth="1.5" />
@@ -347,7 +381,7 @@ function renderRingSwitchUnit(item: DiagramDecorationNode, switchState: 'open' |
   const armAngle = switchState === 'closed' ? 0 : 52;
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <circle cx={centerX} cy={centerY} r={radius + 4} fill="none" stroke={haloStroke} strokeWidth="2" />
       <circle cx={centerX} cy={centerY} r={radius} fill="none" stroke={stroke} strokeWidth="3.2" />
       <line x1={centerX} y1="0" x2={centerX} y2={topStemEndY} stroke={withAlpha(stroke, 'c6')} strokeWidth="3.2" />
@@ -377,7 +411,7 @@ function renderMotorUnit(item: DiagramDecorationNode) {
   const centerY = item.height / 2;
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height + 26}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <circle cx={centerX} cy={centerY} r={radius + 6} fill="none" stroke={haloStroke} strokeWidth="2.2" />
       <circle cx={centerX} cy={centerY} r={radius} fill="none" stroke={stroke} strokeWidth="4.2" />
       <circle cx={centerX} cy={centerY} r={radius * 0.62} fill="none" stroke={innerStroke} strokeWidth="2.7" />
@@ -402,7 +436,7 @@ function renderThreePhaseTransformer(item: DiagramDecorationNode) {
   const sideY = item.height * 0.54;
 
   return (
-    <svg viewBox={`0 0 ${item.width} ${item.height}`} className="diagram-decoration-preview__svg" aria-hidden="true">
+    <svg viewBox={getDecorationSvgViewBox(item)} className="diagram-decoration-preview__svg" aria-hidden="true">
       <circle cx={leftX} cy={sideY} r={radius + 3} fill="none" stroke={haloStroke} strokeWidth="1.8" />
       <circle cx={topX} cy={topY} r={radius + 3} fill="none" stroke={haloStroke} strokeWidth="1.8" />
       <circle cx={rightX} cy={sideY} r={radius + 3} fill="none" stroke={haloStroke} strokeWidth="1.8" />

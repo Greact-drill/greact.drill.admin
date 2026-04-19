@@ -71,6 +71,8 @@ interface DiagramWidgetConfig {
   page: string;
   widgetType: SchemeWidgetType;
   position: { x: number; y: number };
+  /** Отрицательные/положительные — порядок относительно других узлов; 0 или не задано = базовый слой виджета. */
+  zIndex?: number;
   customLabel?: string;
   displayType?: 'widget' | 'compact' | 'card';
   connections?: DiagramConnection[];
@@ -152,11 +154,12 @@ const CANVAS_LIMITS = {
 
 const CANVAS_UNBOUNDED_Y = 1_000_000;
 const ADMIN_PREVIEW_SCALE = 0.82;
-const ADMIN_WIDGET_PREVIEW_SIZE = 72;
+/** ViewBox всех символов в `SchemeWidgetPreview` — как при `preserveAspectRatio="meet"` внутри прямоугольника definition. */
 const SNAP_THRESHOLD = 14;
 const GRID_OFFSET = 16;
-const MIN_ZOOM = 0.45;
-const MAX_ZOOM = 1.4;
+/** Совпадают с DynamicSchemeCanvas во view (fitView / zoom limits). */
+const MIN_ZOOM = 0.35;
+const MAX_ZOOM = 1.45;
 const AUTOSAVE_DELAY_MS = 500;
 const MAX_HISTORY_ENTRIES = 40;
 const DEFAULT_GRID_STEP = 8;
@@ -178,20 +181,40 @@ function clampZoomValue(value: number) {
   return Math.max(MIN_ZOOM, Math.min(Number(value.toFixed(2)), MAX_ZOOM));
 }
 
+/** Как во view (`DynamicSchemeCanvas`): definition × FLOW_SCALE — тот же центр, что на странице просмотра. */
 function getAdminPreviewDimensions(widgetType: SchemeWidgetType) {
-  void widgetType;
+  const definition = getSchemeWidgetDefinition(widgetType);
 
   return {
-    width: ADMIN_WIDGET_PREVIEW_SIZE,
-    height: ADMIN_WIDGET_PREVIEW_SIZE,
+    width: Math.round(definition.width * ADMIN_PREVIEW_SCALE),
+    height: Math.round(definition.height * ADMIN_PREVIEW_SCALE),
   };
 }
 
-function getAdminDecorationPreviewDimensions(item: Pick<DiagramDecorationNode, 'width' | 'height'>) {
+/** Как `DynamicSchemeCanvas.getDecorationDimensions` во view: полный bbox × FLOW_SCALE. */
+function getDecorationCanvasDimensions(item: Pick<DiagramDecorationNode, 'width' | 'height'>) {
   return {
     width: Math.max(48, Math.round(item.width * ADMIN_PREVIEW_SCALE)),
     height: Math.max(32, Math.round(item.height * ADMIN_PREVIEW_SCALE)),
   };
+}
+
+/** Как `DynamicSchemeCanvas.getDecorationLayerZIndex` во view: рамка области по умолчанию ниже виджетов. */
+function getDecorationLayerZIndex(item: Pick<DiagramDecorationNode, 'type' | 'zIndex'>) {
+  if (typeof item.zIndex === 'number' && item.zIndex !== 0) {
+    return item.zIndex;
+  }
+
+  return item.type === 'regionFrame' ? -10 : 0;
+}
+
+/** Базовый слой схемных виджетов совпадает со view: поверх декораций с отрицательным z (например область −10). */
+function getWidgetFlowLayerZIndex(item: Pick<DiagramWidgetConfig, 'zIndex'>) {
+  if (typeof item.zIndex === 'number' && item.zIndex !== 0) {
+    return item.zIndex;
+  }
+
+  return 0;
 }
 
 function clampCanvasPosition(position: { x: number; y: number }, size: { width: number; height: number }) {
@@ -212,18 +235,19 @@ function getScaledCanvasPosition(position: { x: number; y: number }) {
   };
 }
 
-function getFlowNodeCenterFromWidget(position: { x: number; y: number }) {
+function getFlowNodeCenterFromWidget(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
   const scaled = getScaledCanvasPosition(position);
+  const dimensions = getAdminPreviewDimensions(widgetType);
 
   return {
-    x: scaled.x + (ADMIN_WIDGET_PREVIEW_SIZE / 2),
-    y: scaled.y + (ADMIN_WIDGET_PREVIEW_SIZE / 2),
+    x: scaled.x + dimensions.width / 2,
+    y: scaled.y + dimensions.height / 2,
   };
 }
 
 function getFlowNodeCenterFromDecoration(item: DiagramDecorationNode) {
   const scaled = getScaledCanvasPosition(item.position);
-  const dimensions = getAdminDecorationPreviewDimensions(item);
+  const dimensions = getDecorationCanvasDimensions(item);
 
   return {
     x: scaled.x + (dimensions.width / 2),
@@ -231,22 +255,26 @@ function getFlowNodeCenterFromDecoration(item: DiagramDecorationNode) {
   };
 }
 
-function getWidgetPositionFromFlowNodeCenter(center: { x: number; y: number }) {
+function getWidgetPositionFromFlowNodeCenter(center: { x: number; y: number }, widgetType: SchemeWidgetType) {
+  const dimensions = getAdminPreviewDimensions(widgetType);
+
   return {
-    x: (center.x - (ADMIN_WIDGET_PREVIEW_SIZE / 2)) / ADMIN_PREVIEW_SCALE,
-    y: (center.y - (ADMIN_WIDGET_PREVIEW_SIZE / 2)) / ADMIN_PREVIEW_SCALE,
+    x: (center.x - dimensions.width / 2) / ADMIN_PREVIEW_SCALE,
+    y: (center.y - dimensions.height / 2) / ADMIN_PREVIEW_SCALE,
   };
 }
 
-function clampFlowNodeCenterPosition(center: { x: number; y: number }) {
+function clampFlowNodeCenterPosition(center: { x: number; y: number }, widgetType: SchemeWidgetType) {
+  const dimensions = getAdminPreviewDimensions(widgetType);
+
   return {
-    x: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2))),
-    y: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, center.y),
+    x: Math.max(dimensions.width / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - dimensions.width / 2)),
+    y: Math.max(dimensions.height / 2, center.y),
   };
 }
 
-function getDecorationPositionFromFlowNodeCenter(center: { x: number; y: number }, item: Pick<DiagramDecorationNode, 'width' | 'height'>) {
-  const dimensions = getAdminDecorationPreviewDimensions(item);
+function getDecorationPositionFromFlowNodeCenter(center: { x: number; y: number }, item: DiagramDecorationNode) {
+  const dimensions = getDecorationCanvasDimensions(item);
 
   return {
     x: (center.x - (dimensions.width / 2)) / ADMIN_PREVIEW_SCALE,
@@ -254,8 +282,8 @@ function getDecorationPositionFromFlowNodeCenter(center: { x: number; y: number 
   };
 }
 
-function clampDecorationFlowNodeCenterPosition(center: { x: number; y: number }, item: Pick<DiagramDecorationNode, 'width' | 'height'>) {
-  const dimensions = getAdminDecorationPreviewDimensions(item);
+function clampDecorationFlowNodeCenterPosition(center: { x: number; y: number }, item: DiagramDecorationNode) {
+  const dimensions = getDecorationCanvasDimensions(item);
 
   return {
     x: Math.max(dimensions.width / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (dimensions.width / 2))),
@@ -396,6 +424,7 @@ function getSmartSnapGuides(position: { x: number; y: number }, moved: DiagramLa
 }
 
 const ZOOM_OPTIONS = [
+  { label: '35%', value: 0.35 },
   { label: '55%', value: 0.55 },
   { label: '65%', value: 0.65 },
   { label: '70%', value: 0.7 },
@@ -465,7 +494,7 @@ function isWidgetLayoutItem(item: DiagramLayoutItem | DiagramDecorationNode): it
 
 function getNodeCenter(item: DiagramLayoutItem | DiagramDecorationNode) {
   return isWidgetLayoutItem(item)
-    ? getFlowNodeCenterFromWidget(item.position)
+    ? getFlowNodeCenterFromWidget(item.position, item.widgetType)
     : getFlowNodeCenterFromDecoration(item);
 }
 
@@ -475,13 +504,13 @@ function getWidgetCenter(item: DiagramLayoutItem) {
 
 function getItemPositionFromFlowNodeCenter(center: { x: number; y: number }, item: DiagramLayoutItem | DiagramDecorationNode) {
   return isWidgetLayoutItem(item)
-    ? getWidgetPositionFromFlowNodeCenter(center)
+    ? getWidgetPositionFromFlowNodeCenter(center, item.widgetType)
     : getDecorationPositionFromFlowNodeCenter(center, item);
 }
 
 function clampNodeCenterPosition(center: { x: number; y: number }, item: DiagramLayoutItem | DiagramDecorationNode) {
   return isWidgetLayoutItem(item)
-    ? clampFlowNodeCenterPosition(center)
+    ? clampFlowNodeCenterPosition(center, item.widgetType)
     : clampDecorationFlowNodeCenterPosition(center, item);
 }
 
@@ -577,8 +606,7 @@ function getPageEdgeDisplayLabel(
 }
 
 function getWidgetAnchor(item: DiagramLayoutItem, target: DiagramLayoutItem) {
-  const definition = getAdminPreviewDimensions(item.widgetType);
-  const position = getScaledCanvasPosition(item.position);
+  const frame = getAdminPreviewDimensions(item.widgetType);
   const sourceCenter = getWidgetCenter(item);
   const targetCenter = getWidgetCenter(target);
   const dx = targetCenter.x - sourceCenter.x;
@@ -586,7 +614,7 @@ function getWidgetAnchor(item: DiagramLayoutItem, target: DiagramLayoutItem) {
 
   if (Math.abs(dx) >= Math.abs(dy)) {
     return {
-      x: dx >= 0 ? position.x + definition.width : position.x,
+      x: dx >= 0 ? sourceCenter.x + frame.width / 2 : sourceCenter.x - frame.width / 2,
       y: sourceCenter.y,
       side: (dx >= 0 ? 'right' : 'left') as AnchorSide,
     };
@@ -594,7 +622,7 @@ function getWidgetAnchor(item: DiagramLayoutItem, target: DiagramLayoutItem) {
 
   return {
     x: sourceCenter.x,
-    y: dy >= 0 ? position.y + definition.height : position.y,
+    y: dy >= 0 ? sourceCenter.y + frame.height / 2 : sourceCenter.y - frame.height / 2,
     side: (dy >= 0 ? 'bottom' : 'top') as AnchorSide,
   };
 }
@@ -667,8 +695,8 @@ const DiagramFlowNode: React.FC<FlowNodeProps<FlowNode<DiagramFlowNodeData>>> = 
 
     return (
       <div
-        className={`diagram-admin-canvas-widget ${dragging ? 'is-dragging' : ''} ${data.hasAlarm ? 'is-alarm' : ''} ${selected ? 'is-selected' : ''}`}
-        title={label}
+        className={`diagram-admin-canvas-widget diagram-admin-canvas-widget--layout-like-view ${dragging ? 'is-dragging' : ''} ${data.hasAlarm ? 'is-alarm' : ''} ${selected ? 'is-selected' : ''}`}
+        title={`${label} · ${definition.label}`}
         onContextMenu={handleContextMenu}
       >
         <Handle id={getHandleId('left', 'source')} type="source" position={Position.Left} isConnectable={false} className="diagram-admin-flow-node__handle" />
@@ -680,10 +708,10 @@ const DiagramFlowNode: React.FC<FlowNodeProps<FlowNode<DiagramFlowNodeData>>> = 
         <Handle id={getHandleId('top', 'target')} type="target" position={Position.Top} isConnectable={false} className="diagram-admin-flow-node__handle" />
         <Handle id={getHandleId('bottom', 'target')} type="target" position={Position.Bottom} isConnectable={false} className="diagram-admin-flow-node__handle" />
 
-        <div className="diagram-admin-canvas-widget__symbol">
+        <div className="diagram-admin-canvas-widget__symbol diagram-admin-canvas-widget__symbol--fill">
           <SchemeWidgetPreview type={data.item.widgetType} active={!data.hasAlarm} alarm={data.hasAlarm} />
         </div>
-        <div className="diagram-admin-canvas-widget__meta">
+        <div className="diagram-admin-canvas-widget__meta diagram-admin-canvas-widget__meta--in-node">
           <strong>{label}</strong>
           <span>{definition.label}</span>
         </div>
@@ -691,7 +719,7 @@ const DiagramFlowNode: React.FC<FlowNodeProps<FlowNode<DiagramFlowNodeData>>> = 
     );
   }
 
-  const dimensions = getAdminDecorationPreviewDimensions(data.item);
+  const dimensions = getDecorationCanvasDimensions(data.item);
 
   return (
     <div
@@ -858,10 +886,10 @@ const DiagramCanvas: React.FC<{
       id: item.id,
       type: 'diagramWidget',
       className: 'diagram-admin-flow__node diagram-admin-flow__node--widget',
-      position: getFlowNodeCenterFromWidget(item.position),
+      position: getFlowNodeCenterFromWidget(item.position, item.widgetType),
       style: {
-        width: ADMIN_WIDGET_PREVIEW_SIZE,
-        height: ADMIN_WIDGET_PREVIEW_SIZE,
+        ...getAdminPreviewDimensions(item.widgetType),
+        zIndex: getWidgetFlowLayerZIndex(item),
       },
       data: {
         kind: 'widget' as const,
@@ -878,7 +906,7 @@ const DiagramCanvas: React.FC<{
       selectable: true,
     })),
     ...decorations.map((item) => {
-      const dimensions = getAdminDecorationPreviewDimensions(item);
+      const dimensions = getDecorationCanvasDimensions(item);
 
       return {
         id: item.id,
@@ -888,6 +916,7 @@ const DiagramCanvas: React.FC<{
         style: {
           width: dimensions.width,
           height: dimensions.height,
+          zIndex: getDecorationLayerZIndex(item),
         },
         data: {
           kind: 'decoration' as const,
@@ -1017,6 +1046,43 @@ const DiagramCanvas: React.FC<{
     draftNodesRef.current = draftNodes;
   }, [draftNodes]);
 
+  /** Как во view: после появления узлов на полотне (первая отрисовка или загрузка с пустого), fit по содержимому. */
+  const prevNodesCountRef = useRef<number | null>(null);
+  useEffect(() => {
+    const count = nodesFromProps.length;
+    if (!flowInstance) {
+      return;
+    }
+
+    if (count === 0) {
+      prevNodesCountRef.current = 0;
+      return;
+    }
+
+    const prev = prevNodesCountRef.current;
+    const shouldFitAfterAppear = prev === null || prev === 0;
+    if (!shouldFitAfterAppear) {
+      prevNodesCountRef.current = count;
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      flowInstance.fitView({
+        padding: 0.12,
+        minZoom: 0.35,
+        maxZoom: 1.2,
+        duration: 0,
+        nodes: draftNodesRef.current.map((node) => ({ id: node.id })),
+      });
+
+      onZoomChange?.(clampZoomValue(flowInstance.getViewport().zoom));
+    });
+
+    prevNodesCountRef.current = count;
+
+    return () => cancelAnimationFrame(frame);
+  }, [flowInstance, nodesFromProps.length, onZoomChange]);
+
   useEffect(() => {
     if (!flowInstance || !draftNodesRef.current.length) {
       return;
@@ -1024,8 +1090,8 @@ const DiagramCanvas: React.FC<{
 
     const frame = requestAnimationFrame(() => {
       flowInstance.fitView({
-        padding: 0.14,
-        minZoom: MIN_ZOOM,
+        padding: 0.12,
+        minZoom: 0.35,
         maxZoom: 1.2,
         duration: 0,
         nodes: draftNodesRef.current.map((node) => ({ id: node.id })),
@@ -1116,54 +1182,27 @@ const DiagramCanvas: React.FC<{
     }));
   }, []);
 
-  const updateDragIndicator = useCallback((clientX: number, clientY: number) => {
-    const surface = surfaceRef.current;
-    if (!surface) {
-      return;
-    }
-
-    const bounds = surface.getBoundingClientRect();
-    setDragIndicator({
-      x: clientX - bounds.left,
-      y: clientY - bounds.top,
-    });
-  }, []);
-
+  /** Flow → экранный пиксель относительно `surfaceRef` (как рисует React Flow), не сырой clientX курсора. */
   const flowToSurfacePosition = useCallback((point: { x: number; y: number }) => {
-    if (!flowInstance) {
+    if (!flowInstance || !surfaceRef.current) {
       return null;
     }
 
-    const viewport = flowInstance.getViewport();
+    const screen = flowInstance.flowToScreenPosition({ x: point.x, y: point.y });
+    const bounds = surfaceRef.current.getBoundingClientRect();
+
     return {
-      x: (point.x * viewport.zoom) + viewport.x,
-      y: (point.y * viewport.zoom) + viewport.y,
+      x: Math.round(screen.x - bounds.left),
+      y: Math.round(screen.y - bounds.top),
     };
   }, [flowInstance]);
 
-  const singleSelectedNode = useMemo(() => {
-    if (selectedWidgetIds.length !== 1) {
-      return null;
+  const updateDragIndicatorFromFlowCenter = useCallback((flowCenter: { x: number; y: number }) => {
+    const pos = flowToSurfacePosition(flowCenter);
+    if (pos) {
+      setDragIndicator(pos);
     }
-
-    return draftNodes.find((node) => node.id === selectedWidgetIds[0]) ?? null;
-  }, [draftNodes, selectedWidgetIds]);
-
-  const selectedToolbarPosition = useMemo(() => {
-    if (!singleSelectedNode) {
-      return null;
-    }
-
-    const point = flowToSurfacePosition(singleSelectedNode.position);
-    if (!point) {
-      return null;
-    }
-
-    return {
-      x: point.x,
-      y: point.y - 58,
-    };
-  }, [flowToSurfacePosition, singleSelectedNode]);
+  }, [flowToSurfacePosition]);
 
   const handleNodeEdit = useCallback((node: FlowNode<DiagramFlowNodeData>) => {
     if (node.data.kind === 'widget') {
@@ -1229,19 +1268,6 @@ const DiagramCanvas: React.FC<{
               top: `${dragIndicator.y}px`,
             }}
           />
-        ) : null}
-        {selectedToolbarPosition && singleSelectedNode ? (
-          <div
-            className="diagram-admin-canvas__floating-toolbar"
-            style={{
-              left: `${selectedToolbarPosition.x}px`,
-              top: `${selectedToolbarPosition.y}px`,
-            }}
-          >
-            <Button icon="pi pi-pencil" text rounded size="small" onClick={() => handleNodeEdit(singleSelectedNode)} />
-            <Button icon="pi pi-copy" text rounded size="small" onClick={() => onDuplicate(singleSelectedNode.id)} />
-            <Button icon="pi pi-trash" text rounded severity="danger" size="small" onClick={() => onDelete(singleSelectedNode.id)} />
-          </div>
         ) : null}
         {contextMenuState && contextMenuNode ? (
           <div
@@ -1312,7 +1338,10 @@ const DiagramCanvas: React.FC<{
 
             const moved = applyDragPointerPosition(event.clientX, event.clientY, node.id);
             if (moved) {
-              updateDragIndicator(event.clientX, event.clientY);
+              const flowCenter = moved.get(node.id);
+              if (flowCenter) {
+                updateDragIndicatorFromFlowCenter(flowCenter);
+              }
               syncDraftNodes(moved);
             }
           }}
@@ -1327,7 +1356,10 @@ const DiagramCanvas: React.FC<{
               return;
             }
 
-            updateDragIndicator(event.clientX, event.clientY);
+            const flowCenter = moved.get(node.id);
+            if (flowCenter) {
+              updateDragIndicatorFromFlowCenter(flowCenter);
+            }
 
             if (session.frame !== null) {
               cancelAnimationFrame(session.frame);
@@ -1694,6 +1726,32 @@ const DiagramWidgetForm: React.FC<{
         ) : (
           <p className="diagram-admin-muted">На этой странице пока нет других элементов для связи.</p>
         )}
+      </div>
+
+      <div className="field mt-3">
+        <label htmlFor="diagram-widget-z-index" className="font-semibold mb-2 block">Слой (z-index)</label>
+        <p className="diagram-admin-muted text-sm mb-2 m-0">
+          Больше — выше остальных. По умолчанию виджеты отображаются поверх фоновых рамок областей (как во view).
+        </p>
+        <input
+          id="diagram-widget-z-index"
+          type="number"
+          className="p-inputtext w-full"
+          placeholder="0 — по умолчанию"
+          value={formData.zIndex !== undefined && formData.zIndex !== null ? String(formData.zIndex) : ''}
+          onChange={(event) => {
+            const raw = event.target.value.trim();
+            if (raw === '') {
+              setFormData({ ...formData, zIndex: undefined });
+              return;
+            }
+            const n = Number(raw);
+            if (!Number.isFinite(n)) {
+              return;
+            }
+            setFormData({ ...formData, zIndex: Math.round(n) });
+          }}
+        />
       </div>
 
       <div className="field mt-3">
@@ -2137,6 +2195,32 @@ const DiagramDecorationForm: React.FC<{
         </div>
       </div>
 
+      <div className="field mt-3">
+        <label htmlFor="diagram-decoration-z-index" className="font-semibold mb-2 block">Слой (z-index)</label>
+        <p className="diagram-admin-muted text-sm mb-2 m-0">
+          Управляет перекрытием с виджетами и другими декорациями. Пусто или 0 — правило по умолчанию для типа (рамка области: ниже виджетов).
+        </p>
+        <input
+          id="diagram-decoration-z-index"
+          type="number"
+          className="p-inputtext w-full"
+          placeholder="По умолчанию для типа"
+          value={typeof formData.zIndex === 'number' && formData.zIndex !== 0 ? String(formData.zIndex) : ''}
+          onChange={(event) => {
+            const raw = event.target.value.trim();
+            if (raw === '') {
+              setFormData({ ...formData, zIndex: 0 });
+              return;
+            }
+            const n = Number(raw);
+            if (!Number.isFinite(n)) {
+              return;
+            }
+            setFormData({ ...formData, zIndex: Math.round(n) });
+          }}
+        />
+      </div>
+
       <div className="form-actions mt-4">
         <Button label="Сохранить" icon="pi pi-check" onClick={handleSave} />
         <Button label="Отмена" icon="pi pi-times" severity="secondary" onClick={onCancel} />
@@ -2296,7 +2380,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [showPageEdgeForm, setShowPageEdgeForm] = useState(false);
   const [search, setSearch] = useState('');
   const [librarySearch, setLibrarySearch] = useState('');
-  const [zoom, setZoom] = useState(0.7);
+  const [zoom, setZoom] = useState(1);
   const [fitRequestKey, setFitRequestKey] = useState(0);
   const [selectedWidgetIds, setSelectedWidgetIds] = useState<string[]>([]);
   const [historyPast, setHistoryPast] = useState<LayoutHistoryEntry[]>([]);
@@ -2378,6 +2462,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
           page: config.page,
           widgetType: config.widgetType,
           position: config.position ?? { x: 60, y: 60 },
+          zIndex: typeof config.zIndex === 'number' ? config.zIndex : undefined,
           customLabel: config.customLabel,
           displayType: config.displayType,
           connections: Array.isArray(config.connections)
@@ -2433,7 +2518,8 @@ export default function DiagramWidgetsPage({ title }: Props) {
       if (current && availablePages.some((page) => page.value === current)) {
         return current;
       }
-      return selectedEdge;
+      const preferred = availablePages.find((page) => page.value === selectedEdge);
+      return preferred?.value ?? availablePages[0]?.value ?? '';
     });
   }, [selectedEdge, availablePages]);
 
@@ -2737,6 +2823,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
     setSelectedEdge(edgeId);
     setSelectedEdgePath(edgePath);
     setSelectedWidgetIds([]);
+    setSelectedPage(edgeId);
   };
 
   const handleSelectWidget = useCallback((item: { id: string }, append: boolean) => {
