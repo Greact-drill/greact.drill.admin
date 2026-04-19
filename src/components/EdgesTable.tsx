@@ -1,10 +1,10 @@
-import {
-    getEdgesForAdmin,
-    deleteEdge,
-    createEdge,
-    updateEdge,
-    type Edge
-} from '../api/admin';
+import { 
+    getEdgesForAdmin, 
+    deleteEdge, 
+    createEdge, 
+    updateEdge, 
+    type Edge 
+} from '../api/admin'; 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { InputText } from 'primereact/inputtext';
@@ -226,11 +226,11 @@ function getFormDialogMeta(mode: EdgeFormMode, parentEdge?: Edge | null) {
     };
 }
 
-const EdgeForm: React.FC<{
+const EdgeForm: React.FC<{ 
     mode: EdgeFormMode;
-    edge?: Edge | null;
+    edge?: Edge | null; 
     parentEdge?: Edge | null;
-    onClose: () => void;
+    onClose: () => void; 
     edges: Edge[];
     treeNodes: EdgeTreeNode[];
 }> = ({ mode, edge, parentEdge, onClose, edges, treeNodes }) => {
@@ -303,14 +303,14 @@ const EdgeForm: React.FC<{
         if (Object.keys(nextFieldErrors).length > 0) {
             return;
         }
-
+        
         mutation.mutate({
             id: isEdit ? undefined : trimmedId,
             name: trimmedName,
             parent_id: parentId || null,
         });
     };
-
+    
     const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
     const labelStyle = { color: 'var(--text-primary)' };
     const title = mode === 'edit'
@@ -331,46 +331,46 @@ const EdgeForm: React.FC<{
                 <div className="edge-explorer-form-title">{title}</div>
                 <div className="edge-explorer-form-description">{description}</div>
             </div>
-
+            
             <div className="edge-explorer-form-section">
                 <div className="edge-explorer-form-section-title">Основные сведения</div>
                 <div className="edge-explorer-form-grid">
-                    <div className="field">
+            <div className="field">
                         <label htmlFor="id" className="font-semibold mb-2 block" style={labelStyle}>ID буровой</label>
-                        <InputText
-                            id="id"
-                            value={id}
+                <InputText 
+                    id="id" 
+                    value={id} 
                             onChange={(e) => {
                                 setId(e.target.value);
                                 if (fieldErrors.id) {
                                     setFieldErrors((current) => ({ ...current, id: undefined }));
                                 }
                             }}
-                            disabled={isEdit || mutation.isPending}
-                            required
-                            style={inputStyle}
+                    disabled={isEdit || mutation.isPending} 
+                    required 
+                    style={inputStyle}
                             placeholder="Например: roman-main"
-                        />
+                />
                         {fieldErrors.id && <small className="edge-explorer-form-error">{fieldErrors.id}</small>}
                         {isEdit && <small className="edge-explorer-form-hint">ID фиксирован после создания и используется в интеграциях.</small>}
-                    </div>
-
+            </div>
+            
                     <div className="field">
-                        <label htmlFor="name" className="font-semibold mb-2 block" style={labelStyle}>Название</label>
-                        <InputText
-                            id="name"
-                            value={name}
+                <label htmlFor="name" className="font-semibold mb-2 block" style={labelStyle}>Название</label>
+                <InputText 
+                    id="name"
+                    value={name}
                             onChange={(e) => {
                                 setName(e.target.value);
                                 if (fieldErrors.name) {
                                     setFieldErrors((current) => ({ ...current, name: undefined }));
                                 }
                             }}
-                            required
-                            disabled={mutation.isPending}
-                            style={inputStyle}
+                    required 
+                    disabled={mutation.isPending}
+                    style={inputStyle}
                             placeholder="Отображаемое название буровой"
-                        />
+                />
                         {fieldErrors.name && <small className="edge-explorer-form-error">{fieldErrors.name}</small>}
                     </div>
                 </div>
@@ -380,38 +380,38 @@ const EdgeForm: React.FC<{
                 <div className="edge-explorer-form-section-title">Положение в структуре</div>
                 <div className="field">
                     <label htmlFor="parent" className="font-semibold mb-2 block" style={labelStyle}>Расположение в структуре</label>
-                    <Dropdown
-                        id="parent"
-                        value={parentId}
-                        onChange={(e) => setParentId(e.value)}
+                <Dropdown
+                    id="parent"
+                    value={parentId}
+                    onChange={(e) => setParentId(e.value)}
                         options={[{ id: '', label: 'Без родителя — корневая буровая' }, ...availableParents]}
                         optionLabel="label"
-                        optionValue="id"
+                    optionValue="id"
                         placeholder="Выберите родительский элемент"
-                        disabled={mutation.isPending}
-                        style={inputStyle}
+                    disabled={mutation.isPending}
+                    style={inputStyle}
                         filter
-                    />
+                />
                     <small className="edge-explorer-form-hint">Можно оставить пустым, чтобы элемент был корневым.</small>
                 </div>
             </div>
 
             <div className="edge-explorer-form-footer mt-4">
-                <Button
+                <Button 
                     label={isEdit ? 'Сохранить изменения' : 'Создать буровую'}
                     icon={isEdit ? 'pi pi-save' : 'pi pi-plus'}
-                    type="submit"
-                    loading={mutation.isPending}
+                    type="submit" 
+                    loading={mutation.isPending} 
                     className="edge-explorer-primary-btn"
                 />
-                <Button
+                <Button 
                     label="Отмена"
                     icon="pi pi-times"
                     type="button"
-                    onClick={onClose}
+                    onClick={onClose} 
                     severity="secondary"
                     text
-                    disabled={mutation.isPending}
+                    disabled={mutation.isPending} 
                 />
             </div>
         </form>
@@ -637,14 +637,14 @@ export default function EdgesTable({ title }: Props) {
         return (
             <div className="edges-tree-table edges-explorer-page">
                 <Message severity="error" text={`Ошибка загрузки данных: ${(error as Error).message}`} />
-            </div>
-        );
+        </div>
+    );
     }
 
     return (
         <div className="edges-tree-table edges-explorer-page">
             {deleteError && <Message severity="error" text={deleteError} className="mb-3" />}
-
+            
             <section className="edges-overview">
                 <div className="edges-overview-main">
                     <div className="edges-overview-copy">
@@ -724,7 +724,7 @@ export default function EdgesTable({ title }: Props) {
                             />
                         </span>
                         {globalFilterValue && (
-                            <Button
+                                            <Button 
                                 label="Сбросить"
                                 size="small"
                                 text
@@ -863,8 +863,8 @@ export default function EdgesTable({ title }: Props) {
                                             </button>
                                         ))}
                                     </div>
-                                )}
-                            </div>
+                )}
+            </div>
                         </>
                     ) : (
                         <div className="edges-detail-placeholder">
@@ -895,7 +895,7 @@ export default function EdgesTable({ title }: Props) {
                 draggable={false}
                 onHide={handleHideForm}
             >
-                <EdgeForm
+                <EdgeForm 
                     mode={formMode}
                     edge={selectedEdge}
                     parentEdge={formParentEdge}
@@ -904,7 +904,7 @@ export default function EdgesTable({ title }: Props) {
                     treeNodes={treeData}
                 />
             </Dialog>
-
+            
             <Dialog
                 visible={deleteTarget != null}
                 className="responsive-dialog responsive-dialog-sm edges-delete-dialog"

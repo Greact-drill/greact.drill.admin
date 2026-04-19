@@ -587,9 +587,10 @@
   justify-content: center;
   gap: 3px;
   padding: 5px 4px;
+  box-sizing: border-box;
   border-radius: 14px;
-  border: 1px dashed rgba(232, 201, 160, 0.18);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed transparent;
+  background: transparent;
   cursor: grab;
   z-index: 1;
   transition: border-color 0.24s ease, background-color 0.24s ease, box-shadow 0.24s ease;
@@ -618,10 +619,27 @@
 }
 
 .diagram-admin-flow .react-flow__node {
-  width: 72px;
-  height: 72px;
-  background: transparent;
-  border: 0;
+  width: auto;
+  height: auto;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.diagram-admin-flow .react-flow__node.selected,
+.diagram-admin-flow .react-flow__node:hover {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.diagram-admin-flow .react-flow__node.diagram-admin-flow__node--decoration,
+.diagram-admin-flow .react-flow__node.diagram-admin-flow__node--decoration.selected,
+.diagram-admin-flow .react-flow__node.diagram-admin-flow__node--decoration:hover {
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .diagram-admin-flow .react-flow__node.selectable:focus,
@@ -631,9 +649,20 @@
 
 .diagram-admin-flow .diagram-admin-canvas-widget {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  box-shadow: none !important;
   cursor: grab;
+}
+
+.diagram-admin-flow__node--decoration .diagram-admin-canvas-widget,
+.diagram-admin-flow__node--decoration .diagram-admin-canvas-widget:hover,
+.diagram-admin-flow__node--decoration .diagram-admin-canvas-widget.is-dragging {
+  border-color: transparent !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .diagram-admin-flow .react-flow__node.dragging .diagram-admin-canvas-widget {
@@ -656,9 +685,9 @@
 }
 
 .diagram-admin-canvas-widget:hover {
-  border-color: rgba(245, 207, 87, 0.34);
-  background: rgba(245, 207, 87, 0.05);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+  border-color: rgba(148, 163, 184, 0.28);
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .diagram-admin-canvas-widget--decoration:hover {
@@ -672,30 +701,24 @@
 }
 
 .diagram-admin-canvas-widget.is-alarm {
-  border-color: rgba(255, 107, 107, 0.4);
-  background: rgba(255, 107, 107, 0.06);
+  border-color: rgba(255, 107, 107, 0.38);
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .diagram-admin-canvas-widget.is-selected {
-  border-color: rgba(123, 211, 255, 0.72);
-  background: rgba(123, 211, 255, 0.08);
-  box-shadow:
-    0 0 0 2px rgba(123, 211, 255, 0.26),
-    0 12px 28px rgba(0, 0, 0, 0.18);
+  border-color: transparent;
+  outline: 1px solid rgba(123, 211, 255, 0.58);
+  outline-offset: 2px;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .diagram-admin-canvas-widget--decoration.is-selected {
-  border-color: rgba(123, 211, 255, 0.46);
-  background: transparent;
-  box-shadow:
-    0 0 0 1px rgba(123, 211, 255, 0.22),
-    0 0 18px rgba(123, 211, 255, 0.14);
-}
-
-.diagram-admin-canvas-widget__symbol {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-color: transparent !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .diagram-admin-canvas-widget__decoration {
@@ -710,31 +733,58 @@
   display: none;
 }
 
-.diagram-admin-canvas-widget .scheme-widget-preview {
-  width: 28px;
-  height: 28px;
+.diagram-admin-scheme-widget {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 8px 5px;
+  box-sizing: border-box;
+  background: transparent;
 }
 
-.diagram-admin-canvas-widget__meta {
-  text-align: center;
+.diagram-admin-scheme-widget__symbol {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.diagram-admin-scheme-widget .scheme-widget-preview {
+  width: 100%;
+  height: 100%;
   max-width: 100%;
+  max-height: 100%;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  transform: none;
 }
 
-.diagram-admin-canvas-widget__meta strong {
+.diagram-admin-scheme-widget .scheme-widget-preview.is-active,
+.diagram-admin-scheme-widget .scheme-widget-preview.is-idle,
+.diagram-admin-scheme-widget .scheme-widget-preview.is-alarm {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.diagram-admin-scheme-widget__meta {
+  width: 100%;
+  text-align: center;
+  padding-top: 0;
+}
+
+.diagram-admin-scheme-widget__label {
   font-size: 0.62rem;
-  line-height: 1.05;
+  line-height: 1.2;
+  color: rgba(244, 236, 223, 0.96);
   word-break: break-word;
   overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.diagram-admin-canvas-widget__meta span {
-  font-size: 0.54rem;
-  line-height: 1;
-  opacity: 0.82;
 }
 
 .diagram-admin-toolbar__actions {
@@ -791,6 +841,33 @@
   background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
   text-align: left;
+}
+
+.diagram-admin-list__item-main {
+  min-width: 0;
+  display: contents;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.diagram-admin-list__item--edge {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.diagram-admin-list__item--edge .diagram-admin-list__item-main {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.diagram-admin-list__item--edge > .p-button {
+  justify-self: end;
 }
 
 .diagram-widget-form__preview {

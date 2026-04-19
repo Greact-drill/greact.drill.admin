@@ -152,7 +152,6 @@ const CANVAS_LIMITS = {
 
 const CANVAS_UNBOUNDED_Y = 1_000_000;
 const ADMIN_PREVIEW_SCALE = 0.82;
-const ADMIN_WIDGET_PREVIEW_SIZE = 72;
 const SNAP_THRESHOLD = 14;
 const GRID_OFFSET = 16;
 const MIN_ZOOM = 0.45;
@@ -179,11 +178,11 @@ function clampZoomValue(value: number) {
 }
 
 function getAdminPreviewDimensions(widgetType: SchemeWidgetType) {
-  void widgetType;
+  const definition = getSchemeWidgetDefinition(widgetType);
 
   return {
-    width: ADMIN_WIDGET_PREVIEW_SIZE,
-    height: ADMIN_WIDGET_PREVIEW_SIZE,
+    width: Math.round(definition.width * ADMIN_PREVIEW_SCALE),
+    height: Math.round(definition.height * ADMIN_PREVIEW_SCALE),
   };
 }
 
@@ -192,6 +191,14 @@ function getAdminDecorationPreviewDimensions(item: Pick<DiagramDecorationNode, '
     width: Math.max(48, Math.round(item.width * ADMIN_PREVIEW_SCALE)),
     height: Math.max(32, Math.round(item.height * ADMIN_PREVIEW_SCALE)),
   };
+}
+
+function getDecorationLayerZIndex(item: Pick<DiagramDecorationNode, 'type' | 'zIndex'>) {
+  if (typeof item.zIndex === 'number' && item.zIndex !== 0) {
+    return item.zIndex;
+  }
+
+  return item.type === 'regionFrame' ? -10 : 0;
 }
 
 function clampCanvasPosition(position: { x: number; y: number }, size: { width: number; height: number }) {
@@ -212,12 +219,13 @@ function getScaledCanvasPosition(position: { x: number; y: number }) {
   };
 }
 
-function getFlowNodeCenterFromWidget(position: { x: number; y: number }) {
+function getFlowNodeCenterFromWidget(position: { x: number; y: number }, widgetType: SchemeWidgetType) {
   const scaled = getScaledCanvasPosition(position);
+  const dimensions = getAdminPreviewDimensions(widgetType);
 
   return {
-    x: scaled.x + (ADMIN_WIDGET_PREVIEW_SIZE / 2),
-    y: scaled.y + (ADMIN_WIDGET_PREVIEW_SIZE / 2),
+    x: scaled.x + (dimensions.width / 2),
+    y: scaled.y + (dimensions.height / 2),
   };
 }
 
@@ -231,17 +239,21 @@ function getFlowNodeCenterFromDecoration(item: DiagramDecorationNode) {
   };
 }
 
-function getWidgetPositionFromFlowNodeCenter(center: { x: number; y: number }) {
+function getWidgetPositionFromFlowNodeCenter(center: { x: number; y: number }, widgetType: SchemeWidgetType) {
+  const dimensions = getAdminPreviewDimensions(widgetType);
+
   return {
-    x: (center.x - (ADMIN_WIDGET_PREVIEW_SIZE / 2)) / ADMIN_PREVIEW_SCALE,
-    y: (center.y - (ADMIN_WIDGET_PREVIEW_SIZE / 2)) / ADMIN_PREVIEW_SCALE,
+    x: (center.x - (dimensions.width / 2)) / ADMIN_PREVIEW_SCALE,
+    y: (center.y - (dimensions.height / 2)) / ADMIN_PREVIEW_SCALE,
   };
 }
 
-function clampFlowNodeCenterPosition(center: { x: number; y: number }) {
+function clampFlowNodeCenterPosition(center: { x: number; y: number }, widgetType: SchemeWidgetType) {
+  const dimensions = getAdminPreviewDimensions(widgetType);
+
   return {
-    x: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (ADMIN_WIDGET_PREVIEW_SIZE / 2))),
-    y: Math.max(ADMIN_WIDGET_PREVIEW_SIZE / 2, center.y),
+    x: Math.max(dimensions.width / 2, Math.min(center.x, CANVAS_LIMITS.width * ADMIN_PREVIEW_SCALE - (dimensions.width / 2))),
+    y: Math.max(dimensions.height / 2, center.y),
   };
 }
 
@@ -465,7 +477,7 @@ function isWidgetLayoutItem(item: DiagramLayoutItem | DiagramDecorationNode): it
 
 function getNodeCenter(item: DiagramLayoutItem | DiagramDecorationNode) {
   return isWidgetLayoutItem(item)
-    ? getFlowNodeCenterFromWidget(item.position)
+    ? getFlowNodeCenterFromWidget(item.position, item.widgetType)
     : getFlowNodeCenterFromDecoration(item);
 }
 
@@ -475,13 +487,13 @@ function getWidgetCenter(item: DiagramLayoutItem) {
 
 function getItemPositionFromFlowNodeCenter(center: { x: number; y: number }, item: DiagramLayoutItem | DiagramDecorationNode) {
   return isWidgetLayoutItem(item)
-    ? getWidgetPositionFromFlowNodeCenter(center)
+    ? getWidgetPositionFromFlowNodeCenter(center, item.widgetType)
     : getDecorationPositionFromFlowNodeCenter(center, item);
 }
 
 function clampNodeCenterPosition(center: { x: number; y: number }, item: DiagramLayoutItem | DiagramDecorationNode) {
   return isWidgetLayoutItem(item)
-    ? clampFlowNodeCenterPosition(center)
+    ? clampFlowNodeCenterPosition(center, item.widgetType)
     : clampDecorationFlowNodeCenterPosition(center, item);
 }
 
@@ -663,12 +675,13 @@ const DiagramFlowNode: React.FC<FlowNodeProps<FlowNode<DiagramFlowNodeData>>> = 
 
   if (data.kind === 'widget') {
     const label = data.item.customLabel || data.tagName;
-    const definition = getSchemeWidgetDefinition(data.item.widgetType);
+    const dimensions = getAdminPreviewDimensions(data.item.widgetType);
 
     return (
       <div
         className={`diagram-admin-canvas-widget ${dragging ? 'is-dragging' : ''} ${data.hasAlarm ? 'is-alarm' : ''} ${selected ? 'is-selected' : ''}`}
         title={label}
+        style={{ width: dimensions.width, height: dimensions.height }}
         onContextMenu={handleContextMenu}
       >
         <Handle id={getHandleId('left', 'source')} type="source" position={Position.Left} isConnectable={false} className="diagram-admin-flow-node__handle" />
@@ -680,12 +693,13 @@ const DiagramFlowNode: React.FC<FlowNodeProps<FlowNode<DiagramFlowNodeData>>> = 
         <Handle id={getHandleId('top', 'target')} type="target" position={Position.Top} isConnectable={false} className="diagram-admin-flow-node__handle" />
         <Handle id={getHandleId('bottom', 'target')} type="target" position={Position.Bottom} isConnectable={false} className="diagram-admin-flow-node__handle" />
 
-        <div className="diagram-admin-canvas-widget__symbol">
-          <SchemeWidgetPreview type={data.item.widgetType} active={!data.hasAlarm} alarm={data.hasAlarm} />
-        </div>
-        <div className="diagram-admin-canvas-widget__meta">
-          <strong>{label}</strong>
-          <span>{definition.label}</span>
+        <div className={`diagram-admin-scheme-widget ${data.hasAlarm ? 'is-alarm' : 'is-active'}`}>
+          <div className="diagram-admin-scheme-widget__symbol">
+            <SchemeWidgetPreview type={data.item.widgetType} active={!data.hasAlarm} alarm={data.hasAlarm} />
+          </div>
+          <div className="diagram-admin-scheme-widget__meta">
+            <div className="diagram-admin-scheme-widget__label">{label}</div>
+          </div>
         </div>
       </div>
     );
@@ -695,7 +709,7 @@ const DiagramFlowNode: React.FC<FlowNodeProps<FlowNode<DiagramFlowNodeData>>> = 
 
   return (
     <div
-      className={`diagram-admin-canvas-widget diagram-admin-canvas-widget--decoration ${dragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
+      className={`diagram-admin-canvas-widget diagram-admin-canvas-widget--decoration ${dragging ? 'is-dragging' : ''}`}
       title={data.title}
       style={{ width: dimensions.width, height: dimensions.height }}
       onContextMenu={handleContextMenu}
@@ -826,6 +840,7 @@ const DiagramCanvas: React.FC<{
     primaryId: string;
     originals: Map<string, { x: number; y: number }>;
     frame: number | null;
+    centerOffset: { x: number; y: number };
   } | null>(null);
   const [dragIndicator, setDragIndicator] = useState<{ x: number; y: number } | null>(null);
   const [alignmentGuides, setAlignmentGuides] = useState<DiagramCanvasGuides | null>(null);
@@ -854,29 +869,34 @@ const DiagramCanvas: React.FC<{
   }, [decorations, widgets]);
 
   const nodesFromProps = useMemo<FlowNode<DiagramFlowNodeData>[]>(() => ([
-    ...widgets.map((item) => ({
-      id: item.id,
-      type: 'diagramWidget',
-      className: 'diagram-admin-flow__node diagram-admin-flow__node--widget',
-      position: getFlowNodeCenterFromWidget(item.position),
-      style: {
-        width: ADMIN_WIDGET_PREVIEW_SIZE,
-        height: ADMIN_WIDGET_PREVIEW_SIZE,
-      },
-      data: {
-        kind: 'widget' as const,
-        item,
-        tagName: tagNames.get(item.tag_id) || item.tag_id,
-        hasAlarm: Boolean(item.connections?.some((connection) => connection.kind === 'alert')),
-        onEditWidget,
-        onDeleteNode: onDelete,
-        onDuplicateNode: onDuplicate,
-        onOpenContextMenu: handleOpenContextMenu,
-      },
-      selected: selectedWidgetIds.includes(item.id),
-      draggable: true,
-      selectable: true,
-    })),
+    ...widgets.map((item) => {
+      const dimensions = getAdminPreviewDimensions(item.widgetType);
+
+      return {
+        id: item.id,
+        type: 'diagramWidget',
+        className: 'diagram-admin-flow__node diagram-admin-flow__node--widget',
+        position: getFlowNodeCenterFromWidget(item.position, item.widgetType),
+        origin: [0.5, 0.5] as [number, number],
+        style: {
+          width: dimensions.width,
+          height: dimensions.height,
+        },
+        data: {
+          kind: 'widget' as const,
+          item,
+          tagName: tagNames.get(item.tag_id) || item.tag_id,
+          hasAlarm: Boolean(item.connections?.some((connection) => connection.kind === 'alert')),
+          onEditWidget,
+          onDeleteNode: onDelete,
+          onDuplicateNode: onDuplicate,
+          onOpenContextMenu: handleOpenContextMenu,
+        },
+        selected: selectedWidgetIds.includes(item.id),
+        draggable: true,
+        selectable: true,
+      };
+    }),
     ...decorations.map((item) => {
       const dimensions = getAdminDecorationPreviewDimensions(item);
 
@@ -885,9 +905,11 @@ const DiagramCanvas: React.FC<{
         type: 'diagramWidget',
         className: 'diagram-admin-flow__node diagram-admin-flow__node--decoration',
         position: getFlowNodeCenterFromDecoration(item),
+        origin: [0.5, 0.5] as [number, number],
         style: {
           width: dimensions.width,
           height: dimensions.height,
+          zIndex: getDecorationLayerZIndex(item),
         },
         data: {
           kind: 'decoration' as const,
@@ -980,7 +1002,7 @@ const DiagramCanvas: React.FC<{
           data: {
             kind: edge.kind,
             decoration: true,
-            waypoints: edge.waypoints,
+            waypoints: edge.waypoints?.map(getScaledCanvasPosition),
           },
           style: {
             strokeWidth: getEdgeStrokeWidth(edge.kind),
@@ -1058,10 +1080,11 @@ const DiagramCanvas: React.FC<{
     }
 
     const pointer = clampNodeCenterPosition(flowInstance.screenToFlowPosition({ x: clientX, y: clientY }), primaryItem);
+    const centerOffset = dragSessionRef.current.centerOffset;
 
     let snappedCenter = {
-      x: Math.round(pointer.x / gridStep) * gridStep,
-      y: Math.round(pointer.y / gridStep) * gridStep,
+      x: Math.round((pointer.x - centerOffset.x) / gridStep) * gridStep,
+      y: Math.round((pointer.y - centerOffset.y) / gridStep) * gridStep,
     };
 
     const movingIds = new Set(dragSessionRef.current.originals.keys());
@@ -1104,6 +1127,12 @@ const DiagramCanvas: React.FC<{
       }, item));
     });
 
+    const viewport = flowInstance.getViewport();
+    setDragIndicator({
+      x: (snappedCenter.x * viewport.zoom) + viewport.x,
+      y: (snappedCenter.y * viewport.zoom) + viewport.y,
+    });
+
     setAlignmentGuides(guideX !== undefined || guideY !== undefined ? { x: guideX, y: guideY } : null);
 
     return moved;
@@ -1116,17 +1145,25 @@ const DiagramCanvas: React.FC<{
     }));
   }, []);
 
-  const updateDragIndicator = useCallback((clientX: number, clientY: number) => {
+  const getRenderedNodeSurfaceCenter = useCallback((nodeId: string) => {
     const surface = surfaceRef.current;
     if (!surface) {
-      return;
+      return null;
     }
 
-    const bounds = surface.getBoundingClientRect();
-    setDragIndicator({
-      x: clientX - bounds.left,
-      y: clientY - bounds.top,
-    });
+    const safeNodeId = nodeId.replace(/"/g, '\\"');
+    const nodeElement = surface.querySelector(`.react-flow__node[data-id="${safeNodeId}"]`) as HTMLElement | null;
+    if (!nodeElement) {
+      return null;
+    }
+
+    const surfaceBounds = surface.getBoundingClientRect();
+    const nodeBounds = nodeElement.getBoundingClientRect();
+
+    return {
+      x: (nodeBounds.left - surfaceBounds.left) + (nodeBounds.width / 2),
+      y: (nodeBounds.top - surfaceBounds.top) + (nodeBounds.height / 2),
+    };
   }, []);
 
   const flowToSurfacePosition = useCallback((point: { x: number; y: number }) => {
@@ -1141,6 +1178,24 @@ const DiagramCanvas: React.FC<{
     };
   }, [flowInstance]);
 
+  const getRenderedNodeCenterOffset = useCallback((nodeId: string, logicalCenter: { x: number; y: number }) => {
+    if (!flowInstance) {
+      return { x: 0, y: 0 };
+    }
+
+    const renderedCenter = getRenderedNodeSurfaceCenter(nodeId);
+    const logicalSurfaceCenter = flowToSurfacePosition(logicalCenter);
+    if (!renderedCenter || !logicalSurfaceCenter) {
+      return { x: 0, y: 0 };
+    }
+
+    const zoom = flowInstance.getViewport().zoom || 1;
+    return {
+      x: (renderedCenter.x - logicalSurfaceCenter.x) / zoom,
+      y: (renderedCenter.y - logicalSurfaceCenter.y) / zoom,
+    };
+  }, [flowInstance, flowToSurfacePosition, getRenderedNodeSurfaceCenter]);
+
   const singleSelectedNode = useMemo(() => {
     if (selectedWidgetIds.length !== 1) {
       return null;
@@ -1154,7 +1209,7 @@ const DiagramCanvas: React.FC<{
       return null;
     }
 
-    const point = flowToSurfacePosition(singleSelectedNode.position);
+    const point = getRenderedNodeSurfaceCenter(singleSelectedNode.id) ?? flowToSurfacePosition(singleSelectedNode.position);
     if (!point) {
       return null;
     }
@@ -1163,7 +1218,7 @@ const DiagramCanvas: React.FC<{
       x: point.x,
       y: point.y - 58,
     };
-  }, [flowToSurfacePosition, singleSelectedNode]);
+  }, [flowToSurfacePosition, getRenderedNodeSurfaceCenter, singleSelectedNode]);
 
   const handleNodeEdit = useCallback((node: FlowNode<DiagramFlowNodeData>) => {
     if (node.data.kind === 'widget') {
@@ -1297,10 +1352,16 @@ const DiagramCanvas: React.FC<{
           onNodeDoubleClick={(_, node) => handleNodeEdit(node)}
           onNodeDragStart={(event, node, draggedNodes) => {
             const dragGroup = draggedNodes.length ? draggedNodes : [node];
+            const nodePositionMap = new Map(
+              draftNodesRef.current.map((draftNode) => [
+                draftNode.id,
+                { x: draftNode.position.x, y: draftNode.position.y },
+              ])
+            );
             const originals = new Map(
               dragGroup.map((draggedNode) => [
                 draggedNode.id,
-                { x: draggedNode.position.x, y: draggedNode.position.y },
+                nodePositionMap.get(draggedNode.id) ?? { x: draggedNode.position.x, y: draggedNode.position.y },
               ])
             );
 
@@ -1308,11 +1369,14 @@ const DiagramCanvas: React.FC<{
               primaryId: node.id,
               originals,
               frame: null,
+              centerOffset: getRenderedNodeCenterOffset(
+                node.id,
+                originals.get(node.id) ?? { x: node.position.x, y: node.position.y }
+              ),
             };
 
             const moved = applyDragPointerPosition(event.clientX, event.clientY, node.id);
             if (moved) {
-              updateDragIndicator(event.clientX, event.clientY);
               syncDraftNodes(moved);
             }
           }}
@@ -1327,8 +1391,6 @@ const DiagramCanvas: React.FC<{
               return;
             }
 
-            updateDragIndicator(event.clientX, event.clientY);
-
             if (session.frame !== null) {
               cancelAnimationFrame(session.frame);
             }
@@ -1342,13 +1404,20 @@ const DiagramCanvas: React.FC<{
           }}
           onNodeDragStop={(event, node, draggedNodes) => {
             const dragGroup = draggedNodes.length ? draggedNodes : [node];
+            const nodePositionMap = new Map(
+              draftNodesRef.current.map((draftNode) => [
+                draftNode.id,
+                { x: draftNode.position.x, y: draftNode.position.y },
+              ])
+            );
             const moved = applyDragPointerPosition(event.clientX, event.clientY, node.id) ?? new Map(
               dragGroup.map((draggedNode) => {
                 const item = itemMap.get(draggedNode.id);
+                const currentPosition = nodePositionMap.get(draggedNode.id) ?? draggedNode.position;
 
                 return [
                   draggedNode.id,
-                  item ? clampNodeCenterPosition(draggedNode.position, item) : draggedNode.position,
+                  item ? clampNodeCenterPosition(currentPosition, item) : currentPosition,
                 ] as const;
               })
             );
@@ -2149,8 +2218,10 @@ const DiagramPageEdgeForm: React.FC<{
   item: DiagramDecorationEdge | null;
   nodeOptions: Array<{ value: string; label: string }>;
   onSave: (item: DiagramDecorationEdge) => void;
+  onDelete?: (id: string) => void;
+  canDelete?: boolean;
   onCancel: () => void;
-}> = ({ item, nodeOptions, onSave, onCancel }) => {
+}> = ({ item, nodeOptions, onSave, onDelete, canDelete = false, onCancel }) => {
   const [formData, setFormData] = useState<DiagramDecorationEdge | null>(item);
   const [error, setError] = useState('');
 
@@ -2276,6 +2347,15 @@ const DiagramPageEdgeForm: React.FC<{
 
       <div className="form-actions mt-4">
         <Button label="Сохранить" icon="pi pi-check" onClick={handleSave} />
+        {onDelete && canDelete ? (
+          <Button
+            label="Удалить связь"
+            icon="pi pi-trash"
+            severity="danger"
+            outlined
+            onClick={() => onDelete(formData.id)}
+          />
+        ) : null}
         <Button label="Отмена" icon="pi pi-times" severity="secondary" onClick={onCancel} />
       </div>
     </div>
@@ -2943,6 +3023,39 @@ export default function DiagramWidgetsPage({ title }: Props) {
     setEditingPageEdge(null);
   };
 
+  const handleDeletePageEdge = useCallback((id: string) => {
+    const target = pageConfigRef.current.edges.find((edge) => edge.id === id);
+    if (!target) {
+      return;
+    }
+
+    const displayLabel = getPageEdgeDisplayLabel(target, allPageLayouts, pageDecorations, tagNames);
+
+    confirmDialog({
+      message: `Удалить связь "${displayLabel}"?`,
+      header: 'Подтверждение удаления',
+      icon: 'pi pi-exclamation-triangle',
+      acceptClassName: 'p-button-danger',
+      accept: () => {
+        const previousPageConfig = cloneDiagramPageConfig(pageConfigRef.current);
+        const nextPageConfig: DiagramPageConfig = {
+          ...pageConfigRef.current,
+          edges: pageConfigRef.current.edges.filter((edge) => edge.id !== id),
+        };
+
+        setPageConfig(nextPageConfig);
+        pageConfigRef.current = nextPageConfig;
+        if (editingPageEdge?.id === id) {
+          setEditingPageEdge(null);
+          setShowPageEdgeForm(false);
+        }
+        if (!isHydratingRef.current) {
+          syncPagePersistence(previousPageConfig, nextPageConfig);
+        }
+      },
+    });
+  }, [allPageLayouts, editingPageEdge?.id, pageDecorations, syncPagePersistence, tagNames]);
+
   const handleDeleteWidget = (id: string) => {
     const widget = layoutsRef.current.find((item) => item.id === id);
     const decoration = pageConfigRef.current.items.find((item) => item.id === id);
@@ -3533,21 +3646,31 @@ export default function DiagramWidgetsPage({ title }: Props) {
                   <h4 className="diagram-admin-subsection-title">Проводки</h4>
                   <div className="diagram-admin-list">
                     {pageEdges.map((edge) => (
-                      <button
-                        type="button"
-                        key={edge.id}
-                        className="diagram-admin-list__item diagram-admin-list__item--edge"
-                        onDoubleClick={() => {
-                          setEditingPageEdge(edge);
-                          setShowPageEdgeForm(true);
-                        }}
-                      >
-                        <div className={`diagram-admin-list__edge-line diagram-admin-list__edge-line--${edge.kind}`} />
-                        <div>
-                          <strong>{getPageEdgeDisplayLabel(edge, allPageLayouts, pageDecorations, tagNames)}</strong>
-                          <span>{edge.kind} · {edge.sourceSide || 'auto'} → {edge.targetSide || 'auto'}</span>
-                        </div>
-                      </button>
+                      <div key={edge.id} className="diagram-admin-list__item diagram-admin-list__item--edge">
+                        <button
+                          type="button"
+                          className="diagram-admin-list__item-main"
+                          onClick={() => {
+                            setEditingPageEdge(edge);
+                            setShowPageEdgeForm(true);
+                          }}
+                        >
+                          <div className={`diagram-admin-list__edge-line diagram-admin-list__edge-line--${edge.kind}`} />
+                          <div>
+                            <strong>{getPageEdgeDisplayLabel(edge, allPageLayouts, pageDecorations, tagNames)}</strong>
+                            <span>{edge.kind} · {edge.sourceSide || 'auto'} → {edge.targetSide || 'auto'}</span>
+                          </div>
+                        </button>
+                        <Button
+                          type="button"
+                          icon="pi pi-trash"
+                          text
+                          rounded
+                          severity="danger"
+                          aria-label={`Удалить связь ${getPageEdgeDisplayLabel(edge, allPageLayouts, pageDecorations, tagNames)}`}
+                          onClick={() => handleDeletePageEdge(edge.id)}
+                        />
+                      </div>
                     ))}
                   </div>
                 </>
@@ -3615,6 +3738,8 @@ export default function DiagramWidgetsPage({ title }: Props) {
             item={editingPageEdge}
             nodeOptions={pageNodeOptions}
             onSave={handleSavePageEdge}
+            onDelete={handleDeletePageEdge}
+            canDelete={Boolean(editingPageEdge && pageEdges.some((edge) => edge.id === editingPageEdge.id))}
             onCancel={() => {
               setShowPageEdgeForm(false);
               setEditingPageEdge(null);
