@@ -1209,6 +1209,38 @@ const DiagramCanvas: React.FC<{
     };
   }, [flowInstance]);
 
+  /** Центр узла в пикселях относительно `surfaceRef` (фактическая отрисовка DOM), для согласования drag с логическими координатами. */
+  const getRenderedNodeSurfaceCenter = useCallback((nodeId: string): { x: number; y: number } | null => {
+    const surface = surfaceRef.current;
+    if (!surface) {
+      return null;
+    }
+
+    const nodeEls = surface.querySelectorAll<HTMLElement>('.react-flow__node');
+    const el = Array.from(nodeEls).find((candidate) => {
+      return candidate.dataset.id === nodeId || candidate.getAttribute('data-id') === nodeId;
+    });
+    if (el) {
+      const nodeRect = el.getBoundingClientRect();
+      const surfaceRect = surface.getBoundingClientRect();
+      return {
+        x: Math.round(nodeRect.left + nodeRect.width / 2 - surfaceRect.left),
+        y: Math.round(nodeRect.top + nodeRect.height / 2 - surfaceRect.top),
+      };
+    }
+
+    if (!flowInstance) {
+      return null;
+    }
+
+    const node = flowInstance.getNode(nodeId);
+    if (!node) {
+      return null;
+    }
+
+    return flowToSurfacePosition(node.position);
+  }, [flowInstance, flowToSurfacePosition]);
+
   const getRenderedNodeCenterOffset = useCallback((nodeId: string, logicalCenter: { x: number; y: number }) => {
     if (!flowInstance) {
       return { x: 0, y: 0 };
