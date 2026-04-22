@@ -7,6 +7,7 @@ import { Dropdown } from 'primereact/dropdown';
 import EdgeTreeSelector from './EdgeTreeSelector';
 import { getMediaConfig, putMediaConfig, uploadMediaAsset } from '../api/media';
 import { getErrorMessage } from '../utils/errorUtils';
+import PageHeader from '../ui/PageHeader';
 
 interface CameraConfig {
   id: string;
@@ -242,6 +243,11 @@ export default function MediaConfigPage() {
 
   return (
     <div className="media-config-page">
+      <PageHeader
+        kicker="Конфигурация"
+        title="Медиа"
+        description="Выберите элемент и настройте камеры/материалы. Для документов доступна только глобальная конфигурация."
+      />
     <div className="media-config-header">
         <h3>Настройка медиа</h3>
         <p>Настройте источники, файлы и документы для выбранной буровой или глобально.</p>

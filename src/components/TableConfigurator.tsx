@@ -18,10 +18,16 @@ import { Dialog } from 'primereact/dialog';
 import { Message } from 'primereact/message';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
+import { Dropdown } from 'primereact/dropdown';
 import EdgeTreeSelector from './EdgeTreeSelector';
 import EdgePathDisplay from './EdgePathDisplay';
 import { getErrorMessage } from '../utils/errorUtils';
 import { getFilteredAndSortedTags } from '../utils/tagUtils';
+import { useAppToast } from '../ui/ToastProvider';
+import PageHeader from '../ui/PageHeader';
+import EmptyState from '../ui/EmptyState';
+import AppCard from '../ui/AppCard';
+import AppButton from '../ui/AppButton';
 
 interface Props {
     title: string;
@@ -61,6 +67,7 @@ const getAvailablePages = (selectedEdge: string, edgePath: Edge[]): Array<{label
 
 export default function TableConfigurator({ title }: Props) {
     const queryClient = useQueryClient();
+    const toast = useAppToast();
     const [selectedEdge, setSelectedEdge] = useState<string>('');
     const [selectedEdgePath, setSelectedEdgePath] = useState<Edge[]>([]);
     const [selectedPage, setSelectedPage] = useState<string>('');
@@ -163,7 +170,7 @@ export default function TableConfigurator({ title }: Props) {
 
     const handleAddTable = () => {
         if (!selectedPage) {
-            alert('Сначала выберите страницу');
+            toast.warn('Сначала выберите страницу.');
             return;
         }
 
@@ -204,7 +211,7 @@ export default function TableConfigurator({ title }: Props) {
 
         // Валидация
         if (tableConfig.rows < 1 || tableConfig.cols < 1) {
-            alert('Количество строк и столбцов должно быть больше 0');
+            toast.warn('Количество строк и столбцов должно быть больше 0.');
             return;
         }
 
@@ -219,55 +226,54 @@ export default function TableConfigurator({ title }: Props) {
         return getFilteredAndSortedTags(tags || [], selectedEdge);
     }, [tags, selectedEdge]);
 
-    const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
-    const labelStyle = { color: 'var(--text-primary)' };
-
     return (
-        <div className="table-configurator">
-            <div className="configurator-header">
-                <h2>{title}</h2>
-                <div className="controls">
-                    {selectedPage && (
-                        <>
-                            {tableConfig && tableConfig.rows > 0 && tableConfig.cols > 0 && (
-                                <Button
-                                    label="Редактировать таблицу"
-                                    icon="pi pi-pencil"
-                                    onClick={handleEditTable}
-                                    className="mr-2"
-                                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                                />
-                            )}
-                            {!tableConfig || tableConfig.rows === 0 || tableConfig.cols === 0 ? (
-                                <Button
-                                    label="Добавить таблицу"
-                                    icon="pi pi-plus"
-                                    onClick={handleAddTable}
-                                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                                    className="mr-2"
-                                />
-                            ) : (
-                                <Button
-                                    label="Удалить таблицу"
-                                    icon="pi pi-trash"
-                                    onClick={handleDeleteTable}
-                                    severity="danger"
-                                    className="mr-2"
-                                />
-                            )}
-                        </>
-                    )}
-                    <Button
-                        label="Обновить"
-                        icon="pi pi-refresh"
-                        onClick={() => {
-                            queryClient.invalidateQueries({ queryKey: ['table-configs'] });
-                            refetchTableConfig();
-                        }}
-                        severity="info"
-                    />
-                </div>
-            </div>
+        <AppCard className="table-configurator">
+            <PageHeader
+                kicker="Конфигуратор"
+                title={title}
+                description="Выберите элемент и страницу, затем создайте или отредактируйте конфигурацию таблицы."
+                actions={(
+                    <>
+                        {selectedPage ? (
+                            <>
+                                {tableConfig && tableConfig.rows > 0 && tableConfig.cols > 0 ? (
+                                    <AppButton
+                                        label="Редактировать таблицу"
+                                        icon="pi pi-pencil"
+                                        onClick={handleEditTable}
+                                        className="mr-2"
+                                    />
+                                ) : null}
+                                {!tableConfig || tableConfig.rows === 0 || tableConfig.cols === 0 ? (
+                                    <AppButton
+                                        label="Добавить таблицу"
+                                        icon="pi pi-plus"
+                                        onClick={handleAddTable}
+                                        className="mr-2"
+                                    />
+                                ) : (
+                                    <AppButton
+                                        label="Удалить таблицу"
+                                        icon="pi pi-trash"
+                                        onClick={handleDeleteTable}
+                                        variant="danger"
+                                        className="mr-2"
+                                    />
+                                )}
+                            </>
+                        ) : null}
+                        <AppButton
+                            label="Обновить"
+                            icon="pi pi-refresh"
+                            onClick={() => {
+                                queryClient.invalidateQueries({ queryKey: ['table-configs'] });
+                                refetchTableConfig();
+                            }}
+                            variant="info"
+                        />
+                    </>
+                )}
+            />
 
             {(saveTableMutation.error || deleteTableMutation.error) && (
                 <Message 
@@ -296,20 +302,18 @@ export default function TableConfigurator({ title }: Props) {
                             <EdgePathDisplay edgePath={selectedEdgePath} />
                             
                             <div className="page-selector mb-3">
-                                <label className="font-semibold mb-2 block" style={labelStyle}>Страница</label>
-                                <select
+                                <label className="font-semibold mb-2 block app-field-label">Страница</label>
+                                <Dropdown
                                     value={selectedPage}
-                                    onChange={(e) => setSelectedPage(e.target.value)}
-                                    className="p-dropdown w-full"
-                                    style={inputStyle}
-                                >
-                                    <option value="">Выберите страницу</option>
-                                    {availablePages.map(page => (
-                                        <option key={page.value} value={page.value}>
-                                            {page.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={(e) => setSelectedPage(e.value)}
+                                    options={availablePages}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Выберите страницу"
+                                    className="w-full app-input"
+                                    disabled={availablePages.length === 0}
+                                    filter
+                                />
                             </div>
 
                             {selectedPage && (
@@ -321,20 +325,22 @@ export default function TableConfigurator({ title }: Props) {
                                             <p><strong>Размер:</strong> {tableConfig.rows} строк × {tableConfig.cols} столбцов</p>
                                         </div>
                                     ) : (
-                                        <div className="empty-state">
-                                            <i className="pi pi-table" style={{ fontSize: '3rem' }}></i>
-                                            <p>На этой странице нет настроенной таблицы</p>
-                                            <p className="text-sm">Нажмите "Добавить таблицу" для создания</p>
-                                        </div>
+                                        <EmptyState
+                                            icon="pi pi-table"
+                                            title="На этой странице нет настроенной таблицы"
+                                            description={'Нажмите \"Добавить таблицу\" для создания.'}
+                                        />
                                     )}
                                 </div>
                             )}
                         </>
                     ) : (
                         <div className="no-selection-message">
-                            <i className="pi pi-sitemap" style={{ fontSize: '4rem' }}></i>
-                            <h3>Выберите элемент в дереве</h3>
-                            <p>Для начала работы выберите элемент из иерархии оборудования слева</p>
+                            <EmptyState
+                                icon="pi pi-sitemap"
+                                title="Выберите элемент в дереве"
+                                description="Для начала работы выберите элемент из иерархии оборудования слева."
+                            />
                         </div>
                     )}
                 </div>
@@ -376,7 +382,7 @@ export default function TableConfigurator({ title }: Props) {
             </Dialog>
 
             <ConfirmDialog />
-        </div>
+        </AppCard>
     );
 }
 
@@ -423,6 +429,7 @@ const CellEditor = React.memo(function CellEditor({
 }: CellEditorProps) {
     const selectedTagLabel =
         cell.value && tagNameById.has(cell.value) ? `${tagNameById.get(cell.value)} (${cell.value})` : cell.value || '';
+  const tagOptions = isActive ? tags.map((tag) => ({ label: `${tag.name} (${tag.id})`, value: tag.id })) : [];
 
     return (
         <div className="table-cell-editor">
@@ -457,43 +464,29 @@ const CellEditor = React.memo(function CellEditor({
                     style={cellInputStyle}
                 />
             ) : (
-                <select
-                    value={cell.value || ''}
-                    onChange={(e) => onValueChange(rowIndex, colIndex, e.target.value)}
-                    style={cellSelectStyle}
-                    onFocus={() => onActivate(rowIndex, colIndex)}
-                    onBlur={onDeactivate}
-                >
-                    {isActive ? (
-                        <>
-                            <option value="">Выберите тег</option>
-                            {tags.map(tag => (
-                                <option key={tag.id} value={tag.id}>
-                                    {tag.name} ({tag.id})
-                                </option>
-                            ))}
-                        </>
-                    ) : (
-                        <option value={cell.value || ''}>
-                            {selectedTagLabel || 'Выберите тег'}
-                        </option>
-                    )}
-                </select>
+        <Dropdown
+          value={cell.value || ''}
+          onChange={(e) => onValueChange(rowIndex, colIndex, e.value)}
+          options={tagOptions}
+          placeholder={selectedTagLabel || 'Выберите тег'}
+          style={cellSelectStyle}
+          onFocus={() => onActivate(rowIndex, colIndex)}
+          onBlur={onDeactivate}
+          filter={isActive}
+          disabled={!isActive}
+          virtualScrollerOptions={isActive ? { itemSize: 36 } : undefined}
+        />
             )}
         </div>
     );
 });
 
 function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoading }: TableConfigFormProps) {
-    const inputStyle = useMemo(
-        () => ({ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }),
-        []
-    );
-    const labelStyle = useMemo(() => ({ color: 'var(--text-primary)' }), []);
+    const labelClassName = 'font-semibold mb-2 block app-field-label';
     const emptyCell = useMemo<TableCell>(() => ({ type: 'text', value: '' }), []);
     const cellInputStyle = useMemo(
-        () => ({ ...inputStyle, fontSize: '12px', padding: '4px 8px', width: '100%' }),
-        [inputStyle]
+        () => ({ fontSize: '12px', padding: '4px 8px', width: '100%' }),
+        []
     );
     const cellSelectStyle = cellInputStyle;
     const tagNameById = useMemo(() => {
@@ -642,19 +635,19 @@ function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoa
                     <div className="table-config-panel">
                         <h3 className="table-config-panel-title">Основные параметры</h3>
                         <div className="field mb-3">
-                            <label className="font-semibold mb-2 block" style={labelStyle}>Заголовок таблицы (опционально)</label>
+                            <label className={labelClassName}>Заголовок таблицы (опционально)</label>
                             <InputText
                                 value={config.title || ''}
                                 onChange={(e) => updateConfig((prev) => ({ ...prev, title: e.target.value }))}
                                 placeholder="Введите заголовок таблицы"
-                                style={inputStyle}
+                                className="app-input w-full"
                             />
                         </div>
 
                         <div className="field mb-3">
                             <div className="flex gap-3">
                                 <div className="flex-1">
-                                    <label className="font-semibold mb-2 block" style={labelStyle}>Строки</label>
+                                    <label className={labelClassName}>Строки</label>
                                     <InputNumber
                                         value={config.rows}
                                         onValueChange={(e) => {
@@ -663,12 +656,11 @@ function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoa
                                         }}
                                         min={1}
                                         max={50}
-                                        style={inputStyle}
-                                        className="w-full"
+                                        className="w-full app-input"
                                     />
                                 </div>
                                 <div className="flex-1">
-                                    <label className="font-semibold mb-2 block" style={labelStyle}>Столбцы</label>
+                                    <label className={labelClassName}>Столбцы</label>
                                     <InputNumber
                                         value={config.cols}
                                         onValueChange={(e) => {
@@ -677,8 +669,7 @@ function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoa
                                         }}
                                         min={1}
                                         max={50}
-                                        style={inputStyle}
-                                        className="w-full"
+                                        className="w-full app-input"
                                     />
                                 </div>
                             </div>
@@ -699,19 +690,19 @@ function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoa
                     </div>
 
                     <div className="table-config-actions">
-                        <Button
+                        <AppButton
                             label="Сохранить"
                             icon="pi pi-check"
                             onClick={onSave}
                             disabled={isLoading}
-                            style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
                         />
-                        <Button
+                        <AppButton
                             label="Отмена"
                             icon="pi pi-times"
                             className="p-button-secondary"
                             onClick={onCancel}
                             disabled={isLoading}
+                            variant="secondary"
                         />
                     </div>
                 </div>
@@ -740,7 +731,8 @@ function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoa
                                                     value={config.colHeaders?.[colIndex] || ''}
                                                     onChange={(e) => handleColHeaderChange(colIndex, e.target.value)}
                                                     placeholder={`Столбец ${colIndex + 1}`}
-                                                    style={{ ...inputStyle, fontSize: '12px', padding: '4px 8px' }}
+                                                    className="app-input w-full"
+                                                    style={{ fontSize: '12px', padding: '4px 8px' }}
                                                 />
                                             </th>
                                         ))}
@@ -755,7 +747,8 @@ function TableConfigForm({ config, tags, onConfigChange, onSave, onCancel, isLoa
                                                     value={config.rowHeaders?.[rowIndex] || ''}
                                                     onChange={(e) => handleRowHeaderChange(rowIndex, e.target.value)}
                                                     placeholder={`Строка ${rowIndex + 1}`}
-                                                    style={{ ...inputStyle, fontSize: '12px', padding: '4px 8px' }}
+                                                    className="app-input w-full"
+                                                    style={{ fontSize: '12px', padding: '4px 8px' }}
                                                 />
                                             </th>
                                             {/* Ячейки */}

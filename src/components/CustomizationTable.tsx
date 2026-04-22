@@ -17,6 +17,11 @@ import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { getErrorMessage } from '../utils/errorUtils';
+import PageHeader from '../ui/PageHeader';
+import TableToolbar from '../ui/TableToolbar';
+import { queryParsers, querySerializers, useQueryParamState } from '../ui/useQueryParamState';
+import ErrorBanner from '../ui/ErrorBanner';
+import AppButton from '../ui/AppButton';
 
 type CustomizationType = 'edge' | 'block' | 'tag';
 
@@ -248,7 +253,11 @@ export default function CustomizationTable({ title, type }: Props) {
         value: { value: null, matchMode: FilterMatchMode.CONTAINS },
     });
 
-    const [globalFilterValue, setGlobalFilterValue] = useState('');
+    const [globalFilterValue, setGlobalFilterValue] = useQueryParamState('q', {
+        parse: queryParsers.string,
+        serialize: querySerializers.string,
+        defaultValue: '',
+    });
 
     const fetchFn = useMemo(() => {
         if (type === 'edge') return getEdgeCustomizationForAdmin;
@@ -408,37 +417,35 @@ export default function CustomizationTable({ title, type }: Props) {
     }, [type]);
 
     const header = (
-        <div className="flex flex-wrap align-items-center justify-content-between gap-2">
-            <h2 className="m-0 text-xl font-semibold">{title}</h2>
-            <div className="flex gap-2">
-                <span className="p-input-icon-left">
-                    <i className="pi pi-search" />
-                    <InputText 
-                        value={globalFilterValue} 
-                        onChange={onGlobalFilterChange} 
-                        placeholder="Глобальный поиск" 
-                    />
-                </span>
-                <Button 
-                label={`Создать новый ключ`}
-                icon="pi pi-plus" 
-                className="p-button-primary" 
-                onClick={handleCreate} 
-                style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
+        <TableToolbar
+            query={globalFilterValue}
+            onQueryChange={(value) => onGlobalFilterChange({ target: { value } } as any)}
+            queryPlaceholder="Глобальный поиск"
+            resultCount={(data || []).length}
+            actions={(
+                <AppButton
+                    label="Создать новый ключ"
+                    icon="pi pi-plus"
+                    onClick={handleCreate}
                 />
-            </div>
-        </div>
+            )}
+        />
     );
 
     return (
         <div className="card">
-            {(queryError || deleteMutation.error) && (
-                <Message 
-                    severity="error" 
-                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error, 'Произошла ошибка')}`} 
-                    className="mb-3" 
+            <PageHeader
+                kicker="Кастомизация"
+                title={title}
+                description="Быстрый поиск по ключам и значениям. Создавайте и редактируйте параметры без переходов между экранами."
+            />
+            {(queryError || deleteMutation.error) ? (
+                <ErrorBanner
+                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error, 'Произошла ошибка')}`}
+                    onRetry={() => void queryClient.invalidateQueries({ queryKey: [`${type}-customization`] })}
+                    className="mb-3"
                 />
-            )}
+            ) : null}
             {deleteMutation.isPending && <Message severity="info" text="Удаление..." className="mb-3" />}
             
             <DataTable 

@@ -21,6 +21,10 @@ import EdgeTreeSelector from './EdgeTreeSelector';
 import EdgePathDisplay from './EdgePathDisplay';
 import { getErrorMessage } from '../utils/errorUtils';
 import { sortTagsByName, getFilteredAndSortedTags } from '../utils/tagUtils';
+import { useAppToast } from '../ui/ToastProvider';
+import PageHeader from '../ui/PageHeader';
+import { useDebouncedValue } from '../ui/useDebouncedValue';
+import AppButton from '../ui/AppButton';
 
 // Интерфейс для конфигурации виджета из JSON
 interface WidgetConfig {
@@ -219,7 +223,7 @@ const WidgetForm: React.FC<{
 }> = ({ item, tags, availablePages, onSave, onCancel }) => {
     const [formData, setFormData] = useState<LayoutItem>(item!);
     const [error, setError] = useState('');
-    const tagSelectRef = useRef<HTMLSelectElement>(null);
+    const tagSelectRef = useRef<any>(null);
 
     useEffect(() => {
         if (item) {
@@ -233,7 +237,7 @@ const WidgetForm: React.FC<{
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
-            tagSelectRef.current?.focus();
+            tagSelectRef.current?.focus?.();
         }, 120);
 
         return () => window.clearTimeout(timer);
@@ -263,45 +267,36 @@ const WidgetForm: React.FC<{
         onSave(widgetData);
     };
 
-    const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
-    const labelStyle = { color: 'var(--text-primary)' };
+    const labelClassName = 'font-semibold mb-2 block app-field-label';
 
     return (
         <div className="widget-form">
             {error && <Message severity="error" text={error} className="mb-3" />}
             
             <div className="field mt-3">
-                <label className="font-semibold mb-2 block" style={labelStyle}>Тег</label>
-                <select
+                <label className={labelClassName}>Тег</label>
+                <Dropdown
                     ref={tagSelectRef}
                     value={formData.tag_id}
-                    onChange={(e) => setFormData({ ...formData, tag_id: e.target.value })}
-                    className="p-dropdown w-full"
-                    style={inputStyle}
-                >
-                    <option value="">Выберите тег</option>
-                    {tags.map(tag => (
-                        <option key={tag.id} value={tag.id}>
-                            {tag.name} ({tag.id})
-                        </option>
-                    ))}
-                </select>
+                    onChange={(e) => setFormData({ ...formData, tag_id: e.value })}
+                    options={tags.map((tag) => ({ label: `${tag.name} (${tag.id})`, value: tag.id }))}
+                    placeholder="Выберите тег"
+                    className="w-full app-input"
+                    filter
+                />
             </div>
 
             <div className="field mt-3">
-                <label className="font-semibold mb-2 block" style={labelStyle}>Страница размещения</label>
-                <select
+                <label className={labelClassName}>Страница размещения</label>
+                <Dropdown
                     value={formData.page}
-                    onChange={(e) => setFormData({ ...formData, page: e.target.value })}
-                    className="p-dropdown w-full"
-                    style={inputStyle}
-                >
-                    {availablePages.map(page => (
-                        <option key={page.value} value={page.value}>
-                            {page.label}
-                        </option>
-                    ))}
-                </select>
+                    onChange={(e) => setFormData({ ...formData, page: e.value })}
+                    options={availablePages}
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Выберите страницу"
+                    className="w-full app-input"
+                />
                 <small style={{ color: 'var(--text-secondary)' }}>
                     {formData.page.startsWith('MAIN_') 
                         ? 'Виджет будет отображаться компактно на главной странице'
@@ -310,7 +305,7 @@ const WidgetForm: React.FC<{
             </div>
 
             <div className="field mt-3">
-                <label className="font-semibold mb-2 block" style={labelStyle}>Тип отображения</label>
+                <label className={labelClassName}>Тип отображения</label>
                 <div className="display-type-info">
                     {formData.page.startsWith('MAIN_') ? (
                         <div className="display-type-badge main-page">
@@ -327,45 +322,41 @@ const WidgetForm: React.FC<{
             </div>
 
             <div className="field mt-3">
-                <label className="font-semibold mb-2 block" style={labelStyle}>Тип виджета</label>
-                <select
+                <label className={labelClassName}>Тип виджета</label>
+                <Dropdown
                     value={formData.widgetType}
-                    onChange={(e) => setFormData({ ...formData, widgetType: e.target.value as any })}
-                    className="p-dropdown w-full"
-                    style={inputStyle}
-                >
-                    {WIDGET_TYPES.map(type => (
-                        <option key={type.value} value={type.value}>
-                            {type.label}
-                        </option>
-                    ))}
-                </select>
+                    onChange={(e) => setFormData({ ...formData, widgetType: e.value })}
+                    options={WIDGET_TYPES}
+                    optionLabel="label"
+                    optionValue="value"
+                    className="w-full app-input"
+                />
             </div>
 
             <div className="field mt-3">
-                <label className="font-semibold mb-2 block" style={labelStyle}>
+                <label className={labelClassName}>
                     Пользовательская метка (опционально)
                 </label>
                 <InputText
                     value={formData.customLabel || ''}
                     onChange={(e) => setFormData({ ...formData, customLabel: e.target.value })}
                     placeholder="Введите метку для виджета"
-                    style={inputStyle}
+                    className="app-input w-full"
                 />
             </div>
 
             <div className="form-actions mt-4">
-                <Button 
+                <AppButton 
                     label="Сохранить" 
                     icon="pi pi-check" 
                     onClick={handleSave}
-                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
                 />
-                <Button 
+                <AppButton 
                     label="Отмена" 
                     icon="pi pi-times" 
                     className="p-button-secondary" 
                     onClick={onCancel} 
+                    variant="secondary"
                 />
             </div>
         </div>
@@ -374,6 +365,7 @@ const WidgetForm: React.FC<{
 
 export default function TagLayoutConstructor({ title }: Props) {
     const queryClient = useQueryClient();
+    const toast = useAppToast();
     const [layouts, setLayouts] = useState<LayoutItem[]>([]);
     const [selectedEdge, setSelectedEdge] = useState<string>('');
     const [selectedEdgePath, setSelectedEdgePath] = useState<Edge[]>([]);
@@ -382,6 +374,7 @@ export default function TagLayoutConstructor({ title }: Props) {
     const [editingItem, setEditingItem] = useState<LayoutItem | null>(null);
     const [childEdges, setChildEdges] = useState<Edge[]>([]);
     const [globalSearch, setGlobalSearch] = useState('');
+    const debouncedSearch = useDebouncedValue(globalSearch, 250);
     const [showBulkPlaceDialog, setShowBulkPlaceDialog] = useState(false);
     const [bulkPlaceWidgetType, setBulkPlaceWidgetType] = useState<'gauge' | 'bar' | 'number' | 'value' | 'status' | 'alarm'>('gauge');
     const [bulkPlacing, setBulkPlacing] = useState(false);
@@ -530,11 +523,11 @@ export default function TagLayoutConstructor({ title }: Props) {
 
     const handleAddWidget = () => {
         if (!selectedEdge) {
-            alert('Сначала выберите элемент в дереве');
+            toast.warn('Сначала выберите элемент в дереве.');
             return;
         }
         if (filteredTags.length === 0) {
-            alert('Для выбранного блока нет привязанных тегов.');
+            toast.warn('Для выбранного блока нет привязанных тегов.');
             return;
         }
 
@@ -552,11 +545,11 @@ export default function TagLayoutConstructor({ title }: Props) {
 
     const handlePlaceAllTagsOnPage = () => {
         if (!selectedEdge || !selectedPage) {
-            alert('Сначала выберите элемент в дереве и страницу размещения.');
+            toast.warn('Сначала выберите элемент в дереве и страницу размещения.');
             return;
         }
         if (filteredTags.length === 0) {
-            alert('Для выбранного элемента нет доступных тегов (список пуст).');
+            toast.warn('Для выбранного элемента нет доступных тегов (список пуст).');
             return;
         }
         setShowBulkPlaceDialog(true);
@@ -659,15 +652,16 @@ export default function TagLayoutConstructor({ title }: Props) {
         return layouts.filter(item => 
             item.page === selectedPage
         ).filter(item => {
-            if (globalSearch) {
+            if (debouncedSearch) {
                 const tagName = tagsMap.get(item.tag_id) || '';
                 const widgetLabel = item.customLabel || '';
-                return tagName.toLowerCase().includes(globalSearch.toLowerCase()) ||
-                       widgetLabel.toLowerCase().includes(globalSearch.toLowerCase());
+                const normalized = debouncedSearch.toLowerCase();
+                return tagName.toLowerCase().includes(normalized) ||
+                       widgetLabel.toLowerCase().includes(normalized);
             }
             return true;
         });
-    }, [layouts, selectedPage, globalSearch, tagsMap]);
+    }, [layouts, selectedPage, debouncedSearch, tagsMap]);
 
     const availablePages = useMemo(() => {
         return getAvailablePages(selectedEdge, selectedEdgePath);
@@ -686,58 +680,54 @@ export default function TagLayoutConstructor({ title }: Props) {
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="layout-constructor">
-                <div className="constructor-header">
-                    <h2>{title}</h2>
-                    <div className="controls">
-                        <div className="p-input-icon-left">
-                            <i className="pi pi-search" />
-                            <input
-                                type="text"
-                                value={globalSearch}
-                                onChange={(e) => setGlobalSearch(e.target.value)}
-                                placeholder="Поиск по виджетам..."
-                                className="p-inputtext mr-2"
-                            />
-                        </div>
-                        {selectedEdge && (
-                            <>
-                                <select
-                                    value={selectedPage}
-                                    onChange={(e) => setSelectedPage(e.target.value)}
-                                    className="p-dropdown mr-2"
-                                >
-                                    {availablePages.map(page => (
-                                        <option key={page.value} value={page.value}>
-                                            {page.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <Button
-                                    label="Добавить виджет"
-                                    icon="pi pi-plus"
-                                    onClick={handleAddWidget}
-                                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                                    className="mr-2"
+                <PageHeader
+                    kicker="Конструктор"
+                    title={title}
+                    description="Настройте размещение виджетов на выбранной странице оборудования. Поддерживается drag-and-drop и автосохранение."
+                    actions={(
+                        <>
+                            <div className="p-input-icon-left">
+                                <i className="pi pi-search" />
+                                <input
+                                    type="text"
+                                    value={globalSearch}
+                                    onChange={(e) => setGlobalSearch(e.target.value)}
+                                    placeholder="Поиск по виджетам..."
+                                    className="p-inputtext mr-2 app-input"
                                 />
-                                <Button
-                                    label="Разместить все теги"
-                                    icon="pi pi-objects-column"
-                                    onClick={handlePlaceAllTagsOnPage}
-                                    disabled={filteredTags.length === 0 || saveSingleMutation.isPending || bulkPlacing}
-                                    severity="secondary"
-                                    className="mr-2"
-                                    title="Создать виджеты для всех тегов из списка (доступных для элемента) на текущей странице с сеткой позиций"
-                                />
-                            </>
-                        )}
-                        <Button
-                            label="Обновить"
-                            icon="pi pi-refresh"
-                            onClick={handleRefresh}
-                            severity="info"
-                        />
-                    </div>
-                </div>
+                            </div>
+                            {selectedEdge ? (
+                                <>
+                                    <Dropdown
+                                        value={selectedPage}
+                                        onChange={(e) => setSelectedPage(e.value)}
+                                        options={availablePages}
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        placeholder="Страница"
+                                        className="mr-2 app-input"
+                                    />
+                                    <AppButton
+                                        label="Добавить виджет"
+                                        icon="pi pi-plus"
+                                        onClick={handleAddWidget}
+                                        className="mr-2"
+                                    />
+                                    <Button
+                                        label="Разместить все теги"
+                                        icon="pi pi-objects-column"
+                                        onClick={handlePlaceAllTagsOnPage}
+                                        disabled={filteredTags.length === 0 || saveSingleMutation.isPending || bulkPlacing}
+                                        severity="secondary"
+                                        className="mr-2"
+                                        title="Создать виджеты для всех тегов из списка (доступных для элемента) на текущей странице с сеткой позиций"
+                                    />
+                                </>
+                            ) : null}
+                            <Button label="Обновить" icon="pi pi-refresh" onClick={handleRefresh} severity="info" />
+                        </>
+                    )}
+                />
 
                 {(saveSingleMutation.error) && (
                     <Message severity="error" text={`Ошибка сохранения: ${getErrorMessage(saveSingleMutation.error, 'Произошла ошибка при сохранении')}`} />
@@ -889,14 +879,13 @@ export default function TagLayoutConstructor({ title }: Props) {
                             onClick={() => setShowBulkPlaceDialog(false)}
                             disabled={bulkPlacing}
                         />
-                        <Button
+                        <AppButton
                             type="button"
                             label="Разместить"
                             icon="pi pi-check"
                             onClick={() => void executeBulkPlaceAllTags()}
                             loading={bulkPlacing}
                             disabled={bulkPlacing}
-                            style={{ backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)' }}
                         />
                     </div>
                 </Dialog>

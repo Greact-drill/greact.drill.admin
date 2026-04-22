@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTagsForAdmin, deleteTag, createTag, updateTag, syncTags, getEdgesForAdmin } from '../api/admin'; 
 import type { Tag, TagPayload } from '../api/admin';
@@ -15,6 +15,13 @@ import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import type { DataTableFilterMeta } from 'primereact/datatable'; 
 import { SyncDialog } from './SyncDialog';
 import { getErrorMessage } from '../utils/errorUtils';
+import { useAppToast } from '../ui/ToastProvider';
+import PageHeader from '../ui/PageHeader';
+import TableToolbar from '../ui/TableToolbar';
+import { queryParsers, querySerializers, useQueryParamState } from '../ui/useQueryParamState';
+import ErrorBanner from '../ui/ErrorBanner';
+import AppCard from '../ui/AppCard';
+import AppButton from '../ui/AppButton';
 
 interface Props {
     title: string;
@@ -93,8 +100,7 @@ const TagForm: React.FC<{
         mutation.mutate(payload);
     };
     
-    const inputStyle = { backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' };
-    const labelStyle = { color: 'var(--text-primary)' };
+    const labelClassName = 'font-semibold mb-2 block app-field-label';
     const edgeOptions = edges.map(edge => ({
         label: `${edge.name} (${edge.id})`,
         value: edge.id
@@ -105,56 +111,56 @@ const TagForm: React.FC<{
             {error && <Message severity="error" text={error} className="mb-3" />}
             
             <div className="field">
-                <label htmlFor="id" className="font-semibold mb-2 block" style={labelStyle}>ID (Ключ Тега)</label>
+                <label htmlFor="id" className={labelClassName}>ID (Ключ Тега)</label>
                 <InputText 
                     id="id" 
                     value={id} 
                     onChange={(e) => setId(e.target.value)} 
                     disabled={isEdit || mutation.isPending} 
                     required 
-                    style={inputStyle}
+                    className="app-input w-full"
                 />
             </div>
             
             <div className="field mt-3">
-                <label htmlFor="name" className="font-semibold mb-2 block" style={labelStyle}>Название</label>
+                <label htmlFor="name" className={labelClassName}>Название</label>
                 <InputText 
                     id="name" 
                     value={name} 
                     onChange={(e) => setName(e.target.value)} 
                     required 
                     disabled={mutation.isPending} 
-                    style={inputStyle}
+                    className="app-input w-full"
                 />
             </div>
 
             <div className="field mt-3">
-                <label htmlFor="unit" className="font-semibold mb-2 block" style={labelStyle}>Единица измерения</label>
+                <label htmlFor="unit" className={labelClassName}>Единица измерения</label>
                 <InputText 
                     id="unit" 
                     value={unitOfMeasurement} 
                     onChange={(e) => setUnitOfMeasurement(e.target.value)} 
                     required 
                     disabled={mutation.isPending} 
-                    style={inputStyle}
+                    className="app-input w-full"
                 />
             </div>
 
             <div className="field mt-3">
-                <label htmlFor="tag-group" className="font-semibold mb-2 block" style={labelStyle}>Группа тегов</label>
+                <label htmlFor="tag-group" className={labelClassName}>Группа тегов</label>
                 <InputText
                     id="tag-group"
                     value={tagGroup}
                     onChange={(e) => setTagGroup(e.target.value)}
                     disabled={mutation.isPending}
                     placeholder="Например: Давление / Температура / Электрика"
-                    style={inputStyle}
+                    className="app-input w-full"
                 />
             </div>
 
             {unitOfMeasurement !== 'bool' && (
                 <div className="field mt-3">
-                    <label htmlFor="precision" className="font-semibold mb-2 block" style={labelStyle}>Точность (знаков после запятой)</label>
+                    <label htmlFor="precision" className={labelClassName}>Точность (знаков после запятой)</label>
                     <InputNumber 
                         id="precision" 
                         value={precision} 
@@ -165,14 +171,14 @@ const TagForm: React.FC<{
                         useGrouping={false}
                         placeholder="По умолчанию: 2"
                         disabled={mutation.isPending} 
-                        style={inputStyle}
+                        className="app-input w-full"
                     />
                     <small style={{ color: 'var(--text-secondary)' }}>0–10. Только для числовых тегов. Оставьте пустым для 2 знаков.</small>
                 </div>
             )}
 
             <div className="field mt-3">
-                <label htmlFor="edge-ids" className="font-semibold mb-2 block" style={labelStyle}>Привязка к оборудованию</label>
+                <label htmlFor="edge-ids" className={labelClassName}>Привязка к оборудованию</label>
                 <MultiSelect
                     id="edge-ids"
                     value={edgeIds}
@@ -182,13 +188,13 @@ const TagForm: React.FC<{
                     filter
                     placeholder="Выберите оборудование (опционально)"
                     disabled={mutation.isPending || edgeOptions.length === 0}
-                    style={inputStyle}
+                    className="app-input w-full"
                 />
             </div>
 
             <div className='flex gap-3'>
                 <div className="field mt-3 flex-1">
-                    <label htmlFor="min" className="font-semibold mb-2 block" style={labelStyle}>Min</label>
+                    <label htmlFor="min" className={labelClassName}>Min</label>
                     <InputNumber 
                         id="min" 
                         value={min} 
@@ -197,11 +203,11 @@ const TagForm: React.FC<{
                         useGrouping={false}
                         disabled={mutation.isPending} 
                         required 
-                        style={inputStyle}
+                        className="app-input w-full"
                     />
                 </div>
                 <div className="field mt-3 flex-1">
-                    <label htmlFor="max" className="font-semibold mb-2 block" style={labelStyle}>Max</label>
+                    <label htmlFor="max" className={labelClassName}>Max</label>
                     <InputNumber 
                         id="max" 
                         value={max} 
@@ -210,19 +216,19 @@ const TagForm: React.FC<{
                         useGrouping={false}
                         disabled={mutation.isPending} 
                         required 
-                        style={inputStyle}
+                        className="app-input w-full"
                     />
                 </div>
             </div>
 
             <div className="field mt-3">
-                <label htmlFor="comment" className="font-semibold mb-2 block" style={labelStyle}>Комментарий</label>
+                <label htmlFor="comment" className={labelClassName}>Комментарий</label>
                 <InputText 
                     id="comment" 
                     value={comment} 
                     onChange={(e) => setComment(e.target.value)} 
                     disabled={mutation.isPending} 
-                    style={inputStyle}
+                    className="app-input w-full"
                 />
             </div>
 
@@ -249,8 +255,10 @@ const TagForm: React.FC<{
 
 export default function TagsTable({ title }: Props) {
     const queryClient = useQueryClient();
+    const toast = useAppToast();
     const [openForm, setOpenForm] = useState(false);
     const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+    const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
 
     const [openSyncDialog, setOpenSyncDialog] = useState(false);
     
@@ -272,7 +280,11 @@ export default function TagsTable({ title }: Props) {
         id: { value: null, matchMode: FilterMatchMode.CONTAINS },
     });
 
-    const [globalFilterValue, setGlobalFilterValue] = useState('');
+    const [globalFilterValue, setGlobalFilterValue] = useQueryParamState('q', {
+        parse: queryParsers.string,
+        serialize: querySerializers.string,
+        defaultValue: '',
+    });
 
     const { data: tags, isLoading, error: queryError } = useQuery<Tag[]>({
         queryKey: ['tags'],
@@ -292,15 +304,50 @@ export default function TagsTable({ title }: Props) {
         },
     });
 
+    const bulkDeleteMutation = useMutation({
+        mutationFn: async (ids: string[]) => {
+            const results = await Promise.allSettled(ids.map((id) => deleteTag(id)));
+            const successful = results.filter((r) => r.status === 'fulfilled').length;
+            const failed = results.filter((r) => r.status === 'rejected').length;
+            return { successful, failed, total: ids.length };
+        },
+        onSuccess: (result) => {
+            queryClient.invalidateQueries({ queryKey: ['tags'] });
+            setSelectedTags([]);
+            toast.success(
+                `Удалено: ${result.successful} из ${result.total}${result.failed ? `, ошибок: ${result.failed}` : ''}`,
+                'Массовое удаление'
+            );
+        },
+        onError: (err: any) => {
+            toast.error(getErrorMessage(err, 'Не удалось удалить теги.'), 'Массовое удаление');
+        },
+    });
+    const filteredTagsValue = useMemo(
+        () => (tags || []).filter((tag) => !showUnassignedOnly || !tag.edge_ids?.length),
+        [tags, showUnassignedOnly]
+    );
+
+    const handleBulkDelete = () => {
+        if (!selectedTags.length) return;
+        confirmDialog({
+            header: 'Подтверждение удаления',
+            message: `Удалить выбранные теги (${selectedTags.length})? Действие необратимо.`,
+            icon: 'pi pi-exclamation-triangle',
+            acceptClassName: 'p-button-danger',
+            accept: () => bulkDeleteMutation.mutate(selectedTags.map((t) => t.id)),
+        });
+    };
+
     const syncMutation = useMutation({
         mutationFn: (edge: string) => syncTags(edge),
         onSuccess: (data) => {
-            alert(data.message);
+            toast.success(data.message, 'Синхронизация');
             queryClient.invalidateQueries({ queryKey: ['tags'] });
             setOpenSyncDialog(false);
         },
         onError: (err: any) => {
-            alert(`Ошибка синхронизации: ${getErrorMessage(err, 'Неизвестная ошибка')}`);
+            toast.error(getErrorMessage(err, 'Неизвестная ошибка'), 'Ошибка синхронизации');
             setOpenSyncDialog(false);
         },
     });
@@ -318,10 +365,13 @@ export default function TagsTable({ title }: Props) {
             queryClient.invalidateQueries({ queryKey: ['tags'] });
             setCreateTagsDialogVisible(false);
             setSelectedTagsFile(null);
-            alert(`Создано тегов: ${data.successful} из ${data.total}${data.failed > 0 ? `, ошибок: ${data.failed}` : ''}`);
+            toast.success(
+                `Создано тегов: ${data.successful} из ${data.total}${data.failed > 0 ? `, ошибок: ${data.failed}` : ''}`,
+                'Импорт тегов'
+            );
         },
         onError: (err: any) => {
-            alert(`Ошибка создания тегов: ${getErrorMessage(err, 'Неизвестная ошибка')}`);
+            toast.error(getErrorMessage(err, 'Неизвестная ошибка'), 'Ошибка импорта тегов');
         },
     });
 
@@ -348,7 +398,7 @@ export default function TagsTable({ title }: Props) {
             const tagsData = JSON.parse(text);
             
             if (!Array.isArray(tagsData)) {
-                alert('Файл должен содержать массив тегов');
+                toast.warn('Файл должен содержать массив тегов.');
                 return;
             }
 
@@ -368,7 +418,7 @@ export default function TagsTable({ title }: Props) {
             createTagsMutation.mutate(tags);
         } catch (error) {
             console.error('Ошибка парсинга JSON:', error);
-            alert('Ошибка чтения файла. Убедитесь, что файл содержит валидный JSON.');
+            toast.error('Ошибка чтения файла. Убедитесь, что файл содержит валидный JSON.', 'Импорт тегов');
         }
     };
 
@@ -499,67 +549,73 @@ export default function TagsTable({ title }: Props) {
     };
 
     const header = (
-        <div className="flex flex-wrap align-items-center justify-content-between gap-2">
-            <h2 className="m-0 text-xl font-semibold">{title}</h2>
-            <div className="flex gap-2">
-                <span className="p-input-icon-left">
-                    <i className="pi pi-search" />
-                    <InputText 
-                        value={globalFilterValue} 
-                        onChange={onGlobalFilterChange} 
-                        placeholder="Глобальный поиск" 
+        <TableToolbar
+            query={globalFilterValue}
+            onQueryChange={(value) => onGlobalFilterChange({ target: { value } } as any)}
+            queryPlaceholder="Глобальный поиск"
+            resultCount={filteredTagsValue.length}
+            actions={(
+                <>
+                    {selectedTags.length ? (
+                        <AppButton
+                            label={`Удалить выбранные (${selectedTags.length})`}
+                            icon="pi pi-trash"
+                            variant="danger"
+                            outlined
+                            onClick={handleBulkDelete}
+                            disabled={bulkDeleteMutation.isPending}
+                        />
+                    ) : null}
+                    <AppButton
+                        label="Загрузить эмуляцию"
+                        icon="pi pi-upload"
+                        variant="secondary"
+                        onClick={() => setUploadDialogVisible(true)}
                     />
-                </span>
-                <Button 
-                    label="Загрузить эмуляцию"
-                    icon="pi pi-upload" 
-                    className="p-button-secondary" 
-                    onClick={() => setUploadDialogVisible(true)}
-                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                />
-                <Button 
-                    label="Создать теги из файла"
-                    icon="pi pi-file-import" 
-                    className="p-button-secondary" 
-                    onClick={() => setCreateTagsDialogVisible(true)}
-                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                />
-                <Button 
-                    label={showUnassignedOnly ? "Показать все" : "Непривязанные"}
-                    icon="pi pi-filter"
-                    className="p-button-secondary"
-                    onClick={() => setShowUnassignedOnly(prev => !prev)}
-                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                />
-                <Button 
-                    label="Создать новый тег" 
-                    icon="pi pi-plus" 
-                    className="p-button-primary" 
-                    onClick={handleCreate} 
-                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                />
-                <Button 
-                    label="Синхронизировать" 
-                    icon="pi pi-sync" 
-                    className="p-button-help" 
-                    onClick={handleOpenSyncDialog}
-                    disabled={isLoading || syncMutation.isPending} 
-                    style={{backgroundColor: 'var(--accent-primary)', borderColor: 'var(--accent-primary)'}}
-                    tooltip="Открыть диалог синхронизации тегов"
-                />
-            </div>
-        </div>
+                    <AppButton
+                        label="Создать теги из файла"
+                        icon="pi pi-file-import"
+                        variant="secondary"
+                        onClick={() => setCreateTagsDialogVisible(true)}
+                    />
+                    <AppButton
+                        label={showUnassignedOnly ? 'Показать все' : 'Непривязанные'}
+                        icon="pi pi-filter"
+                        variant="secondary"
+                        onClick={() => setShowUnassignedOnly((prev) => !prev)}
+                    />
+                    <AppButton
+                        label="Создать новый тег"
+                        icon="pi pi-plus"
+                        onClick={handleCreate}
+                    />
+                    <AppButton
+                        label="Синхронизировать"
+                        icon="pi pi-sync"
+                        variant="secondary"
+                        onClick={handleOpenSyncDialog}
+                        disabled={isLoading || syncMutation.isPending}
+                        tooltip="Открыть диалог синхронизации тегов"
+                    />
+                </>
+            )}
+        />
     );
 
     return (
-        <div className="card">
-            {(queryError || deleteMutation.error || syncMutation.error || edgesError) && (
-                <Message 
-                    severity="error" 
-                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error || syncMutation.error || edgesError, 'Произошла ошибка')}`} 
-                    className="mb-3" 
+        <AppCard>
+            <PageHeader
+                kicker="Справочник"
+                title={title}
+                description="Управляйте тегами, привязкой к оборудованию, синхронизацией и импортом."
+            />
+            {(queryError || deleteMutation.error || syncMutation.error || edgesError) ? (
+                <ErrorBanner
+                    text={`Ошибка: ${getErrorMessage(queryError || deleteMutation.error || syncMutation.error || edgesError, 'Произошла ошибка')}`}
+                    onRetry={() => void queryClient.invalidateQueries({ queryKey: ['tags'] })}
+                    className="mb-3"
                 />
-            )}
+            ) : null}
             {uploadSuccessMessage && (
                 <Message
                     severity="success"
@@ -589,12 +645,14 @@ export default function TagsTable({ title }: Props) {
                 {/** eslint-disable-next-line react/jsx-no-useless-fragment */}
                 <>
                 <DataTable 
-                    value={(tags || []).filter(tag => !showUnassignedOnly || !tag.edge_ids?.length)} 
+                    value={filteredTagsValue} 
                     loading={isLoading}
                     paginator rows={10} 
                     rowsPerPageOptions={[5, 10, 25]}
                     header={header}
                     dataKey="id"
+                    selection={selectedTags}
+                    onSelectionChange={(e) => setSelectedTags(e.value as Tag[])}
                     removableSort
                     tableStyle={{ minWidth: '100%' }}
                     emptyMessage="Теги не найдены."
@@ -602,6 +660,7 @@ export default function TagsTable({ title }: Props) {
                     globalFilterFields={['id', 'edge_ids', 'name', 'tag_group', 'unit_of_measurement', 'precision', 'min', 'max', 'comment']}
                     onFilter={(e) => setFilters(e.filters)}
                 >
+                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                 <Column 
                     field="id"
                     header="ID Тега"
@@ -863,6 +922,6 @@ export default function TagsTable({ title }: Props) {
             </Dialog>
             
             <ConfirmDialog />
-        </div>
+        </AppCard>
     );
 }

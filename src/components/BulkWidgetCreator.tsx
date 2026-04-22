@@ -5,6 +5,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { Checkbox } from 'primereact/checkbox';
 import { Message } from 'primereact/message';
 import type { Edge, Tag } from '../api/admin';
+import { useAppToast } from '../ui/ToastProvider';
 
 interface BulkWidgetCreatorProps {
   parentEdge: Edge;
@@ -26,6 +27,7 @@ const BulkWidgetCreator: React.FC<BulkWidgetCreatorProps> = ({
   tags,
   onBulkCreate
 }) => {
+  const toast = useAppToast();
   const [visible, setVisible] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [selectedPage, setSelectedPage] = useState<string>('KTU');
@@ -86,12 +88,12 @@ const BulkWidgetCreator: React.FC<BulkWidgetCreatorProps> = ({
       .map(([id]) => id);
 
     if (selectedEdgeIds.length === 0) {
-      alert('Выберите хотя бы один дочерний элемент');
+      toast.warn('Выберите хотя бы один дочерний элемент.');
       return;
     }
 
     if (!selectedTag) {
-      alert('Выберите тег');
+      toast.warn('Выберите тег.');
       return;
     }
 

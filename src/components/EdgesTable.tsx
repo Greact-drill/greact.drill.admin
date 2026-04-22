@@ -14,6 +14,11 @@ import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import React, { useEffect, useMemo, useState } from 'react';
 import { getErrorMessage } from '../utils/errorUtils';
+import PageHeader from '../ui/PageHeader';
+import TableToolbar from '../ui/TableToolbar';
+import { queryParsers, querySerializers, useQueryParamState } from '../ui/useQueryParamState';
+import ErrorBanner from '../ui/ErrorBanner';
+import EmptyState from '../ui/EmptyState';
 
 interface Props {
     title: string;
@@ -425,7 +430,11 @@ export default function EdgesTable({ title }: Props) {
     const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
     const [formParentEdge, setFormParentEdge] = useState<Edge | null>(null);
     const [deleteError, setDeleteError] = useState('');
-    const [globalFilterValue, setGlobalFilterValue] = useState('');
+    const [globalFilterValue, setGlobalFilterValue] = useQueryParamState('q', {
+        parse: queryParsers.string,
+        serialize: querySerializers.string,
+        defaultValue: '',
+    });
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
     const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
     const [deleteTarget, setDeleteTarget] = useState<EdgeTreeNode | null>(null);
@@ -636,9 +645,12 @@ export default function EdgesTable({ title }: Props) {
     if (error) {
         return (
             <div className="edges-tree-table edges-explorer-page">
-                <Message severity="error" text={`Ошибка загрузки данных: ${(error as Error).message}`} />
-        </div>
-    );
+                <ErrorBanner
+                    text={`Ошибка загрузки данных: ${(error as Error).message}`}
+                    onRetry={() => void queryClient.invalidateQueries({ queryKey: ['edges'] })}
+                />
+            </div>
+        );
     }
 
     return (
@@ -646,24 +658,19 @@ export default function EdgesTable({ title }: Props) {
             {deleteError && <Message severity="error" text={deleteError} className="mb-3" />}
             
             <section className="edges-overview">
-                <div className="edges-overview-main">
-                    <div className="edges-overview-copy">
-                        <span className="edges-overview-kicker">Структура буровых</span>
-                        <h2>{title}</h2>
-                        <p>
-                            Управляйте иерархией буровых в одном рабочем пространстве: находите нужный узел,
-                            просматривайте контекст и безопасно меняйте структуру без переходов между таблицами.
-                        </p>
-                    </div>
-                    <div className="edges-overview-actions">
+                <PageHeader
+                    kicker="Структура буровых"
+                    title={title}
+                    description="Управляйте иерархией буровых в одном рабочем пространстве: находите нужный узел, просматривайте контекст и безопасно меняйте структуру без переходов между таблицами."
+                    actions={(
                         <Button
                             label="Создать корневую буровую"
                             icon="pi pi-plus"
                             onClick={handleCreate}
                             className="edge-explorer-primary-btn"
                         />
-                    </div>
-                </div>
+                    )}
+                />
 
                 <div className="edges-overview-stats">
                     <div className="edges-stat-card">
@@ -714,25 +721,14 @@ export default function EdgesTable({ title }: Props) {
                         </div>
                     </div>
 
-                    <div className="edges-search-row">
-                        <span className="p-input-icon-left edges-search-input">
-                            <i className="pi pi-search" />
-                            <InputText
-                                value={globalFilterValue}
-                                onChange={(e) => setGlobalFilterValue(e.target.value)}
-                                placeholder="Поиск по названию или ID"
-                            />
-                        </span>
-                        {globalFilterValue && (
-                                            <Button 
-                                label="Сбросить"
-                                size="small"
-                                text
-                                icon="pi pi-times"
-                                onClick={() => setGlobalFilterValue('')}
-                            />
-                        )}
-                    </div>
+                    <TableToolbar
+                        title="Поиск"
+                        query={globalFilterValue}
+                        onQueryChange={setGlobalFilterValue}
+                        queryPlaceholder="Поиск по названию или ID"
+                        resultCount={flattenedTree.length}
+                        actions={null}
+                    />
 
                     {isLoading ? (
                         <div className="edges-panel-state">
@@ -741,9 +737,11 @@ export default function EdgesTable({ title }: Props) {
                         </div>
                     ) : filteredTree.nodes.length === 0 ? (
                         <div className="edges-panel-state">
-                            <i className="pi pi-search" />
-                            <strong>Совпадений не найдено</strong>
-                            <span>Попробуйте поиск по части названия или системному ID.</span>
+                            <EmptyState
+                                icon="pi pi-search"
+                                title="Совпадений не найдено"
+                                description="Попробуйте поиск по части названия или системному ID."
+                            />
                         </div>
                     ) : (
                         <div className="edge-tree-list">

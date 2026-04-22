@@ -23,6 +23,7 @@ import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Message } from 'primereact/message';
+import { Dropdown } from 'primereact/dropdown';
 import {
   createTagCustomization,
   createEdgeCustomization,
@@ -36,6 +37,8 @@ import {
   type Tag,
 } from '../api/admin';
 import DiagramDecorationPreview from './DiagramDecorationPreview';
+import PageHeader from '../ui/PageHeader';
+import AppCard from '../ui/AppCard';
 import {
   getSchemeWidgetDefinition,
   isSchemeWidgetType,
@@ -1603,58 +1606,47 @@ const DiagramWidgetForm: React.FC<{
 
       <div className="field mt-3">
         <label htmlFor="diagram-widget-tag" className="font-semibold mb-2 block">Тег</label>
-        <select
-          id="diagram-widget-tag"
+        <Dropdown
+          inputId="diagram-widget-tag"
           value={formData.tag_id}
-          onChange={(event) => setFormData({ ...formData, tag_id: event.target.value })}
-          className="p-dropdown w-full"
-        >
-          <option value="">Выберите тег</option>
-          {tags.map((tag) => (
-            <option key={tag.id} value={tag.id}>
-              {tag.name} ({tag.id})
-            </option>
-          ))}
-        </select>
+          onChange={(event) => setFormData({ ...formData, tag_id: event.value })}
+          options={tags.map((tag) => ({ label: `${tag.name} (${tag.id})`, value: tag.id }))}
+          placeholder="Выберите тег"
+          className="w-full"
+          filter
+          virtualScrollerOptions={{ itemSize: 36 }}
+        />
       </div>
 
       <div className="field mt-3">
         <label htmlFor="diagram-widget-page" className="font-semibold mb-2 block">Страница размещения</label>
-        <select
-          id="diagram-widget-page"
+        <Dropdown
+          inputId="diagram-widget-page"
           value={formData.page}
-          onChange={(event) => setFormData({ ...formData, page: event.target.value, connections: [] })}
-          className="p-dropdown w-full"
-        >
-          {pages.map((page) => (
-            <option key={page.value} value={page.value}>
-              {page.label}
-            </option>
-          ))}
-        </select>
+          onChange={(event) => setFormData({ ...formData, page: event.value, connections: [] })}
+          options={pages}
+          optionLabel="label"
+          optionValue="value"
+          className="w-full"
+        />
       </div>
 
       <div className="field mt-3">
         <label htmlFor="diagram-widget-type" className="font-semibold mb-2 block">Тип элемента</label>
-        <select
-          id="diagram-widget-type"
+        <Dropdown
+          inputId="diagram-widget-type"
           value={formData.widgetType}
           onChange={(event) => {
-            const widgetType = event.target.value as SchemeWidgetType;
+            const widgetType = event.value as SchemeWidgetType;
             setFormData({
               ...formData,
               widgetType,
               position: normalizeWidgetPosition(formData.position, widgetType),
             });
           }}
-          className="p-dropdown w-full"
-        >
-          {SCHEME_WIDGET_LIBRARY.map((type) => (
-            <option key={type.type} value={type.type}>
-              {type.label}
-            </option>
-          ))}
-        </select>
+          options={SCHEME_WIDGET_LIBRARY.map((type) => ({ label: type.label, value: type.type }))}
+          className="w-full"
+        />
       </div>
 
       <div className="field mt-3">
@@ -1686,18 +1678,18 @@ const DiagramWidgetForm: React.FC<{
         {connectionCandidates.length ? (
           <>
             <div className="diagram-widget-form__connection-add">
-              <select
-                className="diagram-widget-form__connection-picker"
+              <Dropdown
                 value={connectionDraftTagId}
-                onChange={(event) => setConnectionDraftTagId(event.target.value)}
-              >
-                <option value="">Выберите элемент для связи</option>
-                {availableConnectionCandidates.map((widget) => (
-                  <option key={widget.id} value={widget.tag_id}>
-                    {(widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id)} · {getSchemeWidgetDefinition(widget.widgetType).label}
-                  </option>
-                ))}
-              </select>
+                onChange={(event) => setConnectionDraftTagId(event.value)}
+                options={availableConnectionCandidates.map((widget) => ({
+                  label: `${widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id} · ${getSchemeWidgetDefinition(widget.widgetType).label}`,
+                  value: widget.tag_id,
+                }))}
+                placeholder="Выберите элемент для связи"
+                className="diagram-widget-form__connection-picker"
+                filter
+                virtualScrollerOptions={{ itemSize: 36 }}
+              />
               <Button
                 type="button"
                 label="Добавить"
@@ -1733,17 +1725,14 @@ const DiagramWidgetForm: React.FC<{
                       <strong>{widget.customLabel || tagNames.get(widget.tag_id) || widget.tag_id}</strong>
                       <span>{getSchemeWidgetDefinition(widget.widgetType).label}</span>
                     </div>
-                    <select
-                      className="diagram-widget-form__connection-kind"
+                    <Dropdown
                       value={connection.kind}
-                      onChange={(event) => updateConnectionKind(widget.tag_id, event.target.value as DiagramConnectionKind)}
-                    >
-                      {CONNECTION_KIND_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(event) => updateConnectionKind(widget.tag_id, event.value)}
+                      options={CONNECTION_KIND_OPTIONS}
+                      optionLabel="label"
+                      optionValue="value"
+                      className="diagram-widget-form__connection-kind"
+                    />
                     <Button
                       type="button"
                       icon="pi pi-times"
@@ -1815,10 +1804,10 @@ const DiagramWidgetForm: React.FC<{
 };
 
 const ANCHOR_SIDE_OPTIONS: Array<{ value: DiagramNodeAnchorSide; label: string }> = [
-  { value: 'top', label: 'Top' },
-  { value: 'right', label: 'Right' },
-  { value: 'bottom', label: 'Bottom' },
-  { value: 'left', label: 'Left' },
+  { value: 'top', label: 'Сверху' },
+  { value: 'right', label: 'Справа' },
+  { value: 'bottom', label: 'Снизу' },
+  { value: 'left', label: 'Слева' },
 ];
 
 function sanitizeDecorationDimension(value: string, fallback: number, min = 36, max = 900) {
@@ -1953,52 +1942,45 @@ const DiagramDecorationForm: React.FC<{
 
       <div className="field mt-3">
         <label htmlFor="diagram-decoration-type" className="font-semibold mb-2 block">Тип элемента</label>
-        <select
-          id="diagram-decoration-type"
+        <Dropdown
+          inputId="diagram-decoration-type"
           value={formData.type}
-          onChange={(event) => handleTypeChange(event.target.value as DiagramDecorationNodeType)}
-          className="p-dropdown w-full"
-        >
-          {DIAGRAM_DECORATION_LIBRARY.map((itemOption) => (
-            <option key={itemOption.type} value={itemOption.type}>
-              {itemOption.label}
-            </option>
-          ))}
-        </select>
+          onChange={(event) => handleTypeChange(event.value)}
+          options={DIAGRAM_DECORATION_LIBRARY.map((itemOption) => ({ label: itemOption.label, value: itemOption.type }))}
+          className="w-full"
+        />
       </div>
 
       <div className="field mt-3">
         <label htmlFor="diagram-decoration-state-tag" className="font-semibold mb-2 block">Тег состояния</label>
-        <select
-          id="diagram-decoration-state-tag"
+        <Dropdown
+          inputId="diagram-decoration-state-tag"
           value={formData.bindings?.stateTagId || ''}
-          onChange={(event) => updateBindingField('stateTagId', event.target.value)}
-          className="p-dropdown w-full"
-        >
-          <option value="">Не привязан</option>
-          {sortedTagOptions.map((tag) => (
-            <option key={tag.id} value={tag.id}>
-              {tag.name} ({tag.id})
-            </option>
-          ))}
-        </select>
+          onChange={(event) => updateBindingField('stateTagId', event.value)}
+          options={[
+            { label: 'Не привязан', value: '' },
+            ...sortedTagOptions.map((tag) => ({ label: `${tag.name} (${tag.id})`, value: tag.id })),
+          ]}
+          className="w-full"
+          filter
+          virtualScrollerOptions={{ itemSize: 36 }}
+        />
       </div>
 
       <div className="field mt-3">
         <label htmlFor="diagram-decoration-alarm-tag" className="font-semibold mb-2 block">Аварийный тег</label>
-        <select
-          id="diagram-decoration-alarm-tag"
+        <Dropdown
+          inputId="diagram-decoration-alarm-tag"
           value={formData.bindings?.alarmTagId || ''}
-          onChange={(event) => updateBindingField('alarmTagId', event.target.value)}
-          className="p-dropdown w-full"
-        >
-          <option value="">Не привязан</option>
-          {sortedTagOptions.map((tag) => (
-            <option key={tag.id} value={tag.id}>
-              {tag.name} ({tag.id})
-            </option>
-          ))}
-        </select>
+          onChange={(event) => updateBindingField('alarmTagId', event.value)}
+          options={[
+            { label: 'Не привязан', value: '' },
+            ...sortedTagOptions.map((tag) => ({ label: `${tag.name} (${tag.id})`, value: tag.id })),
+          ]}
+          className="w-full"
+          filter
+          virtualScrollerOptions={{ itemSize: 36 }}
+        />
       </div>
 
       {formData.type === 'textLabel' ? (
@@ -2023,16 +2005,17 @@ const DiagramDecorationForm: React.FC<{
           </div>
           <div className="field mt-3">
             <label htmlFor="diagram-decoration-align" className="font-semibold mb-2 block">Выравнивание</label>
-            <select
-              id="diagram-decoration-align"
+            <Dropdown
+              inputId="diagram-decoration-align"
               value={formData.data?.align || 'left'}
-              onChange={(event) => updateDataField('align', event.target.value)}
-              className="p-dropdown w-full"
-            >
-              <option value="left">Left</option>
-              <option value="center">Center</option>
-              <option value="right">Right</option>
-            </select>
+              onChange={(event) => updateDataField('align', event.value)}
+              options={[
+                { label: 'Left', value: 'left' },
+                { label: 'Center', value: 'center' },
+                { label: 'Right', value: 'right' },
+              ]}
+              className="w-full"
+            />
           </div>
           <div className="field mt-3">
             <label htmlFor="diagram-decoration-font-size" className="font-semibold mb-2 block">Размер шрифта</label>
@@ -2082,15 +2065,16 @@ const DiagramDecorationForm: React.FC<{
           </div>
           <div className="field mt-3">
             <label htmlFor="diagram-decoration-orientation" className="font-semibold mb-2 block">Ориентация</label>
-            <select
-              id="diagram-decoration-orientation"
+            <Dropdown
+              inputId="diagram-decoration-orientation"
               value={formData.data?.orientation || 'horizontal'}
-              onChange={(event) => updateDataField('orientation', event.target.value)}
-              className="p-dropdown w-full"
-            >
-              <option value="horizontal">Horizontal</option>
-              <option value="vertical">Vertical</option>
-            </select>
+              onChange={(event) => updateDataField('orientation', event.value)}
+              options={[
+                { label: 'Horizontal', value: 'horizontal' },
+                { label: 'Vertical', value: 'vertical' },
+              ]}
+              className="w-full"
+            />
           </div>
         </>
       ) : null}
@@ -2257,51 +2241,48 @@ const DiagramPageEdgeForm: React.FC<{
 
       <div className="field mt-3">
         <label htmlFor="diagram-edge-source" className="font-semibold mb-2 block">Откуда</label>
-        <select
-          id="diagram-edge-source"
+        <Dropdown
+          inputId="diagram-edge-source"
           value={formData.source}
-          onChange={(event) => setFormData({ ...formData, source: event.target.value })}
-          className="p-dropdown w-full"
-        >
-          <option value="">Выберите элемент</option>
-          {nodeOptions.map((itemOption) => (
-            <option key={itemOption.value} value={itemOption.value}>
-              {itemOption.label}
-            </option>
-          ))}
-        </select>
+          onChange={(event) => setFormData({ ...formData, source: event.value })}
+          options={[{ label: 'Выберите элемент', value: '' }, ...nodeOptions]}
+          optionLabel="label"
+          optionValue="value"
+          className="w-full"
+          filter
+          virtualScrollerOptions={{ itemSize: 36 }}
+        />
       </div>
 
       <div className="field mt-3">
         <label htmlFor="diagram-edge-target" className="font-semibold mb-2 block">Куда</label>
-        <select
-          id="diagram-edge-target"
+        <Dropdown
+          inputId="diagram-edge-target"
           value={formData.target}
-          onChange={(event) => setFormData({ ...formData, target: event.target.value })}
-          className="p-dropdown w-full"
-        >
-          <option value="">Выберите элемент</option>
-          {nodeOptions.map((itemOption) => (
-            <option key={itemOption.value} value={itemOption.value}>
-              {itemOption.label}
-            </option>
-          ))}
-        </select>
+          onChange={(event) => setFormData({ ...formData, target: event.value })}
+          options={[{ label: 'Выберите элемент', value: '' }, ...nodeOptions]}
+          optionLabel="label"
+          optionValue="value"
+          className="w-full"
+          filter
+          virtualScrollerOptions={{ itemSize: 36 }}
+        />
       </div>
 
       <div className="field mt-3">
         <label htmlFor="diagram-edge-kind" className="font-semibold mb-2 block">Тип проводки</label>
-        <select
-          id="diagram-edge-kind"
+        <Dropdown
+          inputId="diagram-edge-kind"
           value={formData.kind}
-          onChange={(event) => setFormData({ ...formData, kind: event.target.value as DiagramDecorationEdgeKind })}
-          className="p-dropdown w-full"
-        >
-          <option value="wire">Проводник</option>
-          <option value="power">Силовая</option>
-          <option value="signal">Сигнальная</option>
-          <option value="alert">Аварийная</option>
-        </select>
+          onChange={(event) => setFormData({ ...formData, kind: event.value })}
+          options={[
+            { label: 'Проводник', value: 'wire' },
+            { label: 'Силовая', value: 'power' },
+            { label: 'Сигнальная', value: 'signal' },
+            { label: 'Аварийная', value: 'alert' },
+          ]}
+          className="w-full"
+        />
       </div>
 
       <div className="field mt-3">
@@ -2316,32 +2297,26 @@ const DiagramPageEdgeForm: React.FC<{
 
       <div className="diagram-widget-form__position mt-3">
         <label className="diagram-widget-form__position-field">
-          <span>Source side</span>
-          <select
+          <span>Сторона источника</span>
+          <Dropdown
             value={formData.sourceSide || 'top'}
-            onChange={(event) => setFormData({ ...formData, sourceSide: event.target.value as DiagramNodeAnchorSide })}
+            onChange={(event) => setFormData({ ...formData, sourceSide: event.value })}
+            options={ANCHOR_SIDE_OPTIONS}
+            optionLabel="label"
+            optionValue="value"
             className="p-dropdown"
-          >
-            {ANCHOR_SIDE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <label className="diagram-widget-form__position-field">
-          <span>Target side</span>
-          <select
+          <span>Сторона приёмника</span>
+          <Dropdown
             value={formData.targetSide || 'bottom'}
-            onChange={(event) => setFormData({ ...formData, targetSide: event.target.value as DiagramNodeAnchorSide })}
+            onChange={(event) => setFormData({ ...formData, targetSide: event.value })}
+            options={ANCHOR_SIDE_OPTIONS}
+            optionLabel="label"
+            optionValue="value"
             className="p-dropdown"
-          >
-            {ANCHOR_SIDE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          />
         </label>
       </div>
 
@@ -2374,7 +2349,6 @@ export default function DiagramWidgetsPage({ title }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [showDecorationForm, setShowDecorationForm] = useState(false);
   const [showPageEdgeForm, setShowPageEdgeForm] = useState(false);
-  const [search, setSearch] = useState('');
   const [librarySearch, setLibrarySearch] = useState('');
   const [zoom, setZoom] = useState(0.7);
   const [fitRequestKey, setFitRequestKey] = useState(0);
@@ -2764,21 +2738,7 @@ export default function DiagramWidgetsPage({ title }: Props) {
     return pageConfig.page === selectedPage ? pageConfig.edges : [];
   }, [pageConfig, selectedPage]);
 
-  const pageLayouts = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-
-    return allPageLayouts
-      .filter((item) => {
-        if (!normalizedSearch) {
-          return true;
-        }
-
-        const tagName = tagNames.get(item.tag_id)?.toLowerCase() || '';
-        const label = item.customLabel?.toLowerCase() || '';
-        const widgetName = getSchemeWidgetDefinition(item.widgetType).label.toLowerCase();
-        return tagName.includes(normalizedSearch) || label.includes(normalizedSearch) || widgetName.includes(normalizedSearch);
-      });
-  }, [allPageLayouts, search, tagNames]);
+  const pageLayouts = allPageLayouts;
 
   const selectedPageName = useMemo(() => {
     return availablePages.find((item) => item.value === selectedPage)?.label || selectedPage;
@@ -3369,18 +3329,15 @@ export default function DiagramWidgetsPage({ title }: Props) {
     ]).size,
   };
 
-  const selectedSummary = selectedWidgetIds.length
-    ? `${selectedWidgetIds.length} выбрано`
-    : 'Нет выбора';
-
   return (
     <ReactFlowProvider>
       <div className="diagram-admin-page">
         <div className="diagram-admin-page__hero">
-          <div className="diagram-admin-page__hero-title">
-            <h2>{title}</h2>
-            <p>Focused editor for scheme widgets with precise placement, alignment guides and action history.</p>
-          </div>
+          <PageHeader
+            kicker="Схема"
+            title={title}
+            description="Редактор схемных элементов: точное размещение, направляющие выравнивания и история действий."
+          />
           <div className="diagram-admin-page__hero-stats">
             <div>
               <strong>{stats.total}</strong>
@@ -3406,21 +3363,21 @@ export default function DiagramWidgetsPage({ title }: Props) {
 
         <div className="diagram-admin-page__content">
           <aside className="diagram-admin-sidebar">
-            <div className="diagram-admin-card">
+            <AppCard className="diagram-admin-card">
               <h3>Оборудование</h3>
               <EdgeTreeSelector selectedEdgeId={selectedEdge} onSelectEdge={handleEdgeSelect} />
-            </div>
+            </AppCard>
 
-            <div className="diagram-admin-card">
+            <AppCard className="diagram-admin-card">
               <h3>Маршрут</h3>
               {selectedEdge ? (
                 <EdgePathDisplay edgePath={selectedEdgePath} />
               ) : (
                 <p className="diagram-admin-muted">Выберите оборудование, чтобы открыть страницы схемы.</p>
               )}
-            </div>
+            </AppCard>
 
-            <div className="diagram-admin-card diagram-admin-card--library">
+            <AppCard className="diagram-admin-card diagram-admin-card--library">
               <div className="diagram-admin-card__title-row">
                 <h3>Библиотека элементов</h3>
                 <span>{totalLibraryItems}</span>
@@ -3490,56 +3447,20 @@ export default function DiagramWidgetsPage({ title }: Props) {
                   </section>
                 ))}
               </div>
-            </div>
+            </AppCard>
           </aside>
 
           <section className="diagram-admin-workspace">
             <div className="diagram-admin-toolbar">
-              <div className="diagram-admin-toolbar__controls">
-                <input
-                  type="text"
-                  className="p-inputtext"
-                  placeholder="Search by tag, label or type"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-                <select
-                  value={selectedPage}
-                  onChange={(event) => setSelectedPage(event.target.value)}
-                  className="p-dropdown"
-                  disabled={!availablePages.length}
-                >
-                  {!availablePages.length ? <option value="">Select equipment first</option> : null}
-                  {availablePages.map((page) => (
-                    <option key={page.value} value={page.value}>
-                      {page.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={String(zoom)}
-                  onChange={(event) => setZoom(clampZoomValue(Number(event.target.value)))}
-                  className="p-dropdown diagram-admin-toolbar__zoom"
-                >
-                  {ZOOM_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      Zoom {option.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="diagram-admin-toolbar__selection">{selectedSummary}</div>
+              <div className="diagram-admin-toolbar__bar" role="group" aria-label="Панель управления схемой">
                 <Button
-                  label="Fit Like View"
-                  icon="pi pi-expand"
+                  label="Проводка"
+                  icon="pi pi-share-alt"
                   size="small"
                   severity="secondary"
-                  onClick={() => setFitRequestKey((current) => current + 1)}
+                  disabled={!selectedPage || pageNodeOptions.length < 2}
+                  onClick={openCreatePageEdgeDialog}
                 />
-                <span className="diagram-admin-toolbar__autosave">Autosave 0.5s</span>
-              </div>
-
-              <div className="diagram-admin-toolbar__actions">
-                <Button label="Проводка" icon="pi pi-share-alt" size="small" severity="secondary" disabled={!selectedPage || pageNodeOptions.length < 2} onClick={openCreatePageEdgeDialog} />
                 <Button icon="pi pi-undo" text rounded size="small" disabled={!historyPast.length} onClick={handleUndo} tooltip="Undo" />
                 <Button icon="pi pi-refresh" text rounded size="small" disabled={!historyFuture.length} onClick={handleRedo} tooltip="Redo" />
               </div>

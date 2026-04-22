@@ -1,16 +1,35 @@
 @import 'primereact/resources/primereact.min.css';
 @import 'primeicons/primeicons.css';
 @import 'primeflex/primeflex.css';
-@import 'primereact/resources/themes/lara-dark-amber/theme.css';
+@import 'primereact/resources/themes/soho-dark/theme.css';
 
-/* Глобальные переопределения для PrimeReact - темная теплая тема */
+/* -------------------------------------------------------------------------- */
+/* Design system: tokens are in :root (near top).                               */
+/* Rules: prefer tokens/classes over inline styles; avoid layout-shift effects. */
+/* PrimeReact overrides should be minimal and predictable.                      */
+/* -------------------------------------------------------------------------- */
+
+/* Глобальные переопределения для PrimeReact (premium glow) */
 .p-component {
     color: var(--text-primary) !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Helvetica Neue', Arial, sans-serif !important;
 }
 
 .p-component-overlay {
-    background: rgba(26, 22, 20, 0.8) !important;
+    /* Stronger mask so background text doesn't compete */
+    background: rgba(10, 8, 7, 0.88) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* Dialog mask is sometimes a separate layer depending on PrimeReact version */
+.p-dialog-mask,
+.p-confirm-dialog-mask,
+.p-sidebar-mask,
+.p-overlay-mask {
+    background: rgba(10, 8, 7, 0.88) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 /* Убеждаемся, что все поверхности используют правильные цвета */
@@ -124,6 +143,7 @@
   --border-color: #3a3532;
   --text-primary: #f5f3f0;
   --text-secondary: #a5a09d;
+  --text-muted: #8a8582;
   --accent-primary: #f97316;
   --accent-hover: #ea580c;
   --sidebar-width: 280px;
@@ -139,6 +159,47 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Surfaces (premium glow) */
+  --surface-0: #141210;
+  --surface-1: rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-raised: rgba(255, 255, 255, 0.085);
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  --glow-primary: 0 0 0 4px rgba(249, 115, 22, 0.22), 0 10px 30px rgba(249, 115, 22, 0.10);
+
+  /* Typography scale */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-size-3xl: 28px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Layout tokens */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Focus / accessibility */
+  --focus-ring: 0 0 0 3px rgba(249, 115, 22, 0.35);
+  --focus-ring-strong: 0 0 0 4px rgba(249, 115, 22, 0.45);
 }
 
 body {
@@ -147,7 +208,233 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  background-color: var(--admin-bg);
+  background-color: var(--surface-0);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
+/* Базовый видимый фокус (важно для клавиатуры) */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+/* Минимальные стили для UI-kit */
+.page-header {
+  padding: var(--space-4) 0;
+}
+
+.page-header-main {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.page-header-kicker {
+  display: inline-flex;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.page-header-title {
+  margin: 4px 0 0 0;
+}
+
+.page-header-description {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+  max-width: 80ch;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.table-toolbar {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.table-toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.table-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 280px;
+  flex-wrap: wrap;
+}
+
+.table-toolbar-title {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.table-toolbar-search {
+  min-width: 260px;
+  flex: 1;
+}
+
+.table-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.table-toolbar-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.table-toolbar-filters {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* UI-kit: surfaces & fields */
+.app-card {
+  background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-2) 100%);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.app-card--padded {
+  padding: var(--space-5);
+}
+
+.app-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.app-field__label {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.app-field__hint {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.app-field__error {
+  color: #ffb4a5;
+  font-size: var(--font-size-sm);
+}
+
+/* UI-kit: buttons */
+.app-btn.app-btn--primary {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.app-btn.app-btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.app-btn.app-btn--primary:focus-visible {
+  box-shadow: var(--focus-ring-strong);
+}
+
+.app-btn.app-btn--primary:not(.p-disabled):not(:disabled):hover {
+  box-shadow: var(--glow-primary);
+}
+
+.app-empty-state {
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.app-empty-state-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--accent-primary);
+}
+
+.app-empty-state-title {
+  font-size: 14px;
+}
+
+.app-empty-state-description {
+  color: var(--text-secondary);
+}
+
+.app-field-label {
+  color: var(--text-primary);
+}
+
+.app-input {
+  background-color: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.app-input:focus {
+  border-color: rgba(249, 115, 22, 0.55);
+}
+
+/* PrimeReact wrappers (когда className вешается на контейнер) */
+.app-input.p-dropdown,
+.app-input.p-multiselect,
+.app-input.p-inputnumber,
+.app-input.p-calendar {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.app-input.p-dropdown .p-dropdown-label,
+.app-input.p-multiselect .p-multiselect-label,
+.app-input.p-inputnumber .p-inputtext {
   color: var(--text-primary);
 }
 
@@ -189,39 +476,39 @@ body {
 }
 /* ... остальные стили из App.css (.rig-card, .rigs-grid и т.д.) */
 
-/* Премиальные стили для таблиц PrimeReact - темная теплая тема */
+/* DataTable (premium glow): keep base theme, add subtle accents */
 .p-datatable {
-    border-radius: 12px !important;
+    border-radius: var(--radius-md) !important;
     overflow: hidden !important;
-    border: 1px solid var(--border-color) !important;
+    border: 1px solid var(--border-strong) !important;
     box-shadow: var(--shadow-sm) !important;
-    background: var(--card-bg) !important;
+    background: transparent !important;
     color: var(--text-primary) !important;
 }
 
 .p-datatable-wrapper {
-    background: var(--card-bg) !important;
+    background: transparent !important;
 }
 
 .p-datatable .p-datatable-header {
-    background: var(--card-bg) !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    padding: 20px !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    padding: 16px !important;
     color: var(--text-primary) !important;
 }
 
 .p-datatable .p-datatable-thead > tr > th {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, var(--gray-100) 100%) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
     color: var(--text-primary) !important;
     font-weight: 600 !important;
     font-size: 13px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    padding: 16px !important;
-    border-bottom: 2px solid rgba(249, 115, 22, 0.3) !important;
+    text-transform: none !important;
+    letter-spacing: 0.2px !important;
+    padding: 14px 16px !important;
+    border-bottom: 1px solid var(--border-strong) !important;
     border-top: none !important;
     border-left: none !important;
-    border-right: 1px solid var(--border-color) !important;
+    border-right: 1px solid var(--border-subtle) !important;
 }
 
 .p-datatable .p-datatable-thead > tr > th:last-child {
@@ -229,31 +516,30 @@ body {
 }
 
 .p-datatable .p-datatable-tbody {
-    background: var(--card-bg) !important;
+    background: transparent !important;
 }
 
 .p-datatable .p-datatable-tbody > tr {
     transition: all var(--transition-fast) !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    background: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    background: transparent !important;
 }
 
 .p-datatable .p-datatable-tbody > tr:nth-child(even) {
-    background: rgba(249, 115, 22, 0.03) !important;
+    background: rgba(255, 255, 255, 0.015) !important;
 }
 
 .p-datatable .p-datatable-tbody > tr:hover {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.08) 100%) !important;
-    transform: scale(1.001);
-    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.2);
+    background: rgba(249, 115, 22, 0.08) !important;
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.16);
 }
 
 .p-datatable .p-datatable-tbody > tr > td {
-    padding: 16px !important;
+    padding: 14px 16px !important;
     color: var(--text-primary) !important;
     font-size: 14px !important;
     background: transparent !important;
-    border-right: 1px solid var(--border-color) !important;
+    border-right: 1px solid var(--border-subtle) !important;
 }
 
 .p-datatable .p-datatable-tbody > tr > td:last-child {
@@ -261,8 +547,8 @@ body {
 }
 
 .p-datatable .p-paginator {
-    background: var(--gray-100) !important;
-    border-top: 1px solid var(--border-color) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-top: 1px solid var(--border-subtle) !important;
     padding: 12px 16px !important;
     border-radius: 0 0 12px 12px !important;
     color: var(--text-primary) !important;
@@ -1176,14 +1462,14 @@ select option:checked {
 .p-dialog {
     border-radius: 16px !important;
     box-shadow: var(--shadow-xl) !important;
-    border: 1px solid var(--border-color) !important;
+    border: 1px solid var(--border-strong) !important;
     overflow: hidden !important;
 }
 
 .p-dialog .p-dialog-header {
-    background: linear-gradient(135deg, var(--gray-100) 0%, var(--card-bg) 100%) !important;
-    padding: 24px 32px !important;
-    border-bottom: 1px solid var(--border-color) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    padding: 18px 24px !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
 }
 
 .p-dialog .p-dialog-header .p-dialog-title {
@@ -1194,15 +1480,15 @@ select option:checked {
 }
 
 .p-dialog .p-dialog-content {
-    padding: 32px !important;
-    background: var(--card-bg) !important;
+    padding: 24px !important;
+    background: transparent !important;
     color: var(--text-primary) !important;
 }
 
 .p-dialog .p-dialog-footer {
-    background: var(--card-bg) !important;
-    border-top: 1px solid var(--border-color) !important;
-    padding: 20px 32px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-top: 1px solid var(--border-subtle) !important;
+    padding: 16px 24px !important;
     display: flex !important;
     justify-content: flex-end !important;
     gap: 12px !important;
@@ -1226,7 +1512,6 @@ select option:checked {
     background: rgba(249, 115, 22, 0.15) !important;
     border-color: var(--accent-primary) !important;
     color: var(--accent-primary) !important;
-    transform: translateY(-2px) !important;
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2) !important;
 }
 
@@ -1238,7 +1523,6 @@ select option:checked {
 
 .p-dialog .p-dialog-footer .p-button.p-button-primary:hover {
     background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent-primary) 100%) !important;
-    transform: translateY(-2px) !important;
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4) !important;
 }
 
@@ -1251,7 +1535,6 @@ select option:checked {
 .p-dialog .p-dialog-footer .p-button.p-button-danger:hover {
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
     border-color: #dc2626 !important;
-    transform: translateY(-2px) !important;
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
 }
 
@@ -1263,8 +1546,7 @@ select option:checked {
 }
 
 .p-dialog .p-dialog-header-icon:hover {
-    background-color: var(--gray-100) !important;
-    transform: rotate(90deg);
+    background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
 /* Премиальные формы */
@@ -1277,19 +1559,19 @@ select option:checked {
     font-size: 13px !important;
     color: var(--text-primary) !important;
     margin-bottom: 8px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
+    text-transform: none !important;
+    letter-spacing: 0.2px !important;
 }
 
 .p-inputtext,
 .p-dropdown,
 .p-inputnumber-input {
     border-radius: 10px !important;
-    border: 1px solid var(--border-color) !important;
+    border: 1px solid var(--border-strong) !important;
     padding: 0.75rem 1rem !important;
     font-size: 14px !important;
     transition: all var(--transition-base) !important;
-    background-color: var(--card-bg) !important;
+    background-color: var(--surface-2) !important;
     color: var(--text-primary) !important;
 }
 
@@ -1304,8 +1586,10 @@ select option:checked {
 .p-dropdown-panel {
     border-radius: 12px !important;
     box-shadow: var(--shadow-lg) !important;
-    border: 1px solid var(--border-color) !important;
+    border: 1px solid var(--border-strong) !important;
     margin-top: 4px !important;
+    background: rgba(20, 18, 16, 0.92) !important;
+    backdrop-filter: blur(10px);
 }
 
 .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
@@ -1324,6 +1608,33 @@ select option:checked {
     background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
     color: white !important;
     box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3) !important;
+}
+
+.p-multiselect-panel {
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    border: 1px solid var(--border-strong) !important;
+    margin-top: 4px !important;
+    background: rgba(20, 18, 16, 0.92) !important;
+    backdrop-filter: blur(10px);
+}
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item {
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    margin: 2px 8px !important;
+    transition: all var(--transition-fast) !important;
+}
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item:hover {
+    background-color: rgba(249, 115, 22, 0.12) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%) !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.22) !important;
 }
 
 /* Премиальные сообщения */
@@ -1633,7 +1944,10 @@ select option:checked {
 .admin-layout {
     display: flex;
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a1614 0%, #25201e 50%, #1a1614 100%);
+    background:
+      radial-gradient(circle at 20% -10%, rgba(249, 115, 22, 0.10), transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(249, 115, 22, 0.06), transparent 40%),
+      var(--surface-0);
     color: var(--text-primary);
     width: 100%;
     position: relative;
@@ -1643,13 +1957,15 @@ select option:checked {
 .admin-sidebar {
     width: var(--sidebar-width);
     min-width: var(--sidebar-width); 
-    background-color: var(--sidebar-bg);
-    border-right: 1px solid var(--border-color);
+    background:
+      radial-gradient(circle at 10% 0%, rgba(249, 115, 22, 0.07), transparent 42%),
+      rgba(20, 18, 16, 0.86);
+    border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
     z-index: 10;
-    box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(12px);
     position: relative;
     transition: width var(--transition-base), min-width var(--transition-base);
     overflow: hidden;
@@ -1662,25 +1978,25 @@ select option:checked {
 }
 
 .sidebar-header {
-    padding: 24px 20px;
+    padding: 18px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    border-bottom: 1px solid var(--border-color);
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, var(--sidebar-bg) 100%);
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.02);
     position: relative;
     min-height: 64px;
 }
 
 .admin-sidebar.collapsed .sidebar-header {
-    padding: 24px 12px;
+    padding: 18px 10px;
     justify-content: center;
 }
 
 .sidebar-toggle {
     background: transparent;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     color: var(--text-secondary);
     cursor: pointer;
@@ -1688,21 +2004,21 @@ select option:checked {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-base);
+    transition: border-color var(--transition-base), background var(--transition-base), color var(--transition-base), box-shadow var(--transition-base);
     min-width: 36px;
     min-height: 36px;
     flex-shrink: 0;
 }
 
 .sidebar-toggle:hover {
-    background: rgba(249, 115, 22, 0.15);
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
-    transform: scale(1.05);
+    background: rgba(249, 115, 22, 0.10);
+    border-color: rgba(249, 115, 22, 0.28);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
 }
 
 .sidebar-toggle:active {
-    transform: scale(0.95);
+    background: rgba(249, 115, 22, 0.14);
 }
 
 .sidebar-toggle i {
@@ -1734,11 +2050,11 @@ select option:checked {
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent 0%, var(--border-color) 50%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, var(--border-subtle) 50%, transparent 100%);
 }
 
 .sidebar-nav {
-    padding: 20px 16px;
+    padding: 16px 12px;
     flex-grow: 1;
     overflow-y: auto;
     overflow-x: hidden;
@@ -1920,10 +2236,62 @@ select option:checked {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 18px 20px;
+  padding: 14px 16px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(34, 29, 26, 0.96);
+  border: 1px solid var(--border-strong);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(249, 115, 22, 0.10), transparent 40%),
+    rgba(20, 18, 16, 0.72);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+}
+
+.diagram-admin-toolbar__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.diagram-admin-toolbar__bar > .p-button,
+.diagram-admin-toolbar__bar > .diagram-admin-toolbar__selection {
+  min-height: 42px;
+}
+
+.diagram-admin-toolbar__selection {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.diagram-admin-toolbar .p-button.p-button-secondary {
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+}
+
+.diagram-admin-toolbar .p-button.p-button-secondary:not(:disabled):hover {
+  border-color: rgba(249, 115, 22, 0.28);
+  background: rgba(249, 115, 22, 0.08);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.10);
+}
+
+.diagram-admin-toolbar .p-button.p-button-text {
+  color: var(--text-secondary);
+}
+
+.diagram-admin-toolbar .p-button.p-button-text:not(:disabled):hover {
+  color: #ffd6b5;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .diagram-admin-toolbar__controls,
@@ -2276,9 +2644,9 @@ select option:checked {
 }
 
 .nav-link:hover {
-    background-color: rgba(249, 115, 22, 0.1);
+    background-color: rgba(255, 255, 255, 0.04);
     color: var(--text-primary);
-    transform: translateX(2px);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .nav-link:hover::before {
@@ -2286,10 +2654,12 @@ select option:checked {
 }
 
 .nav-link.active {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.15) 100%);
-    color: var(--accent-primary);
+    background:
+      radial-gradient(circle at 30% 30%, rgba(249, 115, 22, 0.16), transparent 55%),
+      rgba(255, 255, 255, 0.035);
+    color: #ffd6b5;
     font-weight: 600;
-    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2), var(--shadow-sm);
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.18), var(--shadow-sm);
 }
 
 .nav-link.active::before {
@@ -2304,7 +2674,7 @@ select option:checked {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-base);
+    transition: color var(--transition-base), opacity var(--transition-base), filter var(--transition-base);
     flex-shrink: 0;
     color: var(--text-secondary);
     opacity: 0.8;
@@ -2317,29 +2687,25 @@ select option:checked {
 }
 
 .nav-link:hover .pi {
-    transform: scale(1.1);
     opacity: 1;
-    color: var(--accent-primary);
-    filter: drop-shadow(0 2px 4px rgba(249, 115, 22, 0.3));
+    color: #ffd6b5;
+    filter: drop-shadow(0 2px 6px rgba(249, 115, 22, 0.25));
 }
 
 .admin-sidebar.collapsed .nav-link:hover .pi {
-    transform: scale(1.15);
     opacity: 1;
-    color: var(--accent-primary);
-    filter: drop-shadow(0 2px 6px rgba(249, 115, 22, 0.4));
+    color: #ffd6b5;
+    filter: drop-shadow(0 2px 8px rgba(249, 115, 22, 0.30));
 }
 
 .nav-link.active .pi {
-    color: var(--accent-primary);
+    color: #ffd6b5;
     opacity: 1;
-    filter: drop-shadow(0 2px 6px rgba(249, 115, 22, 0.5));
-    transform: scale(1.05);
+    filter: drop-shadow(0 2px 10px rgba(249, 115, 22, 0.30));
 }
 
 .nav-link.active:hover .pi {
-    transform: scale(1.12);
-    filter: drop-shadow(0 3px 8px rgba(249, 115, 22, 0.6));
+    filter: drop-shadow(0 3px 12px rgba(249, 115, 22, 0.35));
 }
 
 /* Tooltip для свернутого состояния */
@@ -2353,7 +2719,7 @@ select option:checked {
     left: calc(100% + 12px);
     top: 50%;
     transform: translateY(-50%);
-    background: var(--card-bg);
+    background: rgba(20, 18, 16, 0.92);
     color: var(--text-primary);
     padding: 8px 12px;
     border-radius: 8px;
@@ -2364,7 +2730,8 @@ select option:checked {
     transition: opacity var(--transition-base), transform var(--transition-base);
     z-index: 1000;
     box-shadow: var(--shadow-lg);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-strong);
+    backdrop-filter: blur(10px);
 }
 
 .admin-sidebar.collapsed .nav-link:hover::after {
@@ -2397,7 +2764,7 @@ select option:checked {
     align-items: center;
     gap: 16px;
     padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-subtle);
     margin-bottom: 32px;
     position: relative;
 }
@@ -2407,39 +2774,36 @@ select option:checked {
     position: absolute;
     bottom: -1px;
     left: 0;
-    width: 60px;
+    width: 54px;
     height: 2px;
     background: linear-gradient(90deg, var(--accent-primary) 0%, transparent 100%);
     border-radius: 2px;
-    box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.20);
 }
 
 .content-header h2,
 .content-header .content-header-title {
     margin: 0;
     color: var(--text-primary);
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #f5f3f0 0%, #fb923c 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text-primary);
     flex: 1;
     min-width: 0;
 }
 
 .content-card {
-    background-color: var(--card-bg);
-    padding: 32px;
+    background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-2) 100%);
+    padding: 24px;
     border-radius: 16px;
     box-shadow: var(--shadow-md);
     flex-grow: 1;
     min-height: 100px;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--border-color);
-    transition: all var(--transition-base);
+    border: 1px solid var(--border-strong);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base);
     position: relative;
     overflow: hidden;
 }
@@ -2450,16 +2814,15 @@ select option:checked {
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--primary-500) 0%, var(--primary-400) 50%, var(--primary-500) 100%);
+    height: 2px;
+    background: linear-gradient(90deg, rgba(249, 115, 22, 0.0) 0%, rgba(249, 115, 22, 0.55) 40%, rgba(249, 115, 22, 0.0) 100%);
     opacity: 0;
     transition: opacity var(--transition-base);
-    box-shadow: 0 0 12px rgba(249, 115, 22, 0.5);
+    box-shadow: 0 0 14px rgba(249, 115, 22, 0.22);
 }
 
 .content-card:hover {
     box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
 }
 
 .content-card:hover::before {
@@ -4191,7 +4554,7 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 .mobile-menu-trigger {
   display: none;
   background: transparent;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   color: var(--text-primary);
   cursor: pointer;
@@ -4200,14 +4563,15 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
   min-height: 44px;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-base);
+  transition: border-color var(--transition-base), background var(--transition-base), box-shadow var(--transition-base), color var(--transition-base);
   flex-shrink: 0;
 }
 
 .mobile-menu-trigger:hover {
-  background: rgba(249, 115, 22, 0.15);
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  background: rgba(249, 115, 22, 0.10);
+  border-color: rgba(249, 115, 22, 0.28);
+  color: #ffd6b5;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
 }
 
 .mobile-menu-trigger i {
@@ -5735,8 +6099,10 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
     gap: 10px;
     padding: 10px 14px;
     border-radius: 999px;
-    background: rgba(249, 115, 22, 0.12);
-    border: 1px solid rgba(249, 115, 22, 0.2);
+    background:
+      radial-gradient(circle at 30% 30%, rgba(249, 115, 22, 0.14), transparent 58%),
+      rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(249, 115, 22, 0.18);
     color: var(--text-primary);
     box-shadow: var(--shadow-sm);
 }
@@ -5748,18 +6114,19 @@ body .edge-tree-selector .p-tree .p-treenode-content.p-highlight [class*="p-tree
 .auth-logout-button {
     width: 42px;
     height: 42px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
-    background: var(--gray-100);
+    background: rgba(255, 255, 255, 0.03);
     color: var(--text-primary);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast), color var(--transition-fast);
 }
 
 .auth-logout-button:hover {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
-    transform: translateY(-1px);
+    border-color: rgba(249, 115, 22, 0.28);
+    background: rgba(249, 115, 22, 0.08);
+    color: #ffd6b5;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
 }
 
 .auth-screen {

@@ -16,6 +16,7 @@ import {
 } from '../api/admin';
 import { getErrorMessage } from '../utils/errorUtils';
 import { getSortedTagOptions } from '../utils/tagUtils';
+import PageHeader from '../ui/PageHeader';
 
 type MaintenanceType =
   | 'daily_maintenance'
@@ -178,10 +179,11 @@ export default function MaintenanceConfigPage() {
 
   return (
     <div className="maintenance-config-page">
-      <div className="maintenance-config-header">
-        <h3>Настройка ТО по буровым</h3>
-        <p>Выберите буровую и привяжите теги к каждому типу технического обслуживания.</p>
-      </div>
+      <PageHeader
+        kicker="Конфигурация"
+        title="ТО"
+        description="Выберите буровую и привяжите теги к каждому типу технического обслуживания."
+      />
 
       {(errorMessage || successMessage) && (
         <div className="maintenance-config-messages">

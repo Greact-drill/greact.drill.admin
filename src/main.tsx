@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PrimeReactProvider } from 'primereact/api';
 import AdminApp from './AdminApp.tsx';
 import { AuthProvider } from './auth/AuthProvider.tsx';
+import { ToastProvider } from './ui/ToastProvider.tsx';
 import './main.css';
 
 const queryClient = new QueryClient();
@@ -16,10 +17,12 @@ function AdminRoot() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <PrimeReactProvider>
-              <Routes>
-                <Route path="/*" element={<AdminApp />} />
-                <Route path="*" element={<Navigate to="/edges" replace />} />
-              </Routes>
+              <ToastProvider>
+                <Routes>
+                  <Route path="/*" element={<AdminApp />} />
+                  <Route path="*" element={<Navigate to="/edges" replace />} />
+                </Routes>
+              </ToastProvider>
             </PrimeReactProvider>
           </AuthProvider>
         </QueryClientProvider>

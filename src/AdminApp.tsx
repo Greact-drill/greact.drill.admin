@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
 import { useAuth } from './auth/AuthProvider';
 import CustomizationTable from './components/CustomizationTable';
 import DiagramWidgetsPage from './components/DiagramWidgetsPage';
@@ -14,8 +14,6 @@ const navItems = [
   { path: '/edges', name: 'Буровые', icon: 'pi pi-building' },
   { path: '/tags', name: 'Теги', icon: 'pi pi-bookmark' },
   { path: '/maintenance-config', name: 'ТО', icon: 'pi pi-wrench' },
-  { path: '/media-config', name: 'Медиа', icon: 'pi pi-video' },
-  { path: '/edge-customization', name: 'Компоненты буровых', icon: 'pi pi-sliders-h' },
   { path: '/table-config', name: 'Настройка таблиц', icon: 'pi pi-table' },
   { path: '/diagram-widgets', name: 'Схемные виджеты', icon: 'pi pi-sitemap' },
 ];
@@ -77,7 +75,7 @@ export default function AdminApp() {
         <nav className="sidebar-nav">
           <ul className="nav-list">
             {navItems.map((item) => {
-              const isActive = location.pathname.includes(item.path);
+              const isActive = matchPath({ path: `${item.path}/*`, end: false }, location.pathname) != null;
               return (
                 <li key={item.path}>
                   <Link
